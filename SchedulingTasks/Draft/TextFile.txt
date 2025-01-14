@@ -1,0 +1,30 @@
+﻿INSERT INTO [Endpoints] ([Name], [Description], [BaseUrl], [Path], [HttpMethod], [TimeoutSeconds], [IsActive], [CreatedAt], [LastModifiedAt])
+VALUES 
+('Daily Reports Endpoint', 'Generates daily reports', 'http://localhost:5000', '/api/report/generate-scheduled', 'POST', 60, 1, '2025-01-12 03:30:53.8933333', '2025-01-12 03:30:53.8933333'),
+('Attestation Reminders Endpoint', 'Processes attestation reminders', 'http://localhost:5000', '/api/attestation/process-reminders', 'POST', 60, 1, '2025-01-12 03:30:53.8933333', '2025-01-12 03:30:53.8933333');
+
+
+
+  INSERT INTO [ScheduledTasks] (
+
+    [Name], 
+    [Description], 
+    [CronExpression], 
+    [LastRun], 
+    [IsEnabled], 
+    [Status], 
+    [RetryAttempts], 
+    [RetryDelaySeconds], 
+    [RetryIfFailed], 
+    [TimeoutSeconds], 
+    [TimeZoneId], 
+    [Priority], 
+    [MaxExecutionMinutes], 
+    [NotificationEmail], 
+    [EndpointId], 
+    [CreatedAt], 
+    [LastModifiedAt]
+)
+VALUES 
+('Daily Reports', 'Generates daily reports', '* * * * *', NULL, 1, 'Pending', 3, 30, 1, 60, 'America/New_York', 1, 30, NULL, 1, '2025-01-12 03:31:10.776667', '2025-01-12 03:31:10.776667'),
+('Attestation Reminders', 'Processes attestation reminders', '* * * * *', NULL, 1, 'Pending', 3, 30, 1, 60, 'America/New_York', 2, 30, NULL, 2, '2025-01-12 03:31:10.776667', '2025-01-12 03:31:10.776667');
