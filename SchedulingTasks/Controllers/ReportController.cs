@@ -19,7 +19,7 @@ namespace SchedulingTasks.Controllers
                 _attemptCount++;
 
                 if (_attemptCount == 1)
-                    await Task.Delay(TimeSpan.FromSeconds(40), cancellationToken);
+                    await Task.Delay(TimeSpan.FromSeconds(50), cancellationToken);
 
                 // GetPendingAttestationsAsync
                 logger.LogInformation($"Starting generating scheduled reports in the controller - {correlationId}");

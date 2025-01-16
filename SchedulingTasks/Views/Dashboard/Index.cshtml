@@ -1,0 +1,129 @@
+﻿@using SchedulingTasks.Controllers
+@model DashboardViewModel
+
+<div class="space-y-6 p-6 bg-gray-50">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Tasks -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Tasks</p>
+                    <p class="text-2xl font-semibold text-gray-900">@Model.Stats.TotalTasks</p>
+                </div>
+                <div class="p-3 bg-indigo-50 rounded-full">
+                    <i data-lucide="Folder" class="w-6 h-6 text-indigo-600"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-600">
+                    <span class="text-green-600 font-medium">@Model.Stats.ActiveTasks</span> active tasks
+                </p>
+            </div>
+        </div>
+
+        <!-- Success Rate -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Success Rate</p>
+                    <p class="text-2xl font-semibold text-gray-900">@Model.Stats.SuccessRate%</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-full">
+                    <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i> <!-- Success Icon -->
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-600">Last 24 hours</p>
+            </div>
+        </div>
+
+        <!-- Failed Tasks -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Failed Tasks</p>
+                    <p class="text-2xl font-semibold text-gray-900">@Model.Stats.FailedTasks</p>
+                </div>
+                <div class="p-3 bg-red-50 rounded-full">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-red-600"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-600">Requires attention</p>
+            </div>
+        </div>
+
+        <!-- Next Scheduled -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Next Scheduled</p>
+                    <p class="text-2xl font-semibold text-gray-900">@Model.Stats.NextScheduled</p>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-full">
+                    <i data-lucide="Calendar" class="w-6 h-6 text-blue-600"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-600">Upcoming task</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Executions -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Recent Executions</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attempt Number</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach (var execution in Model.RecentExecutions)
+                    {
+                        <tr>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">@execution.ScheduledTaskName</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">@execution.StartedAt</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">@execution.AttemptNumber</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">@execution.ExecutionTimeMs</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium @(
+                                    execution.Status == "Completed" ? "bg-green-100 text-green-800" :
+                                    execution.Status == "Failed" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800")">
+                                    @execution.Status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Status Distribution</h3>
+        </div>
+        <div class="p-6">
+            <div class="flex items-center space-x-4">
+                @HtmlHelpers.RenderStatusBar("Completed", Model.Distribution.Completed, "bg-green-600")
+                @HtmlHelpers.RenderStatusBar("Failed", Model.Distribution.Failed, "bg-red-600")
+                @HtmlHelpers.RenderStatusBar("Pending", Model.Distribution.Pending, "bg-yellow-600")
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+</script>

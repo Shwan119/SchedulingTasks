@@ -3,6 +3,8 @@ using SchedulingTasks.Interfaces;
 using SchedulingTasks.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using SchedulingTasks.Dto;
+using System.Net;
 
 namespace SchedulingTasks.Services
 {
@@ -15,7 +17,7 @@ namespace SchedulingTasks.Services
             try
             {
                 using var client = httpClientFactory.CreateClient();
-                client.Timeout = TimeSpan.FromSeconds(task.TimeoutSeconds);
+                client.Timeout = TimeSpan.FromSeconds(20);
 
                 var request = new HttpRequestMessage(new HttpMethod(task.Endpoint.HttpMethod), task.Endpoint.FullUrl);
                 request.Headers.Add("X-Correlation-ID", correlationId);
@@ -132,12 +134,26 @@ namespace SchedulingTasks.Services
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IEnumerable<TaskExecution>> GetRecentExecutionsAsync(int count = 100, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<TaskExecutionResponseDto>> GetRecentExecutionsAsync(int count = 10, CancellationToken cancellationToken = default)
         {
-            return await dbContext.TaskExecutions
+            var taskExecutions = await dbContext.TaskExecutions
                 .OrderByDescending(x => x.StartedAt)
                 .Take(count)
-                .ToListAsync(cancellationToken);
+                .Select(x => new TaskExecutionResponseDto
+                {
+                    Id = x.Id,
+                    StartedAt = x.StartedAt,
+                    CompletedAt = x.CompletedAt,
+                    Status = x.Status,
+                    ErrorMessage = x.ErrorMessage,
+                    AttemptNumber = x.AttemptNumber,
+                    HttpStatusCode = x.HttpStatusCode,
+                    ExecutionTimeMs = x.ExecutionTimeMs,
+                    ScheduledTaskId = x.ScheduledTaskId,
+                    ScheduledTaskName = x.ScheduledTask.Name
+                }).ToListAsync(cancellationToken);
+
+            return taskExecutions;
         }
     }
 }

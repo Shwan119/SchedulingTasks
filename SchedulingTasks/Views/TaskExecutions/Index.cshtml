@@ -1,0 +1,83 @@
+﻿@model IEnumerable<SchedulingTasks.Controllers.TaskExecutionViewModel>
+
+<div class="min-h-screen bg-gray-50 p-8">
+    <div class="max-w-7xl mx-auto space-y-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">Task Executions</h2>
+                    <p class="text-sm text-gray-500">View and monitor task execution history</p>
+                </div>
+                <div class="flex space-x-4">
+                    <select id="statusFilter" class="border border-gray-300 rounded-md shadow-sm py-2 px-4">
+                        <option value="all">All Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <div class="relative">
+                        <input type="text" id="searchTerm" placeholder="Search by Task ID..." class="pl-10 border border-gray-300 rounded-md py-2 px-4">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4">🔍</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTTP Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var execution in Model)
+                        {
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@($"#{execution.TaskId}")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@execution.StartedAt</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@execution.CompletedAt ?? "-"</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(execution.Status == "Completed" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")">
+                                        @(execution.Status == "Completed" ? "✔️" : "❌") @execution.Status
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@execution.AttemptNumber</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium @(execution.HttpStatusCode >= 200 && execution.HttpStatusCode < 300 ? "text-green-600" : "text-red-600")">
+                                    @execution.HttpStatusCode
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-500">@execution.ErrorMessage ?? "-"</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Filtering logic (basic example)
+    document.getElementById('statusFilter').addEventListener('change', function () {
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const status = row.querySelector('td:nth-child(4) span').textContent.trim().toLowerCase();
+            row.style.display = this.value === 'all' || status === this.value ? '' : 'none';
+        });
+    });
+
+    document.getElementById('searchTerm').addEventListener('input', function () {
+        const search = this.value.toLowerCase();
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const taskId = row.querySelector('td:first-child').textContent.trim();
+            row.style.display = taskId.includes(search) ? '' : 'none';
+        });
+    });
+</script>
