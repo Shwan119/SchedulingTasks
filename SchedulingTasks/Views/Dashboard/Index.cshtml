@@ -77,35 +77,45 @@
             <h3 class="text-lg font-medium text-gray-900">Recent Executions</h3>
         </div>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attempt Number</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach (var execution in Model.RecentExecutions)
-                    {
+            @if (Model.RecentExecutions != null && Model.RecentExecutions.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">@execution.ScheduledTaskName</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">@execution.StartedAt</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">@execution.AttemptNumber</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">@execution.ExecutionTimeMs</td>
-                            <td class="px-6 py-4">
-                                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium @(
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attempt Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var execution in Model.RecentExecutions)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">@execution.ScheduledTaskName</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">@execution.StartedAt</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">@execution.AttemptNumber</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">@execution.ExecutionTimeMs</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium @(
                                     execution.Status == "Completed" ? "bg-green-100 text-green-800" :
                                     execution.Status == "Failed" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800")">
-                                    @execution.Status
-                                </span>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                                        @execution.Status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="p-6 text-center">
+                    <p class="text-sm text-gray-500">No recent executions available.</p>
+                    <i data-lucide="info" class="w-6 h-6 text-gray-400 mx-auto mt-2"></i>
+                </div>
+            }
         </div>
     </div>
 
