@@ -1,201 +1,217 @@
-﻿using System.Configuration;
-
-namespace SchedulingTasks.Controllers
+﻿namespace SchedulingTasks.Controllers
 {
     public class testing
     {
     }
 
-    public class ScheduledTasks
-    {
-        private readonly YourDbContext _context;
-        private readonly ILogger _logger;
+    <appSettings>
+  <add key = "UnusedReportDaysThreshold" value="90"/>
+  <add key = "UnsubscribeJobRunDays" value="1,2,3,4,5,6"/>
+  <add key = "UnsubscribeJobRunHours" value="2,14"/>
+  <add key = "UnsubscribeOrgFilter" value="ECOE"/>
+</appSettings>
 
-        public ScheduledTasks(YourDbContext context, ILogger logger)
+    using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data.Entity;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace YourNamespace
+    {
+        public class InactiveSubscription
         {
-            _context = context;
-            _logger = logger;
+            public int SubscriptionID { get; set; }
+            public int UserID { get; set; }
+            public int ReportID { get; set; }
+            public string ReportName { get; set; }
+            public string Code { get; set; }
+            public DateTime LastDateUsed { get; set; }
         }
 
-        // Call this method from your scheduled job that runs every minute
-        public async Task RunScheduledTasksAsync()
+        public interface ILogger
         {
-            try
-            {
-                var config = ReportCleanupConfig.Load();
+            void Info(string message);
+            void Error(string message, Exception ex = null);
+        }
 
-                if (config.IsScheduledTime())
+        public class ReportCleanupService
+        {
+            private readonly YourDbContext _context;
+            private readonly ILogger _logger;
+
+            public ReportCleanupService(YourDbContext context, ILogger logger)
+            {
+                _context = context;
+                _logger = logger;
+            }
+
+            public async Task UpdateInactiveSubscriptions()
+            {
+                try
                 {
-                    _logger.Info("Starting inactive subscription cleanup job");
-                    var cleanupService = new ReportCleanupService(_context, config, _logger);
-                    await cleanupService.FindAndUpdateInactiveSubscriptionsAsync();
+                    // Step 1: Fetch inactive subscriptions
+                    var inactiveSubscriptions = GetInactiveSubscriptions();
+                    if (!inactiveSubscriptions.Any())
+                    {
+                        _logger.Info("No inactive subscriptions found to update");
+                        return;
+                    }
+
+                    _logger.Info($"Found {inactiveSubscriptions.Count} inactive subscriptions to auto-cancel");
+
+                    // Step 2: Batch update them
+                    const int batchSize = 500;
+                    int totalUpdated = 0;
+
+                    for (int i = 0; i < inactiveSubscriptions.Count; i += batchSize)
+                    {
+                        var batch = inactiveSubscriptions.Skip(i).Take(batchSize).ToList();
+                        var subscriptionIds = batch.Select(s => s.SubscriptionID).ToList();
+
+                        // Fetch actual entities for update
+                        var subscriptionsToUpdate = await _context.ReportAccesses
+                            .Where(ra => subscriptionIds.Contains(ra.ID))
+                            .ToListAsync();
+
+                        foreach (var subscription in subscriptionsToUpdate)
+                        {
+                            subscription.RequestStatus = "AutoCancelled";
+                            subscription.ModifiedDate = DateTime.Now;
+                            subscription.CancelDate = DateTime.Now;
+                        }
+
+                        var rowsAffected = await _context.SaveChangesAsync();
+                        totalUpdated += rowsAffected;
+
+                        _logger.Info($"Updated batch of {rowsAffected} inactive subscriptions");
+                    }
+
+                    _logger.Info($"Total inactive subscriptions auto-cancelled: {totalUpdated}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error cancelling inactive subscriptions: {ex.Message}", ex);
+                    throw;
                 }
             }
-            catch (ConfigurationErrorsException ex)
+
+            public List<InactiveSubscription> GetInactiveSubscriptions()
             {
-                _logger.Error($"Configuration error in scheduled tasks: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Error in scheduled tasks: {ex.Message}", ex);
-            }
-        }
-    }
-    public class ReportCleanupService
-    {
-        private readonly YourDbContext _context;
-        private readonly ReportCleanupConfig _config;
-        private readonly ILogger _logger;
+                var unusedDays = int.Parse(ConfigurationManager.AppSettings["UnusedReportDaysThreshold"]);
+                var orgCode = ConfigurationManager.AppSettings["UnsubscribeOrgFilter"];
 
-        public ReportCleanupService(YourDbContext context, ReportCleanupConfig config, ILogger logger)
-        {
-            _context = context;
-            _config = config;
-            _logger = logger;
-        }
-
-        public async Task FindAndUpdateInactiveSubscriptionsAsync()
-        {
-            try
-            {
-                var cutoffDate = DateTime.Now.AddDays(-_config.RetentionDays);
-
-                // SQL Command to update all inactive subscriptions
-                var updateCommand = @"
-                UPDATE ra
-                SET ra.RequestStatus = 'AutoCancelled',
-                    ra.ModifiedDate = GETDATE(),
-                    ra.CancelDate = GETDATE()
-                FROM [ROVER].[dbo].[ReportAccesses] ra
-                INNER JOIN [dbo].[ReportInventories] ri ON ra.Report_ID = ri.ID
-                INNER JOIN [dbo].[ReportingOrgs] org ON org.ID = ri.ReportingOrg_ID
-                INNER JOIN [dbo].[vwUserPermission] up ON up.UserID = ra.Requestor_ID AND up.Division_ID = org.Division_ID
-                OUTER APPLY (
-                    SELECT MAX(LogDate) AS LastDateUsed 
-                    FROM [dbo].[vwReportUsage] usg
-                    WHERE usg.RID = ri.ID AND usg.UserID = ra.Requestor_ID
-                ) usage
-                WHERE org.Code = @orgCode
-                AND ra.RequestStatus = 'Approved'
-                AND up.IsAnalyst = 0
-                AND up.IsAdmin = 0
-                AND usage.LastDateUsed < @cutoffDate";
-
-                var rowsAffected = await _context.Database.ExecuteSqlCommandAsync(
-                    updateCommand,
-                    new SqlParameter("@cutoffDate", cutoffDate),
-                    new SqlParameter("@orgCode", _config.OrganizationCode));
-
-                _logger.Info($"Auto-cancelled {rowsAffected} subscriptions that were inactive for {_config.RetentionDays} days");
-
-                return rowsAffected;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Error cancelling inactive subscriptions: {ex.Message}", ex);
-                throw;
+                return _context.Database
+                    .SqlQuery<InactiveSubscription>(@"
+                    SELECT ra.ID as SubscriptionID, ra.Requestor_ID as UserID, ra.Report_ID as ReportID, ri.Name as ReportName, org.Code
+                    , usage.LastDateUsed
+                    FROM [dbo].ReportInventories ri (nolock)
+                        inner join dbo.ReportingOrgs org (nolock) on org.ID = ri.ReportingOrg_ID
+                        inner join [dbo].[ReportAccesses] as ra on ra.Report_ID = ri.ID
+                        INNER JOIN [dbo].[vwUserPermission] up ON up.UserID = ra.Requestor_ID and up.Division_ID = org.Division_ID
+                    OUTER APPLY (
+                        SELECT max(LogDate) as LastDateUsed 
+                        FROM [dbo].[vwReportUsage] usg
+                        WHERE usg.RID = ri.ID AND usg.UserID = ra.Requestor_ID
+                    ) usage
+                    WHERE org.Code = @orgCode
+                    AND ra.RequestStatus = 'Approved'
+                    AND up.IsAnalyst = 0
+                    AND up.IsAdmin = 0
+                    AND usage.LastDateUsed < GETDATE() - @unusedDays
+                    ORDER BY usage.LastDateUsed",
+                        new SqlParameter("@unusedDays", unusedDays),
+                        new SqlParameter("@orgCode", orgCode))
+                    .ToList();
             }
         }
 
-        // For finding inactive subscriptions without updating them (for testing/reporting)
-        public List<InactiveSubscription> GetInactiveSubscriptions()
+        public class JobScheduler
         {
-            var cutoffDate = DateTime.Now.AddDays(-_config.RetentionDays);
+            private readonly ReportCleanupService _cleanupService;
+            private readonly ILogger _logger;
 
-            var inactiveSubscriptions = _context.Database
-                .SqlQuery<InactiveSubscription>(@"
-                SELECT 
-                    ra.ID as SubscriptionID, 
-                    ra.Requestor_ID as UserID, 
-                    ra.Report_ID as ReportID, 
-                    ri.Name as ReportName, 
-                    org.Code as OrganizationCode,
-                    usage.LastDateUsed
-                FROM [dbo].[ReportInventories] ri
-                INNER JOIN [dbo].[ReportingOrgs] org ON org.ID = ri.ReportingOrg_ID
-                INNER JOIN [dbo].[ReportAccesses] ra ON ra.Report_ID = ri.ID
-                INNER JOIN [dbo].[vwUserPermission] up ON up.UserID = ra.Requestor_ID AND up.Division_ID = org.Division_ID
-                OUTER APPLY (
-                    SELECT MAX(LogDate) AS LastDateUsed 
-                    FROM [dbo].[vwReportUsage] usg
-                    WHERE usg.RID = ri.ID AND usg.UserID = ra.Requestor_ID
-                ) usage
-                WHERE org.Code = @orgCode
-                AND ra.RequestStatus = 'Approved'
-                AND up.IsAnalyst = 0
-                AND up.IsAdmin = 0
-                AND usage.LastDateUsed < @cutoffDate
-                ORDER BY usage.LastDateUsed",
-                    new SqlParameter("@cutoffDate", cutoffDate),
-                    new SqlParameter("@orgCode", _config.OrganizationCode))
-                .ToList();
-
-            return inactiveSubscriptions;
-        }
-    }
-
-    public class InactiveSubscription
-    {
-        public int SubscriptionID { get; set; }
-        public int UserID { get; set; }
-        public int ReportID { get; set; }
-        public string ReportName { get; set; }
-        public string OrganizationCode { get; set; }
-        public DateTime LastDateUsed { get; set; }
-    }
-    public class ReportCleanupConfig
-    {
-        public int RetentionDays { get; set; }
-        public List<int> ScheduleDays { get; set; }
-        public List<int> ScheduleHours { get; set; }
-        public string OrganizationCode { get; set; }
-
-        public static ReportCleanupConfig Load()
-        {
-            var config = new ReportCleanupConfig
+            public JobScheduler(ReportCleanupService cleanupService, ILogger logger)
             {
-                RetentionDays = int.Parse(ConfigurationManager.AppSettings["ReportRetentionDays"]),
-                ScheduleDays = ConfigurationManager.AppSettings["ReportCleanupScheduleDays"]
-                    .Split(',')
-                    .Select(int.Parse)
-                    .ToList(),
-                ScheduleHours = ConfigurationManager.AppSettings["ReportCleanupScheduleHours"]
-                    .Split(',')
-                    .Select(int.Parse)
-                    .ToList(),
-                OrganizationCode = ConfigurationManager.AppSettings["ReportOrganizationCode"]
-            };
+                _cleanupService = cleanupService;
+                _logger = logger;
+            }
 
-            config.Validate();
-            return config;
+            public async Task ExecuteScheduledJobs()
+            {
+                try
+                {
+                    if (IsScheduledTime())
+                    {
+                        _logger.Info("Starting auto-unsubscribe job for inactive reports");
+                        await _cleanupService.UpdateInactiveSubscriptions();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error("Error executing scheduled job", ex);
+                }
+            }
+
+            private bool IsScheduledTime()
+            {
+                try
+                {
+                    var scheduleDaysConfig = ConfigurationManager.AppSettings["UnsubscribeJobRunDays"];
+                    var scheduleHoursConfig = ConfigurationManager.AppSettings["UnsubscribeJobRunHours"];
+
+                    if (string.IsNullOrEmpty(scheduleDaysConfig) || string.IsNullOrEmpty(scheduleHoursConfig))
+                    {
+                        _logger.Error("Missing schedule configuration for auto-unsubscribe job");
+                        return false;
+                    }
+
+                    var scheduleDays = scheduleDaysConfig
+                        .Split(',')
+                        .Select(int.Parse)
+                        .ToList();
+
+                    var scheduleHours = scheduleHoursConfig
+                        .Split(',')
+                        .Select(int.Parse)
+                        .ToList();
+
+                    var now = DateTime.Now;
+                    return scheduleDays.Contains((int)now.DayOfWeek) &&
+                           scheduleHours.Contains(now.Hour);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error("Error checking scheduled time", ex);
+                    return false;
+                }
+            }
         }
 
-        public bool IsScheduledTime()
+        // Example main class for integration with your existing scheduler
+        public class ScheduledTaskManager
         {
-            var now = DateTime.Now;
-            return ScheduleDays.Contains((int)now.DayOfWeek) &&
-                   ScheduleHours.Contains(now.Hour);
-        }
+            private readonly YourDbContext _context;
+            private readonly ILogger _logger;
 
-        public void Validate()
-        {
-            if (RetentionDays <= 0)
-                throw new ConfigurationErrorsException("ReportRetentionDays must be greater than 0");
+            public ScheduledTaskManager(YourDbContext context, ILogger logger)
+            {
+                _context = context;
+                _logger = logger;
+            }
 
-            if (!ScheduleDays.Any())
-                throw new ConfigurationErrorsException("ReportCleanupScheduleDays must contain at least one day");
+            // Method to be called by your existing minute-by-minute scheduler
+            public async Task CheckAndRunTasks()
+            {
+                var cleanupService = new ReportCleanupService(_context, _logger);
+                var scheduler = new JobScheduler(cleanupService, _logger);
 
-            if (ScheduleDays.Any(d => d < 0 || d > 6))
-                throw new ConfigurationErrorsException("ReportCleanupScheduleDays must contain values between 0 and 6");
+                await scheduler.ExecuteScheduledJobs();
 
-            if (!ScheduleHours.Any())
-                throw new ConfigurationErrorsException("ReportCleanupScheduleHours must contain at least one hour");
-
-            if (ScheduleHours.Any(h => h < 0 || h > 23))
-                throw new ConfigurationErrorsException("ReportCleanupScheduleHours must contain values between 0 and 23");
-
-            if (string.IsNullOrWhiteSpace(OrganizationCode))
-                throw new ConfigurationErrorsException("ReportOrganizationCode cannot be empty");
+                // Other scheduled tasks can be added here
+            }
         }
     }
 }
