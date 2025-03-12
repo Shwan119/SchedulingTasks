@@ -4,33 +4,74 @@ namespace SchedulingTasks.Controllers
 {
     public class testing
     {
-        public IQueryable<LobDto> GetLobData(int? divId)
+        public List<LobDto> GetLobDataEfCore6(int? divId)
         {
-            var query = from div in _context.Divisions
-                        join grp in _context.DimLOBGroups on div.ID equals grp.Division_ID
-                        join lob in _context.DimLOBs on grp.ID equals lob.LOBGroup_ID
-                        join ex in _context.vwDimLOBExecutives on lob.ID equals ex.LOBID into executivesJoin
-                        from ex in executivesJoin.DefaultIfEmpty()
-                        where (divId == null || grp.Division_ID == divId)
-                              && grp.ActiveFlag == 1
-                              && lob.ActiveFlag == 1
-                              && lob.Division_ID == grp.Division_ID
-                        orderby div.Name, grp.Name, lob.Name
-                        select new LobDto
-                        {
-                            DivisionCode = div.Code,
-                            DivisionName = div.Name,
-                            GroupID = grp.ID,
-                            GroupCd = grp.Cd,
-                            GroupName = grp.Name,
-                            LOBID = lob.ID,
-                            LOBCd = lob.Cd,
-                            LOBName = lob.Name,
-                            ExecutiveNBK = ex != null ? ex.ExecutiveNBK : null,
-                            ExecutiveName = ex != null ? ex.ExecutiveName : null
-                        };
+            FormattableString sql = $@"
+        select div.Code as DivisionCode, div.Name as DivisionName
+        , grp.ID as GroupID, grp.Cd as GroupCd, grp.Name as GroupName  
+        , lob.ID as LOBID, lob.Cd as LOBCd, lob.Name as LOBName
+        , ex.ExecutiveNBK, ex.ExecutiveName
+        from Divisions div
+        left join DimLOBGroups grp on grp.Division_ID = div.ID and grp.ActiveFlag = 1
+        left join DimLOBs lob on lob.LOBGroup_ID = grp.ID and lob.Division_ID = grp.Division_ID and lob.ActiveFlag = 1
+        left join vwDimLOBExecutives ex on ex.LOBID = lob.ID
+        where grp.Division_ID = {divId} or {divId} is null
+        order by DivisionName, GroupName, LOBName";
 
-            return query;
+            return _context.Database.SqlQuery<LobDto>(sql).ToList();
+        }
+        public List<LobDto> GetLobData(int? divId)
+        {
+            string sql = @"
+        select div.Code as DivisionCode, div.Name as DivisionName
+        , grp.ID as GroupID, grp.Cd as GroupCd, grp.Name as GroupName  
+        , lob.ID as LOBID, lob.Cd as LOBCd, lob.Name as LOBName
+        , ex.ExecutiveNBK, ex.ExecutiveName
+        from Divisions div
+        left join DimLOBGroups grp on grp.Division_ID = div.ID and grp.ActiveFlag = 1
+        left join DimLOBs lob on lob.LOBGroup_ID = grp.ID and lob.Division_ID = grp.Division_ID and lob.ActiveFlag = 1
+        left join vwDimLOBExecutives ex on ex.LOBID = lob.ID
+        where grp.Division_ID = @divId or @divId is null
+        order by DivisionName, GroupName, LOBName";
+
+            // Option 1: Using FromSqlRaw with DbSet<LobDto> (EF Core 3.0+)
+            // You would need to have a DbSet<LobDto> in your context for this to work
+            var result = _context.Set<LobDto>().FromSqlRaw(sql, new SqlParameter("@divId", divId ?? (object)DBNull.Value)).ToList();
+
+            // Option 2: Using raw ADO.NET connection
+            var result = new List<LobDto>();
+            using (var command = _context.Database.GetDbConnection().CreateCommand())
+            {
+                command.CommandText = sql;
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = "@divId";
+                parameter.Value = divId ?? (object)DBNull.Value;
+                command.Parameters.Add(parameter);
+
+                _context.Database.OpenConnection();
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        result.Add(new LobDto
+                        {
+                            DivisionCode = reader["DivisionCode"].ToString(),
+                            DivisionName = reader["DivisionName"].ToString(),
+                            GroupID = Convert.ToInt32(reader["GroupID"]),
+                            GroupCd = reader["GroupCd"].ToString(),
+                            GroupName = reader["GroupName"].ToString(),
+                            LOBID = Convert.ToInt32(reader["LOBID"]),
+                            LOBCd = reader["LOBCd"].ToString(),
+                            LOBName = reader["LOBName"].ToString(),
+                            ExecutiveNBK = reader["ExecutiveNBK"] != DBNull.Value ? reader["ExecutiveNBK"].ToString() : null,
+                            ExecutiveName = reader["ExecutiveName"] != DBNull.Value ? reader["ExecutiveName"].ToString() : null
+                        });
+                    }
+                }
+            }
+
+            return result;
         }
     }
 
