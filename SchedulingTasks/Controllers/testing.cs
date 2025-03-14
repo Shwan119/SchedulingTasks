@@ -1,91 +1,89 @@
 ﻿
 
+using System.Data;
+
 namespace SchedulingTasks.Controllers
 {
     public class testing
     {
-        public List<LobDto> GetLobDataEfCore6(int? divId)
+        public IQueryable<LookupDto> GetLookups(int? orgId)
         {
-            FormattableString sql = $@"
-        select div.Code as DivisionCode, div.Name as DivisionName
-        , grp.ID as GroupID, grp.Cd as GroupCd, grp.Name as GroupName  
-        , lob.ID as LOBID, lob.Cd as LOBCd, lob.Name as LOBName
-        , ex.ExecutiveNBK, ex.ExecutiveName
-        from Divisions div
-        left join DimLOBGroups grp on grp.Division_ID = div.ID and grp.ActiveFlag = 1
-        left join DimLOBs lob on lob.LOBGroup_ID = grp.ID and lob.Division_ID = grp.Division_ID and lob.ActiveFlag = 1
-        left join vwDimLOBExecutives ex on ex.LOBID = lob.ID
-        where grp.Division_ID = {divId} or {divId} is null
-        order by DivisionName, GroupName, LOBName";
-
-            return _context.Database.SqlQuery<LobDto>(sql).ToList();
-        }
-        public List<LobDto> GetLobData(int? divId)
-        {
-            string sql = @"
-        select div.Code as DivisionCode, div.Name as DivisionName
-        , grp.ID as GroupID, grp.Cd as GroupCd, grp.Name as GroupName  
-        , lob.ID as LOBID, lob.Cd as LOBCd, lob.Name as LOBName
-        , ex.ExecutiveNBK, ex.ExecutiveName
-        from Divisions div
-        left join DimLOBGroups grp on grp.Division_ID = div.ID and grp.ActiveFlag = 1
-        left join DimLOBs lob on lob.LOBGroup_ID = grp.ID and lob.Division_ID = grp.Division_ID and lob.ActiveFlag = 1
-        left join vwDimLOBExecutives ex on ex.LOBID = lob.ID
-        where grp.Division_ID = @divId or @divId is null
-        order by DivisionName, GroupName, LOBName";
-
-            // Option 1: Using FromSqlRaw with DbSet<LobDto> (EF Core 3.0+)
-            // You would need to have a DbSet<LobDto> in your context for this to work
-            var result = _context.Set<LobDto>().FromSqlRaw(sql, new SqlParameter("@divId", divId ?? (object)DBNull.Value)).ToList();
-
-            // Option 2: Using raw ADO.NET connection
-            var result = new List<LobDto>();
-            using (var command = _context.Database.GetDbConnection().CreateCommand())
-            {
-                command.CommandText = sql;
-                var parameter = command.CreateParameter();
-                parameter.ParameterName = "@divId";
-                parameter.Value = divId ?? (object)DBNull.Value;
-                command.Parameters.Add(parameter);
-
-                _context.Database.OpenConnection();
-
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        result.Add(new LobDto
+            var query = from lok in db.DimLookups
+                        join org in db.ReportingOrgs on lok.ReportingOrg_ID equals org.ID into orgJoin
+                        from org in orgJoin.DefaultIfEmpty()
+                        where lok.ReportingOrg_ID == orgId || orgId == null
+                        orderby lok.Category, lok.ReportingOrg_ID, lok.SortOrder, lok.Code
+                        select new LookupDto
                         {
-                            DivisionCode = reader["DivisionCode"].ToString(),
-                            DivisionName = reader["DivisionName"].ToString(),
-                            GroupID = Convert.ToInt32(reader["GroupID"]),
-                            GroupCd = reader["GroupCd"].ToString(),
-                            GroupName = reader["GroupName"].ToString(),
-                            LOBID = Convert.ToInt32(reader["LOBID"]),
-                            LOBCd = reader["LOBCd"].ToString(),
-                            LOBName = reader["LOBName"].ToString(),
-                            ExecutiveNBK = reader["ExecutiveNBK"] != DBNull.Value ? reader["ExecutiveNBK"].ToString() : null,
-                            ExecutiveName = reader["ExecutiveName"] != DBNull.Value ? reader["ExecutiveName"].ToString() : null
-                        });
-                    }
-                }
+                            ID = lok.ID,
+                            Code = lok.Code,
+                            Description = lok.Description,
+                            Category = lok.Category,
+                            ReportingOrg_ID = lok.ReportingOrg_ID,
+                            SortOrder = lok.SortOrder,
+                            // Additional fields from DimLookups
+
+                            // This handles the IIF expression
+                            ReportingOrg = lok.ReportingOrg_ID == null ? "Global" : org.Name
+                        };
+
+            return query;
+        }
+
+        public List<LookupDto> GetLookupsSqlQuery(int? orgId)
+        {
+            string query = @"
+        select lok.*
+        , ReportingOrg = IIF(ReportingOrg_ID is null, 'Global', org.Name)
+        from DimLookups lok
+        left join ReportingOrgs org on org.ID = lok.ReportingOrg_ID
+        where ReportingOrg_ID = @orgId or @orgId is null
+        order by Category, ReportingOrg_ID, SortOrder, Code";
+
+            var parameter = new SqlParameter("@orgId", SqlDbType.Int);
+            if (orgId == null)
+            {
+                parameter.Value = DBNull.Value;
+            }
+            else
+            {
+                parameter.Value = orgId;
             }
 
-            return result;
+            var lookups = db.Database.SqlQuery<LookupDto>(query, parameter).ToList();
+            return lookups;
+        }
+
+        // Simplified version
+        public List<LookupDto> GetLookupsSqlQuerySimple(int? orgId)
+        {
+            string query = @"
+        select lok.*
+        , ReportingOrg = IIF(ReportingOrg_ID is null, 'Global', org.Name)
+        from DimLookups lok
+        left join ReportingOrgs org on org.ID = lok.ReportingOrg_ID
+        where ReportingOrg_ID = @orgId or @orgId is null
+        order by Category, ReportingOrg_ID, SortOrder, Code";
+
+            var lookups = db.Database.SqlQuery<LookupDto>(query,
+                new SqlParameter { ParameterName = "@orgId", Value = (object)orgId ?? DBNull.Value }).ToList();
+            return lookups;
         }
     }
 
-    public class LobDto
+    public class LookupDto
     {
-        public string DivisionCode { get; set; }
-        public string DivisionName { get; set; }
-        public int GroupID { get; set; }
-        public string GroupCd { get; set; }
-        public string GroupName { get; set; }
-        public int LOBID { get; set; }
-        public string LOBCd { get; set; }
-        public string LOBName { get; set; }
-        public string ExecutiveNBK { get; set; }
-        public string ExecutiveName { get; set; }
+        // Based on your SQL using lok.*, you'll need all DimLookups properties
+        // Plus the calculated ReportingOrg property
+        public int ID { get; set; }
+        public string Code { get; set; }
+        public string Description { get; set; }
+        public string Category { get; set; }
+        public int? ReportingOrg_ID { get; set; }
+        public int SortOrder { get; set; }
+        // Additional fields from DimLookups as needed
+
+        // This is the calculated field from your IIF expression
+        public string ReportingOrg { get; set; }
     }
 }
