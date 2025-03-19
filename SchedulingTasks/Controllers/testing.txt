@@ -1,0 +1,220 @@
+﻿Reports Management System User Guide
+Overview
+The Reports Management System allows users to search, view, and manage reports in the system. This guide provides detailed instructions on how to use the interface and its various features, including both the report listing page and the detailed report view.
+Search and Filter Section
+Search Fields
+
+ID: Enter a specific report ID number to find a particular report
+Name: Enter the name or part of the name of a report to search
+LOB Group Name Dropdown: Select a specific Line of Business Group to filter reports
+LOB Name Dropdown: Select a specific Line of Business to further refine your search
+
+Action Buttons
+
+Filter (funnel icon): Click to apply your selected search criteria and filter the results
+Clear (X icon): Click to reset all search fields and return to the full report list
+Total Records: Displays the current number of reports matching your search criteria
+
+Reports Table
+Column Headers
+
+Owner: Displays the department or person who owns/manages the report
+ID: The unique identification number assigned to each report
+Report Name: The descriptive title of the report
+Last Update: Date and time when the report was last modified
+Action Buttons: Series of buttons for interacting with each report
+
+Action Buttons
+
+History (clock icon): View the revision history of the report, including all previous versions and changes
+Upload (up arrow in circle): Upload a new version of the report or supporting documentation
+Unsubscribe (circle with X): Remove yourself from the report's notification list so you no longer receive updates
+
+Example Entry
+In the example shown:
+
+Owner: DWO / RAM
+ID: 100089
+Report Name: Statements Home Loans Dashboard
+Last Update: 3/17/2025 7:09:33 AM
+All three action buttons (History, Upload, and Unsubscribe) are available for this report
+
+Common Tasks
+Finding a Specific Report
+
+Enter the report ID in the ID field, or
+Enter keywords in the Name field
+Click the Filter button (funnel icon)
+The matching reports will display in the table
+
+Filtering by Department
+
+Select the appropriate LOB Group Name from the dropdown
+Optionally, select a specific LOB Name for further filtering
+Click the Filter button
+The reports associated with the selected department will display
+
+Viewing Report History
+
+Locate the desired report in the table
+Click the History button (clock icon)
+A chronological list of all versions and changes will display
+
+Uploading a New Version
+
+Locate the desired report in the table
+Click the Upload button (up arrow in circle)
+Select the file from your device when prompted
+Complete any required metadata fields
+Submit the upload
+
+Unsubscribing from a Report
+
+Locate the report you wish to stop receiving notifications for
+Click the Unsubscribe button (circle with X)
+Confirm your choice if prompted
+You will no longer receive update notifications for this report
+
+Tips for Efficient Use
+
+Use partial names in the Name field to find reports with similar topics
+Clear filters between searches to ensure you're not limiting results unnecessarily
+Check the Total Records indicator to confirm your search returned the expected number of results
+
+Report Details Page
+The Report Details page allows you to view and edit comprehensive information about a specific report.
+Header Section
+
+ID: The unique identification number of the report (displayed in a blue box)
+Division: The business division responsible for the report (e.g., ETS (DWO))
+Reporting Org: The specific organizational unit that owns the report (e.g., RAM Reporting Org (RAM))
+New Search: Button that returns you to the search page to find different reports
+Save Changes: Button that commits any modifications you've made to the report details
+
+Report Name and Description Section
+
+Report Name (required field): The title of the report with an information icon for additional guidance
+Legacy Report ID: The previous identification number if the report was migrated from another system
+ID: The current system ID number (displayed in a gray box)
+Report Description (required field): Detailed explanation of what the report contains and its purpose
+Report Purpose (required field): Explanation of how and why the report is used within the organization
+Report Category (required field): Dropdown menu to classify the report (e.g., Production)
+Subscription Report: Button to subscribe to receive updates about this report
+
+Status Section
+
+Report Status (required field): Dropdown to indicate if the report is Active, Inactive, etc.
+Report Created Date: When the report was initially created in the system
+Retired Date: Date field that becomes relevant if/when the report is retired
+Retired Reason: Dropdown menu to select the reason why a report was retired
+Retirement Comment: Text field for additional context about the retirement decision
+
+Editing a Report
+
+Make changes to any editable fields (those with text boxes or dropdown menus)
+Review your changes for accuracy
+Click the "Save Changes" button in the header to commit your modifications
+If required fields are incomplete, the system will highlight them for correction
+
+Field Icons
+
+Fields marked with a red asterisk (*) are required
+Information icons (ⓘ) provide additional context when hovered over or clicked
+
+Architecture Section
+The Architecture section contains technical details about the report's structure and data sources.
+
+Report Type (required field): Dropdown to select the format of the report (e.g., Excel)
+Report Automation: Dropdown indicating how the report is generated (e.g., Manual)
+Service ID: Identifier for any associated service
+Primary Data Platform: Dropdown to select the main data source platform (e.g., Strategic Reporting Platform - SRP)
+Additional Data Platform: Secondary data source with a document/list icon button for additional options
+Primary App SOR: System of Record for the primary application
+Additional App SOR: Secondary System of Record with a document/list icon button
+Primary Database Name: Name of the main database used by the report
+Primary Schema Name: Database schema used for report data
+Stored Procedure Name: Name of any stored procedure used to generate the report
+Script Name: Name of any script used in report generation
+Job Name: Identifier for any scheduled job that runs the report
+Tech Support Contact: Field to enter NBK or email for technical support
+
+Delivery Section
+The Delivery section defines how and when the report is distributed to users.
+
+Delivery Method (required field): Dropdown to indicate how the report is delivered (e.g., Manual Publish)
+Time to Create Report (in minutes): Three fields capturing report generation timing:
+
+Minimum: Shortest time needed to generate (e.g., 30 minutes)
+Maximum: Longest time needed to generate (e.g., 60 minutes)
+Average: Typical time needed to generate (e.g., 60 minutes)
+
+
+Report Frequency (required field): How often the report is generated (e.g., Monthly)
+Delivery Time SLA: Service Level Agreement time for delivery (e.g., 11:00)
+Delivery Time SLA 2: Secondary or backup SLA time
+SLA Time Zone: Timezone reference for SLA times (e.g., Eastern)
+Report Runs On (Days of Week): Checkboxes to select which days of the week the report runs
+Level of Effort to Create: Assessment of the complexity to generate (e.g., Low)
+Report Runs On (Calendar Days of Month): Specific dates for monthly reports (e.g., "1,3,15,24")
+Link to Procedure: URL or path to documentation on running the report
+
+Report Subscription Page
+The Report Subscription page allows you to search for and subscribe to available reports.
+Search Section
+
+ID Field: Enter a specific report ID number to find a report
+Report Name: Enter full or partial report name to search
+Division Dropdown: Select a specific division (e.g., DWO (ETS))
+Department Dropdown: Select a specific department (e.g., Data Strategy Reporting and Analytics)
+LOB Name Dropdown: Filter by Line of Business
+Search Button: Blue button with magnifying glass icon to execute the search
+
+Report Selection Area
+The page is divided into two panels:
+
+Left Panel: Lists available reports that you can subscribe to
+Middle Controls: Yellow arrow buttons to move reports between panels
+
+Right Arrow: Add selected report to subscription list
+Left Arrow: Remove selected report from subscription list
+
+
+Right Panel: Shows reports you've selected to subscribe to
+
+Report Information
+Each report listing includes:
+
+Checkbox: For selecting the report
+ID: Unique identifier for the report
+Report Name: The title of the report
+DataAnalyticsID: Technical identifier (if applicable)
+Owner: Department or team that manages the report
+
+Subscription Status Indicators
+
+Green Checkmark: "Already Subscribed" - You already receive this report
+Yellow Eye: "Request is Pending for Review" - Your subscription request is awaiting approval
+Red Circle with Line: "Not Accessible (per Security Scope)" - You don't have permission to access this report
+
+Action Buttons
+
+Clear: Orange button that resets your selections
+Continue: Blue button that submits your subscription requests
+
+Access Request History
+The Access Request History section displays a record of your past report subscription requests.
+History Table Columns
+
+Owner: Department or team that owns the report
+ID: Unique identifier for the report
+Report Name: The title of the report
+Request Date: When you submitted the subscription request
+Status: Current state of your request (e.g., Approved, Pending, Rejected)
+Reviewer: Name of the person who reviewed your request
+Comment: Any notes or feedback regarding your request
+
+Using the Access Request History
+
+Review the status of past requests to see if they've been approved
+Check reviewer comments for any required actions
+Identify reports you've already requested to avoid duplicate submissions
