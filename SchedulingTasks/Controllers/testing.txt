@@ -1,1 +1,44 @@
-﻿
+﻿CREATE TABLE [dbo].[ReportRatings] (
+    [Id] INT IDENTITY(1,1) NOT NULL,
+    [ReportId] INT NOT NULL,
+    [UserId] NVARCHAR(128) NOT NULL,
+    [Rating] INT NOT NULL,
+    [RatedDate] DATETIME NOT NULL DEFAULT GETDATE(),
+    
+    -- Primary key constraint
+    CONSTRAINT [PK_ReportRatings] PRIMARY KEY CLUSTERED ([Id] ASC),
+    
+    -- Validation constraint for rating 1-5
+    CONSTRAINT [CK_ReportRatings_Rating] CHECK ([Rating] >= 1 AND [Rating] <= 5),
+    
+    -- Foreign key to Reports table
+    CONSTRAINT [FK_ReportRatings_ReportInventories] FOREIGN KEY ([ReportId]) 
+        REFERENCES [dbo].[ReportInventories] ([ID]) 
+        ON DELETE CASCADE,
+    
+    -- Foreign key to AspNetUsers table (assumes ASP.NET Identity)
+    CONSTRAINT [FK_ReportRatings_AspNetUsers] FOREIGN KEY ([UserId]) 
+        REFERENCES [dbo].[AspNetUsers] ([Id])
+);
+
+-- Create indexes for improved performance
+-- Index on ReportId for quick lookup of ratings by report
+CREATE NONCLUSTERED INDEX [IX_ReportRatings_ReportId] ON [dbo].[ReportRatings] ([ReportId] ASC);
+
+-- Index on UserId for quick lookup of a user's ratings
+CREATE NONCLUSTERED INDEX [IX_ReportRatings_UserId] ON [dbo].[ReportRatings] ([UserId] ASC);
+
+-- Composite index for finding a specific user's rating for a specific report
+CREATE UNIQUE NONCLUSTERED INDEX [IX_ReportRatings_ReportId_UserId] 
+    ON [dbo].[ReportRatings] ([ReportId] ASC, [UserId] ASC);
+
+-- Add AverageRating column to ReportInventories table (if it doesn't exist)
+IF NOT EXISTS (
+    SELECT * FROM sys.columns 
+    WHERE object_id = OBJECT_ID(N'[dbo].[ReportInventories]') 
+    AND name = 'AverageRating'
+)
+BEGIN
+    ALTER TABLE [dbo].[ReportInventories]
+    ADD [AverageRating] FLOAT NULL;
+END
