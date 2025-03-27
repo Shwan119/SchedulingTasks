@@ -1,44 +1,406 @@
-﻿CREATE TABLE [dbo].[ReportRatings] (
-    [Id] INT IDENTITY(1,1) NOT NULL,
-    [ReportId] INT NOT NULL,
-    [UserId] NVARCHAR(128) NOT NULL,
-    [Rating] INT NOT NULL,
-    [RatedDate] DATETIME NOT NULL DEFAULT GETDATE(),
-    
-    -- Primary key constraint
-    CONSTRAINT [PK_ReportRatings] PRIMARY KEY CLUSTERED ([Id] ASC),
-    
-    -- Validation constraint for rating 1-5
-    CONSTRAINT [CK_ReportRatings_Rating] CHECK ([Rating] >= 1 AND [Rating] <= 5),
-    
-    -- Foreign key to Reports table
-    CONSTRAINT [FK_ReportRatings_ReportInventories] FOREIGN KEY ([ReportId]) 
-        REFERENCES [dbo].[ReportInventories] ([ID]) 
-        ON DELETE CASCADE,
-    
-    -- Foreign key to AspNetUsers table (assumes ASP.NET Identity)
-    CONSTRAINT [FK_ReportRatings_AspNetUsers] FOREIGN KEY ([UserId]) 
-        REFERENCES [dbo].[AspNetUsers] ([Id])
-);
+﻿<!-- Add this inside your table row for each report -->
+<td>
+    <div class="report-rating-cell" data-report-id="@item.Id" data-current-rating="@(item.UserRating ?? 0)">
+        <!-- Star icons will be added via JavaScript -->
+    </div>
+</td>
 
--- Create indexes for improved performance
--- Index on ReportId for quick lookup of ratings by report
-CREATE NONCLUSTERED INDEX [IX_ReportRatings_ReportId] ON [dbo].[ReportRatings] ([ReportId] ASC);
+/* rating.css - For Glyphicon version */
+.report-rating-cell {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
 
--- Index on UserId for quick lookup of a user's ratings
-CREATE NONCLUSTERED INDEX [IX_ReportRatings_UserId] ON [dbo].[ReportRatings] ([UserId] ASC);
+.rating-star-container {
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
 
--- Composite index for finding a specific user's rating for a specific report
-CREATE UNIQUE NONCLUSTERED INDEX [IX_ReportRatings_ReportId_UserId] 
-    ON [dbo].[ReportRatings] ([ReportId] ASC, [UserId] ASC);
+.rating-star-container:hover {
+    background-color: #f5f5f5;
+}
 
--- Add AverageRating column to ReportInventories table (if it doesn't exist)
-IF NOT EXISTS (
-    SELECT * FROM sys.columns 
-    WHERE object_id = OBJECT_ID(N'[dbo].[ReportInventories]') 
-    AND name = 'AverageRating'
-)
-BEGIN
-    ALTER TABLE [dbo].[ReportInventories]
-    ADD [AverageRating] FLOAT NULL;
-END
+.main-star {
+    color: #FFD700; /* Gold color for filled stars */
+    font-size: 24px;
+}
+
+.glyphicon-star-empty {
+    color: #ccc; /* Light gray for empty stars */
+}
+
+.star-with-number {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rating-number {
+    position: absolute;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+}
+
+.rating-popup {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 5px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    padding: 5px;
+    display: none;
+    z-index: 1000;
+}
+
+.rating-popup.active {
+    display: block;
+}
+
+.rating-stars-container {
+    display: flex;
+    gap: 5px;
+}
+
+.rating-star {
+    cursor: pointer;
+    padding: 2px;
+}
+
+.rating-star .glyphicon {
+    font-size: 16px;
+}
+
+.rating-star:hover {
+    transform: scale(1.1);
+}
+
+.rating-message {
+    text-align: center;
+    font-size: 11px;
+    margin-top: 5px;
+    color: #4caf50;
+}
+
+.rating-message.error {
+    color: #f44336;
+}
+
+.rating-cancel {
+    display: inline-block;
+    color: #999;
+    cursor: pointer;
+    margin-top: 5px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-align: center;
+}
+
+.rating-cancel:hover {
+    background-color: #f0f0f0;
+    color: #d9534f;
+}
+
+// rating.js - Using Bootstrap Glyphicons
+$(function () {
+    // Initialize ratings when document is ready
+    initializeRatings();
+
+    function initializeRatings() {
+        // Create rating cells for each report row
+        $('.report-rating-cell').each(function () {
+            var $container = $(this);
+            var reportId = $container.data('report-id');
+            var currentRating = parseInt($container.data('current-rating')) || 0;
+            var isPopupOpen = false;
+            
+            // Create main star - either empty or filled with number based on rating
+            var $mainStar = createMainStar(reportId, currentRating);
+            
+            $container.append($mainStar);
+            
+            // Create popup with rating stars
+            var $popup = $('<div class="rating-popup" id="rating-popup-' + reportId + '">' +
+                '<div class="rating-stars-container"></div>' +
+                '</div>');
+            
+            var $starsContainer = $popup.find('.rating-stars-container');
+            
+            // Add 5 stars to popup
+            for (var i = 1; i <= 5; i++) {
+                var starClass = i <= currentRating ? 'glyphicon-star' : 'glyphicon-star-empty';
+                var $star = $('<div class="rating-star" data-value="' + i + '">' +
+                    '<span class="glyphicon ' + starClass + '"></span>' +
+                    '</div>');
+                
+                $starsContainer.append($star);
+            }
+            
+            // Add cancel button if there's a current rating
+            if (currentRating > 0) {
+                var $cancelButton = $('<div class="rating-cancel" title="Remove Rating">' +
+                    '<span class="glyphicon glyphicon-remove"></span>' +
+                    '</div>');
+                $popup.append($cancelButton);
+                
+                // Handle cancel click
+                $cancelButton.on('click', function(e) {
+                    e.stopPropagation();
+                    removeRating(reportId, function(success) {
+                        if (success) {
+                            currentRating = 0;
+                            // Replace with empty star
+                            $mainStar.replaceWith(createMainStar(reportId, 0));
+                            $mainStar = $container.find('.rating-star-container');
+                            
+                            // Re-attach click event
+                            $mainStar.on('click', togglePopup);
+                            
+                            // Remove cancel button
+                            $(this).remove();
+                            
+                            // Update stars in popup
+                            $popup.find('.rating-star span').removeClass('glyphicon-star').addClass('glyphicon-star-empty');
+                            
+                            // Close popup after brief delay
+                            setTimeout(function() {
+                                closePopup();
+                            }, 1000);
+                        }
+                    });
+                });
+            }
+            
+            $container.append($popup);
+            
+            // Handle click on main star to toggle popup
+            function togglePopup(e) {
+                e.stopPropagation();
+                if (isPopupOpen) {
+                    closePopup();
+                } else {
+                    openPopup();
+                }
+            }
+            
+            function openPopup() {
+                // Close all other open popups first
+                $('.rating-popup.active').removeClass('active');
+                $popup.addClass('active');
+                isPopupOpen = true;
+                
+                // Add document click handler to close popup when clicking outside
+                setTimeout(function() {
+                    $(document).on('click.ratingPopup', function(e) {
+                        if (!$(e.target).closest('.rating-popup, .rating-star-container').length) {
+                            closePopup();
+                        }
+                    });
+                }, 10);
+            }
+            
+            function closePopup() {
+                $popup.removeClass('active');
+                isPopupOpen = false;
+                $(document).off('click.ratingPopup');
+                
+                // Reset star display to current rating
+                $popup.find('.rating-star span').each(function(index) {
+                    var starValue = index + 1;
+                    if (starValue <= currentRating) {
+                        $(this).removeClass('glyphicon-star-empty').addClass('glyphicon-star');
+                    } else {
+                        $(this).removeClass('glyphicon-star').addClass('glyphicon-star-empty');
+                    }
+                });
+            }
+            
+            $mainStar.on('click', togglePopup);
+            
+            // Handle star hover effects
+            $popup.find('.rating-star').on('mouseenter', function() {
+                var hoverValue = $(this).data('value');
+                
+                // Update stars based on hover
+                $popup.find('.rating-star span').each(function(index) {
+                    var starValue = index + 1;
+                    if (starValue <= hoverValue) {
+                        $(this).removeClass('glyphicon-star-empty').addClass('glyphicon-star');
+                    } else {
+                        $(this).removeClass('glyphicon-star').addClass('glyphicon-star-empty');
+                    }
+                });
+            }).on('mouseleave', function() {
+                // Reset to current rating on mouse leave
+                $popup.find('.rating-star span').each(function(index) {
+                    var starValue = index + 1;
+                    if (starValue <= currentRating) {
+                        $(this).removeClass('glyphicon-star-empty').addClass('glyphicon-star');
+                    } else {
+                        $(this).removeClass('glyphicon-star').addClass('glyphicon-star-empty');
+                    }
+                });
+            });
+            
+            // Handle star selection
+            $popup.find('.rating-star').on('click', function(e) {
+                e.stopPropagation();
+                var newRating = $(this).data('value');
+                
+                // If already selected this rating, do nothing
+                if (newRating === currentRating) {
+                    return;
+                }
+                
+                // Save rating via AJAX
+                saveRating(reportId, newRating, function(success) {
+                    if (success) {
+                        currentRating = newRating;
+                        
+                        // Replace the main star with a new one showing the rating
+                        $mainStar.replaceWith(createMainStar(reportId, currentRating));
+                        $mainStar = $container.find('.rating-star-container');
+                        
+                        // Re-attach click event
+                        $mainStar.on('click', togglePopup);
+                        
+                        // Update stars in popup
+                        $popup.find('.rating-star span').each(function(index) {
+                            var starValue = index + 1;
+                            if (starValue <= currentRating) {
+                                $(this).removeClass('glyphicon-star-empty').addClass('glyphicon-star');
+                            } else {
+                                $(this).removeClass('glyphicon-star').addClass('glyphicon-star-empty');
+                            }
+                        });
+                        
+                        // Add cancel button if not present
+                        if ($popup.find('.rating-cancel').length === 0) {
+                            var $cancelButton = $('<div class="rating-cancel" title="Remove Rating">' +
+                                '<span class="glyphicon glyphicon-remove"></span>' +
+                                '</div>');
+                            $popup.append($cancelButton);
+                            
+                            $cancelButton.on('click', function(e) {
+                                e.stopPropagation();
+                                removeRating(reportId, function(success) {
+                                    if (success) {
+                                        currentRating = 0;
+                                        $mainStar.replaceWith(createMainStar(reportId, 0));
+                                        $mainStar = $container.find('.rating-star-container');
+                                        $mainStar.on('click', togglePopup);
+                                        $(this).remove();
+                                        $popup.find('.rating-star span').removeClass('glyphicon-star').addClass('glyphicon-star-empty');
+                                        setTimeout(function() {
+                                            closePopup();
+                                        }, 1000);
+                                    }
+                                });
+                            });
+                        }
+                        
+                        // Show success message
+                        showRatingMessage(reportId, 'Rating saved!');
+                        
+                        // Close popup after brief delay
+                        setTimeout(function() {
+                            closePopup();
+                        }, 1000);
+                    } else {
+                        showRatingMessage(reportId, 'Error saving rating', true);
+                    }
+                });
+            });
+        });
+    }
+    
+    // Function to create the main star based on rating
+    function createMainStar(reportId, rating) {
+        if (rating > 0) {
+            // Create filled star with number
+            return $('<div class="rating-star-container">' +
+                '<div class="star-with-number">' +
+                    '<span class="glyphicon glyphicon-star main-star"></span>' +
+                    '<span class="rating-number">' + rating + '</span>' +
+                '</div>' +
+                '</div>');
+        } else {
+            // Create empty star
+            return $('<div class="rating-star-container">' +
+                '<span class="glyphicon glyphicon-star-empty main-star"></span>' +
+                '</div>');
+        }
+    }
+    
+    // Other functions remain the same
+    function saveRating(reportId, rating, callback) {
+        $.ajax({
+            url: '/Reports/SaveRating',
+            type: 'POST',
+            data: { reportId: reportId, rating: rating },
+            success: function(result) {
+                if (result.success) {
+                    callback(true);
+                } else {
+                    console.error('Error saving rating:', result.message);
+                    callback(false);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', error);
+                callback(false);
+            }
+        });
+    }
+    
+    function removeRating(reportId, callback) {
+        $.ajax({
+            url: '/Reports/RemoveRating',
+            type: 'POST',
+            data: { reportId: reportId },
+            success: function(result) {
+                if (result.success) {
+                    callback(true);
+                } else {
+                    console.error('Error removing rating:', result.message);
+                    callback(false);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', error);
+                callback(false);
+            }
+        });
+    }
+    
+    function showRatingMessage(reportId, message, isError) {
+        var $popup = $('#rating-popup-' + reportId);
+        var $message = $popup.find('.rating-message');
+        
+        if ($message.length === 0) {
+            $message = $('<div class="rating-message"></div>');
+            $popup.append($message);
+        }
+        
+        $message.text(message).toggleClass('error', !!isError);
+        
+        setTimeout(function() {
+            $message.text('').removeClass('error');
+        }, 3000);
+    }
+});
