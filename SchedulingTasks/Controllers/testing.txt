@@ -1,122 +1,4 @@
-﻿<!-- Add this inside your table row for each report -->
-<td>
-    <div class="report-rating-cell" data-report-id="@item.Id" data-current-rating="@(item.UserRating ?? 0)">
-        <!-- Star icons will be added via JavaScript -->
-    </div>
-</td>
-
-/* rating.css - For Glyphicon version */
-.report-rating-cell {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-}
-
-.rating-star-container {
-    cursor: pointer;
-    width: 35px;
-    height: 35px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-}
-
-.rating-star-container:hover {
-    background-color: #f5f5f5;
-}
-
-.main-star {
-    color: #FFD700; /* Gold color for filled stars */
-    font-size: 24px;
-}
-
-.glyphicon-star-empty {
-    color: #ccc; /* Light gray for empty stars */
-}
-
-.star-with-number {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.rating-number {
-    position: absolute;
-    font-size: 11px;
-    font-weight: bold;
-    color: #333;
-    text-align: center;
-}
-
-.rating-popup {
-    position: absolute;
-    top: 0;
-    left: 100%;
-    margin-left: 5px;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    padding: 5px;
-    display: none;
-    z-index: 1000;
-}
-
-.rating-popup.active {
-    display: block;
-}
-
-.rating-stars-container {
-    display: flex;
-    gap: 5px;
-}
-
-.rating-star {
-    cursor: pointer;
-    padding: 2px;
-}
-
-.rating-star .glyphicon {
-    font-size: 16px;
-}
-
-.rating-star:hover {
-    transform: scale(1.1);
-}
-
-.rating-message {
-    text-align: center;
-    font-size: 11px;
-    margin-top: 5px;
-    color: #4caf50;
-}
-
-.rating-message.error {
-    color: #f44336;
-}
-
-.rating-cancel {
-    display: inline-block;
-    color: #999;
-    cursor: pointer;
-    margin-top: 5px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    text-align: center;
-}
-
-.rating-cancel:hover {
-    background-color: #f0f0f0;
-    color: #d9534f;
-}
-
-// rating.js - Using Bootstrap Glyphicons
+﻿// rating.js - With star-based deselection
 $(function () {
     // Initialize ratings when document is ready
     initializeRatings();
@@ -149,41 +31,6 @@ $(function () {
                     '</div>');
                 
                 $starsContainer.append($star);
-            }
-            
-            // Add cancel button if there's a current rating
-            if (currentRating > 0) {
-                var $cancelButton = $('<div class="rating-cancel" title="Remove Rating">' +
-                    '<span class="glyphicon glyphicon-remove"></span>' +
-                    '</div>');
-                $popup.append($cancelButton);
-                
-                // Handle cancel click
-                $cancelButton.on('click', function(e) {
-                    e.stopPropagation();
-                    removeRating(reportId, function(success) {
-                        if (success) {
-                            currentRating = 0;
-                            // Replace with empty star
-                            $mainStar.replaceWith(createMainStar(reportId, 0));
-                            $mainStar = $container.find('.rating-star-container');
-                            
-                            // Re-attach click event
-                            $mainStar.on('click', togglePopup);
-                            
-                            // Remove cancel button
-                            $(this).remove();
-                            
-                            // Update stars in popup
-                            $popup.find('.rating-star span').removeClass('glyphicon-star').addClass('glyphicon-star-empty');
-                            
-                            // Close popup after brief delay
-                            setTimeout(function() {
-                                closePopup();
-                            }, 1000);
-                        }
-                    });
-                });
             }
             
             $container.append($popup);
@@ -257,17 +104,40 @@ $(function () {
                 });
             });
             
-            // Handle star selection
+            // Handle star selection and deselection
             $popup.find('.rating-star').on('click', function(e) {
                 e.stopPropagation();
                 var newRating = $(this).data('value');
                 
-                // If already selected this rating, do nothing
+                // If clicking the same star as current rating, deselect it
                 if (newRating === currentRating) {
+                    // Remove rating
+                    removeRating(reportId, function(success) {
+                        if (success) {
+                            currentRating = 0;
+                            // Replace with empty star
+                            $mainStar.replaceWith(createMainStar(reportId, 0));
+                            $mainStar = $container.find('.rating-star-container');
+                            
+                            // Re-attach click event
+                            $mainStar.on('click', togglePopup);
+                            
+                            // Update stars in popup
+                            $popup.find('.rating-star span').removeClass('glyphicon-star').addClass('glyphicon-star-empty');
+                            
+                            // Show success message
+                            showRatingMessage(reportId, 'Rating removed!');
+                            
+                            // Close popup after brief delay
+                            setTimeout(function() {
+                                closePopup();
+                            }, 1000);
+                        }
+                    });
                     return;
                 }
                 
-                // Save rating via AJAX
+                // Save new rating via AJAX
                 saveRating(reportId, newRating, function(success) {
                     if (success) {
                         currentRating = newRating;
@@ -288,31 +158,6 @@ $(function () {
                                 $(this).removeClass('glyphicon-star').addClass('glyphicon-star-empty');
                             }
                         });
-                        
-                        // Add cancel button if not present
-                        if ($popup.find('.rating-cancel').length === 0) {
-                            var $cancelButton = $('<div class="rating-cancel" title="Remove Rating">' +
-                                '<span class="glyphicon glyphicon-remove"></span>' +
-                                '</div>');
-                            $popup.append($cancelButton);
-                            
-                            $cancelButton.on('click', function(e) {
-                                e.stopPropagation();
-                                removeRating(reportId, function(success) {
-                                    if (success) {
-                                        currentRating = 0;
-                                        $mainStar.replaceWith(createMainStar(reportId, 0));
-                                        $mainStar = $container.find('.rating-star-container');
-                                        $mainStar.on('click', togglePopup);
-                                        $(this).remove();
-                                        $popup.find('.rating-star span').removeClass('glyphicon-star').addClass('glyphicon-star-empty');
-                                        setTimeout(function() {
-                                            closePopup();
-                                        }, 1000);
-                                    }
-                                });
-                            });
-                        }
                         
                         // Show success message
                         showRatingMessage(reportId, 'Rating saved!');
@@ -404,3 +249,282 @@ $(function () {
         }, 3000);
     }
 });
+
+
+
+
+
+
+
+
+/* Enhanced rating.css with better spacing and hover effects */
+.report-rating-cell {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.rating-star-container {
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.rating-star-container:hover {
+    background-color: #f5f5f5;
+}
+
+.main-star {
+    color: #FFD700; /* Gold color for filled stars */
+    font-size: 24px;
+}
+
+.glyphicon-star-empty {
+    color: #ccc; /* Light gray for empty stars */
+}
+
+.star-with-number {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rating-number {
+    position: absolute;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+}
+
+/* Improved popup styling */
+.rating-popup {
+    position: absolute;
+    top: -5px;
+    left: 100%;
+    margin-left: 10px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    padding: 8px 12px;
+    display: none;
+    z-index: 1000;
+}
+
+.rating-popup:before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 15px;
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    border-left: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    transform: rotate(45deg);
+}
+
+.rating-popup.active {
+    display: block;
+}
+
+.rating-stars-container {
+    display: flex;
+    gap: 8px; /* Increased spacing between stars */
+}
+
+.rating-star {
+    cursor: pointer;
+    padding: 4px; /* Increased padding for larger click area */
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.rating-star:hover {
+    transform: scale(1.15);
+    background-color: #f9f9f9;
+}
+
+.rating-star .glyphicon {
+    font-size: 18px; /* Larger stars */
+    transition: color 0.2s;
+}
+
+/* Make stars yellow on hover */
+.rating-star:hover .glyphicon {
+    color: #FFD700 !important; /* Force gold color on hover */
+}
+
+.rating-star:hover .glyphicon-star-empty {
+    color: #FFD700 !important; /* Make empty stars gold on hover */
+}
+
+/* Already-filled stars */
+.rating-star .glyphicon-star {
+    color: #FFD700;
+}
+
+.rating-message {
+    text-align: center;
+    font-size: 11px;
+    margin-top: 6px;
+    color: #4caf50;
+    font-weight: 500;
+}
+
+.rating-message.error {
+    color: #f44336;
+}
+
+
+
+// ReportsController.cs - Rating functionality
+
+/// <summary>
+/// Saves a user's rating for a report
+/// </summary>
+[HttpPost]
+public ActionResult SaveRating(int reportId, int rating)
+{
+    try
+    {
+        // Validate rating
+        if (rating < 1 || rating > 5)
+        {
+            return Json(new { success = false, message = "Invalid rating value" });
+        }
+
+        // Check if report exists
+        var report = db.Reports.Find(reportId);
+        if (report == null)
+        {
+            return Json(new { success = false, message = "Report not found" });
+        }
+
+        // Get current user ID (assuming ASP.NET Identity)
+        var userId = User.Identity.GetUserId();
+        
+        // Check if user has already rated this report
+        var existingRating = db.ReportRatings.FirstOrDefault(r => 
+            r.ReportId == reportId && r.UserId == userId);
+
+        if (existingRating != null)
+        {
+            // Update existing rating
+            existingRating.Rating = rating;
+            existingRating.RatedDate = DateTime.Now;
+        }
+        else
+        {
+            // Create new rating
+            var newRating = new ReportRating
+            {
+                ReportId = reportId,
+                UserId = userId,
+                Rating = rating,
+                RatedDate = DateTime.Now
+            };
+            db.ReportRatings.Add(newRating);
+        }
+
+        db.SaveChanges();
+
+        // Update average rating on the report
+        UpdateReportAverageRating(reportId);
+
+        return Json(new { success = true });
+    }
+    catch (Exception ex)
+    {
+        // Log the error
+        System.Diagnostics.Debug.WriteLine("Error saving rating: " + ex.Message);
+        return Json(new { success = false, message = "An error occurred while saving the rating" });
+    }
+}
+
+/// <summary>
+/// Removes a user's rating for a report
+/// </summary>
+[HttpPost]
+public ActionResult RemoveRating(int reportId)
+{
+    try
+    {
+        // Check if report exists
+        var report = db.Reports.Find(reportId);
+        if (report == null)
+        {
+            return Json(new { success = false, message = "Report not found" });
+        }
+
+        // Get current user ID
+        var userId = User.Identity.GetUserId();
+        
+        // Find the user's rating for this report
+        var existingRating = db.ReportRatings.FirstOrDefault(r => 
+            r.ReportId == reportId && r.UserId == userId);
+
+        if (existingRating != null)
+        {
+            // Remove the rating
+            db.ReportRatings.Remove(existingRating);
+            db.SaveChanges();
+            
+            // Update average rating on the report
+            UpdateReportAverageRating(reportId);
+            
+            return Json(new { success = true });
+        }
+        else
+        {
+            // Rating not found - already removed or never existed
+            return Json(new { success = true, message = "Rating was already removed" });
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log the error
+        System.Diagnostics.Debug.WriteLine("Error removing rating: " + ex.Message);
+        return Json(new { success = false, message = "An error occurred while removing the rating" });
+    }
+}
+
+/// <summary>
+/// Helper method to update the average rating for a report
+/// </summary>
+private void UpdateReportAverageRating(int reportId)
+{
+    var report = db.Reports.Find(reportId);
+    if (report != null)
+    {
+        // Check if there are any ratings
+        var ratingsExist = db.ReportRatings.Any(r => r.ReportId == reportId);
+        
+        if (ratingsExist)
+        {
+            // Calculate new average
+            var avgRating = db.ReportRatings
+                .Where(r => r.ReportId == reportId)
+                .Average(r => (double)r.Rating);
+            
+            report.AverageRating = avgRating;
+        }
+        else
+        {
+            // No ratings left, set to null
+            report.AverageRating = null;
+        }
+        
+        db.SaveChanges();
+    }
+}
