@@ -528,3 +528,28 @@ private void UpdateReportAverageRating(int reportId)
         db.SaveChanges();
     }
 }
+
+
+
+
+
+
+
+
+
+
+$mainStar.html('<span class="glyphicon glyphicon-refresh glyphicon-spin"></span>');
+
+/* Add this to your CSS file */
+.glyphicon-spin {
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(359deg);
+    }
+}
