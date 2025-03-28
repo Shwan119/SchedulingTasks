@@ -581,3 +581,201 @@ else if (sortField == ReportDisplayOrder.UploadDate)
 
 // Default case if no sort field matches
 return ratingOrdered.ToList();
+
+
+
+
+
+
+
+
+
+public class ReportsController : Controller
+{
+    private readonly ReportRatingService _ratingService;
+    
+    public ReportsController(AppDb db)
+    {
+        _ratingService = new ReportRatingService(db);
+    }
+    
+    [HttpPost]
+    public ActionResult SaveRating(int reportId, int rating)
+    {
+        var userId = User.Identity.GetUserId();
+        var result = _ratingService.SaveRating(reportId, rating, userId);
+        
+        return Json(new { 
+            success = result.Success, 
+            message = result.Message 
+        });
+    }
+    
+    [HttpPost]
+    public ActionResult RemoveRating(int reportId)
+    {
+        var userId = User.Identity.GetUserId();
+        var result = _ratingService.RemoveRating(reportId, userId);
+        
+        return Json(new { 
+            success = result.Success, 
+            message = result.Message 
+        });
+    }
+}
+
+// ReportRatingService.cs - in your Services or DataAccess folder
+public class ReportRatingService
+{
+    private readonly AppDb _db;
+
+    public ReportRatingService(AppDb db)
+    {
+        _db = db;
+    }
+
+    public ServiceResult SaveRating(int reportId, int rating, string userId)
+    {
+        try
+        {
+            // Validate rating
+            if (rating < 1 || rating > 5)
+            {
+                return ServiceResult.Error("Invalid rating value");
+            }
+
+            // Check if report exists
+            var report = _db.Reports.Find(reportId);
+            if (report == null)
+            {
+                return ServiceResult.Error("Report not found");
+            }
+
+            // Check if user has already rated this report
+            var existingRating = _db.ReportRatings.FirstOrDefault(r => 
+                r.ReportId == reportId && r.UserId == userId);
+
+            if (existingRating != null)
+            {
+                // Update existing rating
+                existingRating.Rating = rating;
+                existingRating.RatedDate = DateTime.Now;
+            }
+            else
+            {
+                // Create new rating
+                var newRating = new ReportRating
+                {
+                    ReportId = reportId,
+                    UserId = userId,
+                    Rating = rating,
+                    RatedDate = DateTime.Now
+                };
+                _db.ReportRatings.Add(newRating);
+            }
+
+            _db.SaveChanges();
+
+            // Update average rating on the report
+            UpdateReportAverageRating(reportId);
+
+            return ServiceResult.Success();
+        }
+        catch (Exception ex)
+        {
+            // Log the error
+            System.Diagnostics.Debug.WriteLine("Error saving rating: " + ex.Message);
+            return ServiceResult.Error("An error occurred while saving the rating");
+        }
+    }
+
+    public ServiceResult RemoveRating(int reportId, string userId)
+    {
+        try
+        {
+            // Check if report exists
+            var report = _db.Reports.Find(reportId);
+            if (report == null)
+            {
+                return ServiceResult.Error("Report not found");
+            }
+
+            // Find the user's rating for this report
+            var existingRating = _db.ReportRatings.FirstOrDefault(r => 
+                r.ReportId == reportId && r.UserId == userId);
+
+            if (existingRating != null)
+            {
+                // Remove the rating
+                _db.ReportRatings.Remove(existingRating);
+                _db.SaveChanges();
+                
+                // Update average rating on the report
+                UpdateReportAverageRating(reportId);
+                
+                return ServiceResult.Success();
+            }
+            
+            // Rating not found - already removed or never existed
+            return ServiceResult.Success("Rating was already removed");
+        }
+        catch (Exception ex)
+        {
+            // Log the error
+            System.Diagnostics.Debug.WriteLine("Error removing rating: " + ex.Message);
+            return ServiceResult.Error("An error occurred while removing the rating");
+        }
+    }
+
+    private void UpdateReportAverageRating(int reportId)
+    {
+        var report = _db.Reports.Find(reportId);
+        if (report != null)
+        {
+            // Check if there are any ratings
+            var ratingsExist = _db.ReportRatings.Any(r => r.ReportId == reportId);
+            
+            if (ratingsExist)
+            {
+                // Calculate new average
+                var avgRating = _db.ReportRatings
+                    .Where(r => r.ReportId == reportId)
+                    .Average(r => (double)r.Rating);
+                
+                report.AverageRating = avgRating;
+            }
+            else
+            {
+                // No ratings left, set to null
+                report.AverageRating = null;
+            }
+            
+            _db.SaveChanges();
+        }
+    }
+}
+
+// ServiceResult.cs - A helper class for returning results
+public class ServiceResult
+{
+    public bool Success { get; private set; }
+    public string Message { get; private set; }
+    public object Data { get; private set; }
+
+    private ServiceResult(bool success, string message = null, object data = null)
+    {
+        Success = success;
+        Message = message;
+        Data = data;
+    }
+
+    public static ServiceResult Success(string message = null, object data = null)
+    {
+        return new ServiceResult(true, message, data);
+    }
+
+    public static ServiceResult Error(string message, object data = null)
+    {
+        return new ServiceResult(false, message, data);
+    }
+}
