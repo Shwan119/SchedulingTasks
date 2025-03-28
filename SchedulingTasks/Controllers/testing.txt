@@ -553,3 +553,31 @@ $mainStar.html('<span class="glyphicon glyphicon-refresh glyphicon-spin"></span>
         transform: rotate(359deg);
     }
 }
+
+
+
+// First, do the sort by rating
+var ratingOrdered = result.OrderByDescending(r => r.Report.ReportRating ?? 0);
+
+// Then apply the secondary sort based on user selection without repeating the rating sort
+if (sortField == ReportDisplayOrder.ID)
+{
+    return sortDirection == SortDirection.Ascending 
+        ? ratingOrdered.ThenBy(r => r.Report.ID).ToList()
+        : ratingOrdered.ThenByDescending(r => r.Report.ID).ToList();
+}
+else if (sortField == ReportDisplayOrder.ReportName)
+{
+    return sortDirection == SortDirection.Ascending
+        ? ratingOrdered.ThenBy(r => r.Report.Name).ToList()
+        : ratingOrdered.ThenByDescending(r => r.Report.Name).ToList();
+}
+else if (sortField == ReportDisplayOrder.UploadDate)
+{
+    return sortDirection == SortDirection.Ascending
+        ? ratingOrdered.ThenBy(r => r.LastUploadDt).ToList()
+        : ratingOrdered.ThenByDescending(r => r.LastUploadDt).ToList();
+}
+
+// Default case if no sort field matches
+return ratingOrdered.ToList();
