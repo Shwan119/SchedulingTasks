@@ -1,57 +1,30 @@
-﻿WITH Updates AS (
-    SELECT 
-        inv.ID AS InventoryID,
-        pa.UserID AS PrimaryAnalystID,
-        cs.UserID AS ContactSupportID
-    FROM inventories inv
-    LEFT JOIN users pa ON 
-        CASE 
-            WHEN inv.ID = 1 THEN 'ewew'
-            WHEN inv.ID = 2 THEN 'hyhy'
-            WHEN inv.ID = 3 THEN 'hyherr'
-        END = pa.UserName
-    LEFT JOIN users cs ON 
-        CASE 
-            WHEN inv.ID = 1 THEN 'rerere'
-            WHEN inv.ID = 2 THEN 'trhgy'
-            WHEN inv.ID = 3 THEN 'rrr'
-        END = cs.UserName
-    WHERE inv.ID IN (1, 2, 3)
-)
-UPDATE inv
-SET 
-    inv.PrimaryAnalystID = u.PrimaryAnalystID,
-    inv.ContactSupportID = u.ContactSupportID
-FROM inventories inv
-INNER JOIN Updates u ON inv.ID = u.InventoryID;
+﻿-- Declare mapping table
+DECLARE @UserMappings TABLE (
+    InventoryID INT,
+    PrimaryAnalystUserName NVARCHAR(100),
+    ContactSupportUserName NVARCHAR(100)
+);
 
+-- Insert mappings
+INSERT INTO @UserMappings (InventoryID, PrimaryAnalystUserName, ContactSupportUserName)
+VALUES
+    (1, 'ewew', 'rerere'),
+    (2, 'hyhy', 'trhgy'),
+    (3, 'hyherr', 'rrr');
 
-
-
--- Sample temp table with your mappings
+-- Now join safely
 WITH Updates AS (
     SELECT 
-        inv.ID AS InventoryID,
+        m.InventoryID,
         u1.ID AS PrimaryAnalystID,
         u2.ID AS ContactSupportID
-    FROM inventories inv
-    JOIN users u1 ON u1.UserName = 
-        CASE inv.ID
-            WHEN 1 THEN 'ewew'
-            WHEN 2 THEN 'hyhy'
-            WHEN 3 THEN 'hyherr'
-        END
-    JOIN users u2 ON u2.UserName = 
-        CASE inv.ID
-            WHEN 1 THEN 'rerere'
-            WHEN 2 THEN 'trhgy'
-            WHEN 3 THEN 'rrr'
-        END
-    WHERE inv.ID IN (1, 2, 3)
+    FROM @UserMappings m
+    LEFT JOIN users u1 ON u1.UserName = m.PrimaryAnalystUserName
+    LEFT JOIN users u2 ON u2.UserName = m.ContactSupportUserName
 )
 UPDATE inv
 SET 
-    PrimaryAnalystID = u.PrimaryAnalystID,
-    [Contact supportID] = u.ContactSupportID
+    PrimaryAnalystID = ISNULL(u.PrimaryAnalystID, inv.PrimaryAnalystID),
+    [Contact supportID] = ISNULL(u.ContactSupportID, inv.[Contact supportID])
 FROM inventories inv
 JOIN Updates u ON inv.ID = u.InventoryID;
