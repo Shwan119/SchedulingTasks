@@ -1,45 +1,72 @@
-﻿<!-- Fixed filter controls with proper horizontal layout -->
-<tr>
-    <td colspan="5">
-        <div class="filter-controls">
-            <span class="filter-label">Filter by Status:</span>
-            <label class="filter-option">
-                <input type="checkbox" id="showAll" checked /> Show All
-            </label>
-            <label class="filter-option">
-                <input type="checkbox" id="filterActive" /> Active
-            </label>
-            <label class="filter-option">
-                <input type="checkbox" id="filterPending" /> Pending
-            </label>
-            <label class="filter-option">
-                <input type="checkbox" id="filterRetired" /> Retired
-            </label>
-        </div>
-    </td>
-</tr>
-
-.filter-controls {
-    margin: 10px 0;
-    padding: 5px 0;
-    display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-}
-
-.filter-controls .filter-label {
-    font-weight: 600;
-    margin-right: 15px;
-    white-space: nowrap;
-}
-
-.filter-controls .filter-option {
-    margin-right: 15px;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-}
-
-.filter-controls .filter-option input {
-    margin-right: 5px;
-}
+﻿$(document).ready(function() {
+    // Handle filter checkbox changes
+    $('#showAll, #filterActive, #filterPending, #filterRetired').on('change', function() {
+        const $this = $(this);
+        const thisId = $this.attr('id');
+        
+        // If "Show All" was just checked
+        if (thisId === 'showAll') {
+            if ($this.prop('checked')) {
+                // Uncheck all specific filters when "Show All" is checked
+                $('#filterActive, #filterPending, #filterRetired').prop('checked', false);
+            } else {
+                // If "Show All" was unchecked but no specific filters are checked,
+                // keep "Show All" checked
+                if (!$('#filterActive').prop('checked') && 
+                    !$('#filterPending').prop('checked') && 
+                    !$('#filterRetired').prop('checked')) {
+                    $('#showAll').prop('checked', true);
+                    return; // Exit early to prevent infinite loop
+                }
+            }
+        } else {
+            // A specific filter was clicked
+            if ($this.prop('checked')) {
+                // If any specific filter is checked, uncheck "Show All"
+                $('#showAll').prop('checked', false);
+            } else {
+                // If this specific filter was unchecked, check if any other specific filters are still checked
+                if (!$('#filterActive').prop('checked') && 
+                    !$('#filterPending').prop('checked') && 
+                    !$('#filterRetired').prop('checked')) {
+                    // If no specific filters are checked, check "Show All"
+                    $('#showAll').prop('checked', true);
+                }
+            }
+        }
+        
+        // Now apply the filtering
+        applyFilters();
+    });
+    
+    function applyFilters() {
+        const showAll = $('#showAll').prop('checked');
+        const showActive = $('#filterActive').prop('checked');
+        const showPending = $('#filterPending').prop('checked');
+        const showRetired = $('#filterRetired').prop('checked');
+        
+        if (showAll) {
+            // Show all rows
+            $('#reportsTable tbody tr').show();
+        } else {
+            // Hide all rows first
+            $('#reportsTable tbody tr').hide();
+            
+            // Show rows based on selected filters
+            if (showActive) {
+                $('#reportsTable tbody tr[data-status="Active"]').show();
+            }
+            
+            if (showPending) {
+                $('#reportsTable tbody tr[data-status="Pending"]').show();
+            }
+            
+            if (showRetired) {
+                $('#reportsTable tbody tr[data-status="Retired"]').show();
+            }
+        }
+    }
+    
+    // Initialize filtering on page load
+    applyFilters();
+});
