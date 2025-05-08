@@ -1,30 +1,146 @@
-﻿-- Declare mapping table
-DECLARE @UserMappings TABLE (
-    InventoryID INT,
-    PrimaryAnalystUserName NVARCHAR(100),
-    ContactSupportUserName NVARCHAR(100)
-);
+﻿// Orders reports by status priority: Active -> Pending -> Retired
+var orderedReports = reports
+    .OrderBy(r => r.Status == "Active" ? 0 : 
+                  r.Status == "Pending" ? 1 : 
+                  r.Status == "Retired" ? 2 : 3);
 
--- Insert mappings
-INSERT INTO @UserMappings (InventoryID, PrimaryAnalystUserName, ContactSupportUserName)
-VALUES
-    (1, 'ewew', 'rerere'),
-    (2, 'hyhy', 'trhgy'),
-    (3, 'hyherr', 'rrr');
+// With additional ordering by name
+var orderedReports = reports
+    .OrderBy(r => r.Status == "Active" ? 0 : 
+                  r.Status == "Pending" ? 1 : 
+                  r.Status == "Retired" ? 2 : 3)
+    .ThenBy(r => r.Name);
 
--- Now join safely
-WITH Updates AS (
-    SELECT 
-        m.InventoryID,
-        u1.ID AS PrimaryAnalystID,
-        u2.ID AS ContactSupportID
-    FROM @UserMappings m
-    LEFT JOIN users u1 ON u1.UserName = m.PrimaryAnalystUserName
-    LEFT JOIN users u2 ON u2.UserName = m.ContactSupportUserName
-)
-UPDATE inv
-SET 
-    PrimaryAnalystID = ISNULL(u.PrimaryAnalystID, inv.PrimaryAnalystID),
-    [Contact supportID] = ISNULL(u.ContactSupportID, inv.[Contact supportID])
-FROM inventories inv
-JOIN Updates u ON inv.ID = u.InventoryID;
+
+
+@* In your Razor View *@
+<div class="filter-controls">
+    <div class="font-medium">Filter by Status:</div>
+    <label>
+        <input type="checkbox" id="showAll" checked /> Show All
+    </label>
+    <label>
+        <input type="checkbox" id="filterActive" /> Active
+    </label>
+    <label>
+        <input type="checkbox" id="filterPending" /> Pending
+    </label>
+    <label>
+        <input type="checkbox" id="filterRetired" /> Retired
+    </label>
+</div>
+
+<table id="reportsTable">
+    <thead>
+        <tr>
+            <th>Owner</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Security Scope</th>
+            <th>Status</th>
+            <th>Primary Analyst</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var report in Model.Reports)
+        {
+            <tr data-status="@report.Status">
+                <td>@report.Owner</td>
+                <td>@report.ID</td>
+                <td>@report.Name</td>
+                <td>@report.SecurityScope</td>
+                <td class="status-cell @report.Status.ToLower()">@report.Status</td>
+                <td>@report.PrimaryAnalyst</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+@section Scripts {
+    <script type="text/javascript">
+        $(document).ready(function() {
+            // Handle filter checkbox changes
+            $('#showAll, #filterActive, #filterPending, #filterRetired').on('change', function() {
+                filterTable();
+            });
+
+            // Set default initial state
+            $('#showAll').prop('checked', true);
+            
+            function filterTable() {
+                var showAll = $('#showAll').prop('checked');
+                
+                // If "Show All" is checked, uncheck other filters
+                if ($(this).attr('id') === 'showAll' && showAll) {
+                    $('#filterActive, #filterPending, #filterRetired').prop('checked', false);
+                }
+                
+                // If any specific filter is checked, uncheck "Show All"
+                if ($(this).attr('id') !== 'showAll') {
+                    if ($(this).prop('checked')) {
+                        $('#showAll').prop('checked', false);
+                    }
+                    
+                    // If no specific filters are checked, check "Show All"
+                    if (!$('#filterActive').prop('checked') && 
+                        !$('#filterPending').prop('checked') && 
+                        !$('#filterRetired').prop('checked')) {
+                        $('#showAll').prop('checked', true);
+                    }
+                }
+                
+                // Apply filtering
+                if (showAll) {
+                    // Show all rows
+                    $('#reportsTable tbody tr').show();
+                } else {
+                    // Hide all rows first
+                    $('#reportsTable tbody tr').hide();
+                    
+                    // Show rows based on selected filters
+                    if ($('#filterActive').prop('checked')) {
+                        $('#reportsTable tbody tr[data-status="Active"]').show();
+                    }
+                    
+                    if ($('#filterPending').prop('checked')) {
+                        $('#reportsTable tbody tr[data-status="Pending"]').show();
+                    }
+                    
+                    if ($('#filterRetired').prop('checked')) {
+                        $('#reportsTable tbody tr[data-status="Retired"]').show();
+                    }
+                }
+            }
+        });
+    </script>
+}
+
+
+
+<style>
+    .status-cell.active {
+        color: #2563EB; /* Blue */
+    }
+    
+    .status-cell.pending {
+        color: #F97316; /* Orange */
+    }
+    
+    .status-cell.retired {
+        color: #9333EA; /* Purple */
+    }
+    
+    .filter-controls {
+        margin: 15px 0;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .filter-controls label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+</style>
