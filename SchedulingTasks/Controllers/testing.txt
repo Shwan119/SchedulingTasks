@@ -1,146 +1,45 @@
-﻿// Orders reports by status priority: Active -> Pending -> Retired
-var orderedReports = reports
-    .OrderBy(r => r.Status == "Active" ? 0 : 
-                  r.Status == "Pending" ? 1 : 
-                  r.Status == "Retired" ? 2 : 3);
+﻿<!-- Fixed filter controls with proper horizontal layout -->
+<tr>
+    <td colspan="5">
+        <div class="filter-controls">
+            <span class="filter-label">Filter by Status:</span>
+            <label class="filter-option">
+                <input type="checkbox" id="showAll" checked /> Show All
+            </label>
+            <label class="filter-option">
+                <input type="checkbox" id="filterActive" /> Active
+            </label>
+            <label class="filter-option">
+                <input type="checkbox" id="filterPending" /> Pending
+            </label>
+            <label class="filter-option">
+                <input type="checkbox" id="filterRetired" /> Retired
+            </label>
+        </div>
+    </td>
+</tr>
 
-// With additional ordering by name
-var orderedReports = reports
-    .OrderBy(r => r.Status == "Active" ? 0 : 
-                  r.Status == "Pending" ? 1 : 
-                  r.Status == "Retired" ? 2 : 3)
-    .ThenBy(r => r.Name);
-
-
-
-@* In your Razor View *@
-<div class="filter-controls">
-    <div class="font-medium">Filter by Status:</div>
-    <label>
-        <input type="checkbox" id="showAll" checked /> Show All
-    </label>
-    <label>
-        <input type="checkbox" id="filterActive" /> Active
-    </label>
-    <label>
-        <input type="checkbox" id="filterPending" /> Pending
-    </label>
-    <label>
-        <input type="checkbox" id="filterRetired" /> Retired
-    </label>
-</div>
-
-<table id="reportsTable">
-    <thead>
-        <tr>
-            <th>Owner</th>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Security Scope</th>
-            <th>Status</th>
-            <th>Primary Analyst</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var report in Model.Reports)
-        {
-            <tr data-status="@report.Status">
-                <td>@report.Owner</td>
-                <td>@report.ID</td>
-                <td>@report.Name</td>
-                <td>@report.SecurityScope</td>
-                <td class="status-cell @report.Status.ToLower()">@report.Status</td>
-                <td>@report.PrimaryAnalyst</td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-
-@section Scripts {
-    <script type="text/javascript">
-        $(document).ready(function() {
-            // Handle filter checkbox changes
-            $('#showAll, #filterActive, #filterPending, #filterRetired').on('change', function() {
-                filterTable();
-            });
-
-            // Set default initial state
-            $('#showAll').prop('checked', true);
-            
-            function filterTable() {
-                var showAll = $('#showAll').prop('checked');
-                
-                // If "Show All" is checked, uncheck other filters
-                if ($(this).attr('id') === 'showAll' && showAll) {
-                    $('#filterActive, #filterPending, #filterRetired').prop('checked', false);
-                }
-                
-                // If any specific filter is checked, uncheck "Show All"
-                if ($(this).attr('id') !== 'showAll') {
-                    if ($(this).prop('checked')) {
-                        $('#showAll').prop('checked', false);
-                    }
-                    
-                    // If no specific filters are checked, check "Show All"
-                    if (!$('#filterActive').prop('checked') && 
-                        !$('#filterPending').prop('checked') && 
-                        !$('#filterRetired').prop('checked')) {
-                        $('#showAll').prop('checked', true);
-                    }
-                }
-                
-                // Apply filtering
-                if (showAll) {
-                    // Show all rows
-                    $('#reportsTable tbody tr').show();
-                } else {
-                    // Hide all rows first
-                    $('#reportsTable tbody tr').hide();
-                    
-                    // Show rows based on selected filters
-                    if ($('#filterActive').prop('checked')) {
-                        $('#reportsTable tbody tr[data-status="Active"]').show();
-                    }
-                    
-                    if ($('#filterPending').prop('checked')) {
-                        $('#reportsTable tbody tr[data-status="Pending"]').show();
-                    }
-                    
-                    if ($('#filterRetired').prop('checked')) {
-                        $('#reportsTable tbody tr[data-status="Retired"]').show();
-                    }
-                }
-            }
-        });
-    </script>
+.filter-controls {
+    margin: 10px 0;
+    padding: 5px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
 }
 
+.filter-controls .filter-label {
+    font-weight: 600;
+    margin-right: 15px;
+    white-space: nowrap;
+}
 
+.filter-controls .filter-option {
+    margin-right: 15px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
 
-<style>
-    .status-cell.active {
-        color: #2563EB; /* Blue */
-    }
-    
-    .status-cell.pending {
-        color: #F97316; /* Orange */
-    }
-    
-    .status-cell.retired {
-        color: #9333EA; /* Purple */
-    }
-    
-    .filter-controls {
-        margin: 15px 0;
-        display: flex;
-        gap: 15px;
-        align-items: center;
-    }
-    
-    .filter-controls label {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-</style>
+.filter-controls .filter-option input {
+    margin-right: 5px;
+}
