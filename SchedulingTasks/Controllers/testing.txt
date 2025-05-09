@@ -1,5 +1,14 @@
-﻿$(document).ready(function() {
-    // Handle filter checkbox changes
+﻿<tr class="filter-row">
+    <td>@Html.TextBoxFor(m => m.OwnerFilter, new { @class = "form-control column-filter", data_column = "0", placeholder = "Filter Owner" })</td>
+    <td>@Html.TextBoxFor(m => m.IdFilter, new { @class = "form-control column-filter", data_column = "1", placeholder = "Filter ID" })</td>
+    <td>@Html.TextBoxFor(m => m.NameFilter, new { @class = "form-control column-filter", data_column = "2", placeholder = "Filter Name" })</td>
+    <td>@Html.TextBoxFor(m => m.ScopeFilter, new { @class = "form-control column-filter", data_column = "3", placeholder = "Filter Security Scope" })</td>
+    <td>@Html.TextBoxFor(m => m.StatusFilter, new { @class = "form-control column-filter", data_column = "4", placeholder = "Filter Status" })</td>
+    <td>@Html.TextBoxFor(m => m.AnalystFilter, new { @class = "form-control column-filter", data_column = "5", placeholder = "Filter Primary Analyst" })</td>
+</tr>
+
+$(document).ready(function() {
+    // Handle filter checkbox changes for status
     $('#showAll, #filterActive, #filterPending, #filterRetired').on('change', function() {
         const $this = $(this);
         const thisId = $this.attr('id');
@@ -39,34 +48,77 @@
         applyFilters();
     });
     
+    // Handle keyup event for column filters
+    $('.column-filter').on('keyup', function() {
+        applyFilters();
+    });
+    
     function applyFilters() {
         const showAll = $('#showAll').prop('checked');
         const showActive = $('#filterActive').prop('checked');
         const showPending = $('#filterPending').prop('checked');
         const showRetired = $('#filterRetired').prop('checked');
         
-        if (showAll) {
-            // Show all rows
-            $('#reportsTable tbody tr').show();
-        } else {
-            // Hide all rows first
-            $('#reportsTable tbody tr').hide();
+        // Get column filter values
+        const filterValues = [];
+        $('.column-filter').each(function() {
+            const columnIndex = $(this).data('column');
+            filterValues[columnIndex] = $(this).val().toLowerCase();
+        });
+        
+        // Iterate through each row for filtering
+        $('#reportsTable tbody tr').each(function() {
+            const $row = $(this);
+            const status = $row.data('status');
             
-            // Show rows based on selected filters
-            if (showActive) {
-                $('#reportsTable tbody tr[data-status="Active"]').show();
-            }
+            // Check status filter conditions
+            let showByStatus = showAll || 
+                (showActive && status === 'Active') || 
+                (showPending && status === 'Pending') || 
+                (showRetired && status === 'Retired');
             
-            if (showPending) {
-                $('#reportsTable tbody tr[data-status="Pending"]').show();
+            // If it passes status filter, check column filters
+            if (showByStatus) {
+                let showByColumn = true;
+                
+                // Check each column's filter value
+                $row.find('td').each(function(index) {
+                    const cellText = $(this).text().toLowerCase();
+                    const filterValue = filterValues[index];
+                    
+                    // If filter has a value and it doesn't match the cell
+                    if (filterValue && cellText.indexOf(filterValue) === -1) {
+                        showByColumn = false;
+                        return false; // Break the loop
+                    }
+                });
+                
+                // Show/hide based on combined filter results
+                if (showByColumn) {
+                    $row.show();
+                } else {
+                    $row.hide();
+                }
+            } else {
+                $row.hide();
             }
-            
-            if (showRetired) {
-                $('#reportsTable tbody tr[data-status="Retired"]').show();
-            }
-        }
+        });
     }
     
     // Initialize filtering on page load
     applyFilters();
+    
+    // Add some basic styling for the filter inputs
+    $('<style>')
+        .prop('type', 'text/css')
+        .html(`
+            .filter-row td {
+                padding: 5px;
+            }
+            #reportsTable th {
+                white-space: nowrap;
+                min-width: 100px;
+            }
+        `)
+        .appendTo('head');
 });
