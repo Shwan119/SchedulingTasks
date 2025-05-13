@@ -1,18 +1,9 @@
-﻿<tr class="filter-row">
-    <td>@Html.TextBoxFor(m => m.OwnerFilter, new { @class = "form-control column-filter", data_column = "0", placeholder = "Filter Owner" })</td>
-    <td>@Html.TextBoxFor(m => m.IdFilter, new { @class = "form-control column-filter", data_column = "1", placeholder = "Filter ID" })</td>
-    <td>@Html.TextBoxFor(m => m.NameFilter, new { @class = "form-control column-filter", data_column = "2", placeholder = "Filter Name" })</td>
-    <td>@Html.TextBoxFor(m => m.ScopeFilter, new { @class = "form-control column-filter", data_column = "3", placeholder = "Filter Security Scope" })</td>
-    <td>@Html.TextBoxFor(m => m.StatusFilter, new { @class = "form-control column-filter", data_column = "4", placeholder = "Filter Status" })</td>
-    <td>@Html.TextBoxFor(m => m.AnalystFilter, new { @class = "form-control column-filter", data_column = "5", placeholder = "Filter Primary Analyst" })</td>
-</tr>
-
-$(document).ready(function() {
-    // Handle filter checkbox changes for status
+﻿$(document).ready(function() {
+    // Handle filter checkbox changes
     $('#showAll, #filterActive, #filterPending, #filterRetired').on('change', function() {
         const $this = $(this);
         const thisId = $this.attr('id');
-        
+
         // If "Show All" was just checked
         if (thisId === 'showAll') {
             if ($this.prop('checked')) {
@@ -43,82 +34,131 @@ $(document).ready(function() {
                 }
             }
         }
-        
+
         // Now apply the filtering
         applyFilters();
     });
-    
-    // Handle keyup event for column filters
-    $('.column-filter').on('keyup', function() {
+
+    // Add search field event handler
+    $('#searchAllFields').on('keyup', function() {
         applyFilters();
     });
-    
+
     function applyFilters() {
         const showAll = $('#showAll').prop('checked');
         const showActive = $('#filterActive').prop('checked');
         const showPending = $('#filterPending').prop('checked');
         const showRetired = $('#filterRetired').prop('checked');
-        
-        // Get column filter values
-        const filterValues = [];
-        $('.column-filter').each(function() {
-            const columnIndex = $(this).data('column');
-            filterValues[columnIndex] = $(this).val().toLowerCase();
-        });
-        
-        // Iterate through each row for filtering
-        $('#reportsTable tbody tr').each(function() {
-            const $row = $(this);
-            const status = $row.data('status');
-            
-            // Check status filter conditions
-            let showByStatus = showAll || 
-                (showActive && status === 'Active') || 
-                (showPending && status === 'Pending') || 
-                (showRetired && status === 'Retired');
-            
-            // If it passes status filter, check column filters
-            if (showByStatus) {
-                let showByColumn = true;
+        const searchTerm = $('#searchAllFields').val().toLowerCase();
+
+        // First handle visibility based on status filters
+        if (showAll) {
+            // Show all rows
+            $('#reportsTable tbody tr').show();
+        } else {
+            // Hide all rows first
+            $('#reportsTable tbody tr').hide();
+
+            // Show rows based on selected filters
+            if (showActive) {
+                $('#reportsTable tbody tr[data-status="Active"]').show();
+            }
+
+            if (showPending) {
+                $('#reportsTable tbody tr[data-status="Pending"]').show();
+            }
+
+            if (showRetired) {
+                $('#reportsTable tbody tr[data-status="Retired"]').show();
+            }
+        }
+
+        // Then filter by search term if one exists
+        if (searchTerm) {
+            $('#reportsTable tbody tr:visible').each(function() {
+                const $row = $(this);
+                const rowText = $row.text().toLowerCase();
                 
-                // Check each column's filter value
-                $row.find('td').each(function(index) {
-                    const cellText = $(this).text().toLowerCase();
-                    const filterValue = filterValues[index];
-                    
-                    // If filter has a value and it doesn't match the cell
-                    if (filterValue && cellText.indexOf(filterValue) === -1) {
-                        showByColumn = false;
-                        return false; // Break the loop
-                    }
-                });
-                
-                // Show/hide based on combined filter results
-                if (showByColumn) {
-                    $row.show();
-                } else {
+                if (!rowText.includes(searchTerm)) {
                     $row.hide();
                 }
-            } else {
-                $row.hide();
-            }
-        });
+            });
+        }
+        
+        // Update the counter
+        updateCounter();
     }
     
+    function updateCounter() {
+        const totalRows = $('#reportsTable tbody tr').length;
+        const visibleRows = $('#reportsTable tbody tr:visible').length;
+        
+        $('#reportCounter').text(`Showing ${visibleRows} of ${totalRows} reports`);
+    }
+
     // Initialize filtering on page load
     applyFilters();
-    
-    // Add some basic styling for the filter inputs
-    $('<style>')
-        .prop('type', 'text/css')
-        .html(`
-            .filter-row td {
-                padding: 5px;
-            }
-            #reportsTable th {
-                white-space: nowrap;
-                min-width: 100px;
-            }
-        `)
-        .appendTo('head');
 });
+
+
+@* In your Razor View *@
+<div class="filter-controls mb-4">
+    <div class="d-flex align-items-center flex-wrap mb-3">
+        <div class="mr-4">
+            <span class="font-medium mr-2">Filter by Status:</span>
+            <label class="mr-2">
+                <input type="checkbox" id="showAll" checked /> Show All
+            </label>
+            <label class="mr-2">
+                <input type="checkbox" id="filterActive" /> Active
+            </label>
+            <label class="mr-2">
+                <input type="checkbox" id="filterPending" /> Pending
+            </label>
+            <label>
+                <input type="checkbox" id="filterRetired" /> Retired
+            </label>
+        </div>
+        
+        <div>
+            <span class="font-medium mr-2">Search All Fields:</span>
+            <input 
+                type="text" 
+                id="searchAllFields" 
+                placeholder="Search reports..." 
+                class="form-control d-inline-block" 
+                style="width: 250px;"
+            />
+        </div>
+    </div>
+</div>
+
+<table id="reportsTable" class="table">
+    <thead>
+        <tr>
+            <th>Owner</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Security Scope</th>
+            <th>Status</th>
+            <th>Primary Analyst</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var report in Model.Reports)
+        {
+            <tr data-status="@report.Status">
+                <td>@report.Owner</td>
+                <td>@report.ID</td>
+                <td>@report.Name</td>
+                <td>@report.SecurityScope</td>
+                <td class="status-cell @report.Status.ToLower()">@report.Status</td>
+                <td>@report.PrimaryAnalyst</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div id="reportCounter" class="mt-2 text-muted">
+    Showing @Model.Reports.Count() of @Model.Reports.Count() reports
+</div>
