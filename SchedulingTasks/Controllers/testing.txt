@@ -1,83 +1,29 @@
-﻿.filter-container {
-        margin-bottom: 20px;
-    }
-    
-    .filter-row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    
-    .filter-section {
-        margin-right: 30px;
-    }
-    
-    .filter-label {
-        font-weight: 500;
-        margin-right: 8px;
-    }
-    
-    .checkbox-label {
-        margin-right: 10px;
-    }
-    
-    .search-input {
-        padding: 6px 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        width: 250px;
-        display: inline-block;
-    }
-    
-    /* Table styling */
-    .reports-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 10px;
-    }
-    
-    .reports-table th {
-        background-color: #f5f5f5;
-        padding: 10px;
-        text-align: left;
-        border-bottom: 2px solid #ddd;
-    }
-    
-    .reports-table td {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-    }
-    
-    .reports-table tr:hover {
-        background-color: #f9f9f9;
-    }
-    
-    /* Status cell styling */
-    .status-cell {
-        border-radius: 4px;
-        padding: 4px 8px;
-        display: inline-block;
-    }
-    
-    .active {
-        background-color: #e6f7e6;
-        color: #2e7d32;
-    }
-    
-    .pending {
-        background-color: #fff8e1;
-        color: #f57f17;
-    }
-    
-    .retired {
-        background-color: #f5f5f5;
-        color: #616161;
-    }
-    
-    /* Counter styling */
-    .counter {
-        margin-top: 10px;
-        color: #757575;
-        font-size: 0.9em;
-    }
+﻿<div class="filter-container">
+    <div class="filter-row">
+        <div class="filter-section">
+            <span class="filter-label">Filter by Status:</span>
+            <label class="checkbox-label">
+                <input type="checkbox" id="showAll" checked /> Show All
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filterActive" /> Active
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filterPending" /> Pending
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="filterRetired" /> Retired
+            </label>
+        </div>
+        
+        <div class="filter-section">
+            <span class="filter-label">Search All Fields:</span>
+            <input 
+                type="text" 
+                id="searchAllFields" 
+                placeholder="Search reports..." 
+                class="search-input"
+            />
+        </div>
+    </div>
+</div>
