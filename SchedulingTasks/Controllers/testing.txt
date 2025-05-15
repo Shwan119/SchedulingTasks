@@ -1,29 +1,83 @@
-﻿<div class="filter-container">
-    <div class="filter-row">
-        <div class="filter-section">
-            <span class="filter-label">Filter by Status:</span>
-            <label class="checkbox-label">
-                <input type="checkbox" id="showAll" checked /> Show All
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" id="filterActive" /> Active
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" id="filterPending" /> Pending
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" id="filterRetired" /> Retired
-            </label>
-        </div>
+﻿<style>
+    .filter-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between; /* Pushes items to opposite ends */
+        margin-bottom: 20px;
+    }
+    
+    .status-container {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .status-label {
+        font-weight: 500;
+        margin-right: 8px;
+    }
+    
+    .checkbox-label {
+        margin-right: 10px;
+    }
+    
+    .search-container {
+        display: flex;
+        align-items: center;
+    }
+    
+    .search-label {
+        font-weight: 500;
+        margin-right: 8px;
+    }
+    
+    .search-input {
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 250px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .filter-controls {
+            flex-direction: column;
+            align-items: flex-start;
+        }
         
-        <div class="filter-section">
-            <span class="filter-label">Search All Fields:</span>
-            <input 
-                type="text" 
-                id="searchAllFields" 
-                placeholder="Search reports..." 
-                class="search-input"
-            />
-        </div>
+        .status-container {
+            margin-bottom: 15px;
+        }
+    }
+</style>
+
+<div class="filter-controls">
+    <!-- Status filters on the left -->
+    <div class="status-container">
+        <span class="status-label">Filter by Status:</span>
+        <label class="checkbox-label">
+            <input type="checkbox" id="showAll" checked /> Show All
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="filterActive" /> Active
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="filterPending" /> Pending
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="filterRetired" /> Retired
+        </label>
+    </div>
+    
+    <!-- Search field on the right -->
+    <div class="search-container">
+        <span class="search-label">Search All Fields:</span>
+        <input 
+            type="text" 
+            id="searchAllFields" 
+            placeholder="Search reports..." 
+            class="search-input"
+        />
     </div>
 </div>
