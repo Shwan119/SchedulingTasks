@@ -4,35 +4,32 @@
 <head>
     <title>Attestation Trigger</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <style>
-        .attestation-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .btn-attestation {
+            background: linear-gradient(135deg, #f0ad4e 0%, #ec971f 100%);
+            border-color: #d58512;
             color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
             font-weight: 600;
-            cursor: pointer;
             transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
             min-width: 200px;
-            justify-content: center;
         }
 
-        .attestation-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        .btn-attestation:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ec971f 0%, #d58512 100%);
+            border-color: #b06c0c;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(240, 173, 78, 0.3);
         }
 
-        .attestation-button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        .btn-attestation:disabled {
+            background: #cccccc !important;
+            border-color: #cccccc !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
         }
 
         .spinner {
@@ -55,7 +52,7 @@
             top: 20px;
             right: 20px;
             padding: 15px 20px;
-            border-radius: 8px;
+            border-radius: 4px;
             color: white;
             font-weight: 500;
             z-index: 1000;
@@ -64,11 +61,11 @@
         }
 
         .toast.success {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: #5cb85c;
         }
 
         .toast.error {
-            background: linear-gradient(135deg, #f44336, #d32f2f);
+            background: #d9534f;
         }
 
         .toast.show {
@@ -80,26 +77,26 @@
             margin: 50px auto;
             padding: 30px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
-<body style="background-color: #f5f5f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<body style="background-color: #f5f5f5;">
 
-<div class="form-container">
-    <h2 style="color: #333; margin-bottom: 30px;">Attestation Management</h2>
-    
-    @* Hidden fields to pass data to the AJAX call *@
-    <input type="hidden" id="reportId" value="@ViewBag.ReportId" />
-    <input type="hidden" id="attesteeId" value="@ViewBag.AttesteeId" />
-    
-    @* Trigger Attestation Button *@
-    <button type="button" id="triggerAttestationBtn" class="attestation-button">
-        <i class="fas fa-paper-plane" id="btnIcon"></i>
-        <div class="spinner" id="btnSpinner"></div>
-        <span id="btnText">Trigger Attestation</span>
-    </button>
+<div class="container">
+    <div class="form-container">
+        <h2 class="text-primary">Attestation Management</h2>
+        
+        @* Hidden fields to pass data to the AJAX call *@
+        <input type="hidden" id="reportId" value="@ViewBag.ReportId" />
+        <input type="hidden" id="attesteeId" value="@ViewBag.AttesteeId" />
+        
+        @* Trigger Attestation Button *@
+        <button type="button" id="triggerAttestationBtn" class="btn btn-warning btn-lg btn-attestation">
+            <span class="glyphicon glyphicon-send" id="btnIcon"></span>
+            <span id="btnText">Trigger Attestation</span>
+        </button>
     
     @* Success/Error Messages *@
     <div id="messageContainer" style="margin-top: 20px;"></div>
@@ -120,9 +117,7 @@ $(document).ready(function() {
         
         // Disable button and show loading state
         button.prop('disabled', true);
-        btnIcon.hide();
-        btnSpinner.show();
-        btnText.text('Processing...');
+        button.html('<span class="glyphicon glyphicon-refresh glyphicon-spin"></span> Processing...');
         
         // AJAX call to insert record
         $.ajax({
@@ -137,18 +132,16 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     // Success - Keep button disabled and show success state
-                    btnText.text('Attestation Triggered');
-                    btnIcon.removeClass('fa-paper-plane').addClass('fa-check');
-                    btnIcon.show();
-                    btnSpinner.hide();
+                    button.html('<span class="glyphicon glyphicon-ok"></span> Attestation Triggered');
+                    button.removeClass('btn-primary').addClass('btn-success');
                     
                     // Show success toast
                     showToast('Attestation triggered successfully!', 'success');
                     
                     // Optional: Show additional success message
                     $('#messageContainer').html(
-                        '<div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; border-left: 4px solid #28a745;">' +
-                        '<i class="fas fa-check-circle"></i> ' + response.message +
+                        '<div class="alert alert-success">' +
+                        '<span class="glyphicon glyphicon-ok-circle"></span> ' + response.message +
                         '</div>'
                     );
                 } else {
@@ -169,14 +162,10 @@ $(document).ready(function() {
     // Function to reset button to original state
     function resetButton() {
         var button = $('#triggerAttestationBtn');
-        var btnIcon = $('#btnIcon');
-        var btnSpinner = $('#btnSpinner');
-        var btnText = $('#btnText');
         
         button.prop('disabled', false);
-        btnIcon.removeClass('fa-check').addClass('fa-paper-plane').show();
-        btnSpinner.hide();
-        btnText.text('Trigger Attestation');
+        button.removeClass('btn-success').addClass('btn-warning');
+        button.html('<span class="glyphicon glyphicon-send"></span> Trigger Attestation');
     }
     
     // Toast notification function
@@ -208,18 +197,19 @@ $(document).ready(function() {
 
 @* 
 ============================================================
-CONTROLLER CODE (AttestationController.cs)
+CONTROLLER CODE (AttestationController.cs) - Using Entity Framework
 ============================================================
 *@
 
 @*
 using System;
 using System.Web.Mvc;
-using System.Data.SqlClient;
-using System.Configuration;
+using System.Data.Entity;
 
 public class AttestationController : Controller
 {
+    private YourDbContext db = new YourDbContext(); // Replace with your DbContext name
+
     public ActionResult Index()
     {
         // Pass any necessary data to the view
@@ -234,45 +224,36 @@ public class AttestationController : Controller
     {
         try
         {
-            // Insert record into AttestationTable
-            string connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
-            
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            // Create new attestation record using Entity Framework
+            var attestation = new AttestationTable
             {
-                connection.Open();
-                
-                string query = @"
-                    INSERT INTO AttestationTable 
-                    (CreatedOn, ActiveFlag, Attestee_ID, Report_ID, AttestationResult, Comments) 
-                    VALUES 
-                    (@CreatedOn, @ActiveFlag, @AttesteeId, @ReportId, @Result, @Comments)";
-                
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@CreatedOn", DateTime.Now);
-                    command.Parameters.AddWithValue("@ActiveFlag", 1);
-                    command.Parameters.AddWithValue("@AttesteeId", attesteeId);
-                    command.Parameters.AddWithValue("@ReportId", reportId);
-                    command.Parameters.AddWithValue("@Result", "Pending");
-                    command.Parameters.AddWithValue("@Comments", "Triggered via web interface");
-                    
-                    int rowsAffected = command.ExecuteNonQuery();
-                    
-                    if (rowsAffected > 0)
-                    {
-                        return Json(new { 
-                            success = true, 
-                            message = "Attestation record created successfully and notification sent to user." 
-                        });
-                    }
-                    else
-                    {
-                        return Json(new { 
-                            success = false, 
-                            message = "Failed to create attestation record." 
-                        });
-                    }
-                }
+                CreatedOn = DateTime.Now,
+                ActiveFlag = true,
+                Attestee_ID = attesteeId,
+                Report_ID = reportId,
+                AttestationResult = "Pending",
+                Comments = "Triggered via web interface",
+                AttestedOn = null // Will be set when attestation is completed
+            };
+
+            // Add to context and save
+            db.AttestationTables.Add(attestation);
+            int result = db.SaveChanges();
+
+            if (result > 0)
+            {
+                return Json(new { 
+                    success = true, 
+                    message = "Attestation record created successfully and notification sent to user.",
+                    attestationId = attestation.ID
+                });
+            }
+            else
+            {
+                return Json(new { 
+                    success = false, 
+                    message = "Failed to create attestation record." 
+                });
             }
         }
         catch (Exception ex)
@@ -285,6 +266,61 @@ public class AttestationController : Controller
                 message = "An error occurred while processing the request." 
             });
         }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            db.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+}
+
+// Entity Framework Model (AttestationTable.cs)
+public class AttestationTable
+{
+    public int ID { get; set; }
+    public DateTime CreatedOn { get; set; }
+    public bool ActiveFlag { get; set; }
+    public DateTime? AttestedOn { get; set; }
+    public int Attestee_ID { get; set; }
+    public string AttestationResult { get; set; }
+    public string Comments { get; set; }
+    public int Report_ID { get; set; }
+    
+    // Navigation properties (optional)
+    public virtual User Attestee { get; set; }
+    public virtual Report Report { get; set; }
+}
+
+// DbContext (YourDbContext.cs)
+public class YourDbContext : DbContext
+{
+    public YourDbContext() : base("DefaultConnection")
+    {
+    }
+
+    public DbSet<AttestationTable> AttestationTables { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<Report> Reports { get; set; }
+
+    protected override void OnModelCreating(DbModelBuilder modelBuilder)
+    {
+        // Configure table name if different from class name
+        modelBuilder.Entity<AttestationTable>().ToTable("AttestationTable");
+        
+        // Configure relationships
+        modelBuilder.Entity<AttestationTable>()
+            .HasRequired(a => a.Attestee)
+            .WithMany()
+            .HasForeignKey(a => a.Attestee_ID);
+            
+        modelBuilder.Entity<AttestationTable>()
+            .HasRequired(a => a.Report)
+            .WithMany()
+            .HasForeignKey(a => a.Report_ID);
     }
 }
 *@
