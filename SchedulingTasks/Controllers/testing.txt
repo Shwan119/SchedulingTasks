@@ -1,109 +1,19 @@
-﻿using System;
-
-public class TimeEquationGenerator
-{
-private readonly string[] operators = { "+", "-", "*", "/" };
-private readonly Random random = new Random();
-
-private (string equation, int result) GenerateRandomEquation()
-{
-int num1 = random.Next(1, 101); // 1–100
-int num2 = random.Next(1, 101);
-string op = operators[random.Next(operators.Length)];
-
-// Avoid division by zero
-if (op == "/" && num2 == 0)
-num2 = 1;
-
-string equation = $"{num1} {op} {num2}";
-int result = CalculateResult(num1, num2, op);
-
-return (equation, result);
+﻿function parseJsonDate(jsonDate) {
+    if (typeof jsonDate === 'string' && jsonDate.startsWith('/Date(')) {
+        var timestamp = parseInt(jsonDate.replace('/Date(', '').replace(')/', ''));
+        return new Date(timestamp);
+    }
+    return jsonDate;
 }
 
-private int CalculateResult(int num1, int num2, string op)
-{
-return op switch
-{
-"+" => num1 + num2,
-"-" => num1 - num2,
-"*" => num1 * num2,
-"/" => num1 / num2,
-_ => 0
-};
+// In your AJAX success handler:
+success: function(response) {
+    if (response.success) {
+        // Parse the date
+        var createdOnDate = parseJsonDate(response.createdOn);
+        var formattedDate = createdOnDate.toLocaleDateString() + ' ' + createdOnDate.toLocaleTimeString();
+        
+        // Update the field
+        $('#createdOn').text(formattedDate);
+    }
 }
-
-public (string equation, int value) GenerateHour()
-{
-var (equation, result) = GenerateRandomEquation();
-int hour = Math.Abs(result % 24); // Clamp to 0–23
-return (equation, hour);
-}
-
-public (string equation, int value) GenerateMinute()
-{
-var (equation, result) = GenerateRandomEquation();
-int minute = Math.Abs(result % 60); // Clamp to 0–59
-return (equation, minute);
-}
-
-public (string equation, int value) GenerateSecond()
-{
-var (equation, result) = GenerateRandomEquation();
-int second = Math.Abs(result % 60); // Clamp to 0–59
-return (equation, second);
-}
-
-public void GenerateFullTime()
-{
-var (hourEq, hourVal) = GenerateHour();
-var (minEq, minVal) = GenerateMinute();
-var (secEq, secVal) = GenerateSecond();
-
-Console.WriteLine($"{hourEq} → Hour ({hourVal})");
-Console.WriteLine($"{minEq} → Minute ({minVal})");
-Console.WriteLine($"{secEq} → Second ({secVal})");
-}
-}
-
-
-Class TimeEquationGenerator
-Properties:
-operators = ["+", "-", "*", "/"]
-
-Method: generate_random_equation()
-num1 ← random number (1–100)
-num2 ← random number (1–100)
-op ← random choice from operators
-
-If op == "/" and num2 == 0:
-num2 ← 1 // avoid divide by zero
-
-equation_string ← "num1 op num2"
-result ← evaluate equation
-
-Return (equation_string, result)
-
-Method: generate_hour()
-equation, result ← generate_random_equation()
-hour ← result % 24 // clamp to 0-23
-Return (equation, hour)
-
-Method: generate_minute()
-equation, result ← generate_random_equation()
-minute ← result % 60 // clamp to 0-59
-Return (equation, minute)
-
-Method: generate_second()
-equation, result ← generate_random_equation()
-second ← result % 60 // clamp to 0-59
-Return (equation, second)
-
-Method: generate_full_time()
-hour_eq, hour_val ← generate_hour()
-minute_eq, minute_val ← generate_minute()
-second_eq, second_val ← generate_second()
-
-Print hour_eq → Hour (hour_val)
-Print minute_eq → Minute (minute_val)
-Print second_eq → Second (second_val)
