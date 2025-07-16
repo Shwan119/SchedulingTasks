@@ -1,19 +1,80 @@
-﻿function parseJsonDate(jsonDate) {
-    if (typeof jsonDate === 'string' && jsonDate.startsWith('/Date(')) {
-        var timestamp = parseInt(jsonDate.replace('/Date(', '').replace(')/', ''));
-        return new Date(timestamp);
-    }
-    return jsonDate;
-}
+﻿using System;
+using System.Collections.Generic;
 
-// In your AJAX success handler:
-success: function(response) {
-    if (response.success) {
-        // Parse the date
-        var createdOnDate = parseJsonDate(response.createdOn);
-        var formattedDate = createdOnDate.toLocaleDateString() + ' ' + createdOnDate.toLocaleTimeString();
-        
-        // Update the field
-        $('#createdOn').text(formattedDate);
+class Program
+{
+    static void Main(string[] args)
+    {
+        var generator = new TimeEquationGenerator();
+
+        for (int i = 0; i < 5; i++)
+        {
+            var timeEquations = generator.GenerateFullTime();
+            Console.WriteLine($"Run {i + 1}:");
+            foreach (var eq in timeEquations)
+            {
+                Console.WriteLine(eq.ToString());
+            }
+            Console.WriteLine();
+        }
+    }
+}
+public class TimeEquationGenerator
+{
+    private readonly Random random = new Random();
+
+    public class EquationResult
+    {
+        public string Equation { get; set; }
+        public string Label { get; set; }
+        public int Value { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Equation} → {Label} ({Value})";
+        }
+    }
+
+    private (string equation, int result) GenerateMultiplication()
+    {
+        int num1 = random.Next(1, 13);  // small numbers for realistic hour
+        int num2 = random.Next(1, 3);   // small multiplier
+        int result = num1 * num2;
+        string equation = $"{num1} * {num2}";
+        return (equation, result % 24); // clamp to 0–23
+    }
+
+    private (string equation, int result) GenerateAddition()
+    {
+        int num1 = random.Next(1, 60);
+        int num2 = random.Next(1, 60);
+        int result = num1 + num2;
+        string equation = $"{num1} + {num2}";
+        return (equation, result % 60); // clamp to 0–59
+    }
+
+    private (string equation, int result) GenerateSubtraction()
+    {
+        int num1 = random.Next(1, 60);
+        int num2 = random.Next(0, num1); // ensure num2 ≤ num1 for non-negative result
+        int result = num1 - num2;
+        string equation = $"{num1} - {num2}";
+        return (equation, result); // already 0–59
+    }
+
+    public List<EquationResult> GenerateFullTime()
+    {
+        var results = new List<EquationResult>();
+
+        var (hourEq, hourVal) = GenerateMultiplication();
+        results.Add(new EquationResult { Equation = hourEq, Label = "Hour", Value = hourVal });
+
+        var (minEq, minVal) = GenerateAddition();
+        results.Add(new EquationResult { Equation = minEq, Label = "Minute", Value = minVal });
+
+        var (secEq, secVal) = GenerateSubtraction();
+        results.Add(new EquationResult { Equation = secEq, Label = "Second", Value = secVal });
+
+        return results;
     }
 }
