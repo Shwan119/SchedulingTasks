@@ -1,80 +1,98 @@
 ﻿using System;
+using System.Threading;
 using System.Collections.Generic;
 
 class Program
 {
-    static void Main(string[] args)
-    {
-        var generator = new TimeEquationGenerator();
+    static Random random = new Random();
 
-        for (int i = 0; i < 5; i++)
+    static void Main()
+    {
+        // Seed time
+        DateTime now = DateTime.Now;
+        int currentHour = now.Hour;
+        int currentMinute = now.Minute;
+        int currentSecond = now.Second;
+
+        // running it for 1 hour and we pause 10 seconds between each run
+        int ticks = 360;
+
+        // making it more fun and visible
+        var backgroundColors = new[]
         {
-            var timeEquations = generator.GenerateFullTime();
-            Console.WriteLine($"Run {i + 1}:");
-            foreach (var eq in timeEquations)
-            {
-                Console.WriteLine(eq.ToString());
-            }
+            ConsoleColor.DarkBlue,
+            ConsoleColor.DarkGreen,
+            ConsoleColor.DarkGray,
+            ConsoleColor.DarkMagenta,
+            ConsoleColor.DarkCyan
+        };
+
+        for (int i = 0; i < ticks; i++)
+        {
+            int rawSecond = currentSecond + 10;
+            bool secondOverflow = rawSecond >= 60;
+            int nextSecond = secondOverflow ? rawSecond - 60 : rawSecond;
+
+            int rawMinute = currentMinute + (secondOverflow ? 1 : 0);
+            bool minuteOverflow = rawMinute >= 60;
+            int nextMinute = minuteOverflow ? rawMinute - 60 : rawMinute;
+
+            int rawHour = currentHour + (minuteOverflow ? 1 : 0);
+            int nextHour = rawHour >= 24 ? rawHour - 24 : rawHour;
+
+            var hourExpr = GenerateExpression(nextHour);
+            var minuteExpr = GenerateExpression(nextMinute);
+            var secondExpr = GenerateExpression(nextSecond);
+
+            // Apply different background color
+            var bg = backgroundColors[i % backgroundColors.Length];
+            Console.BackgroundColor = bg;
+            Console.ForegroundColor = ConsoleColor.White;
+
+            Console.WriteLine($" Hour:   {hourExpr.A}{hourExpr.Symbol}{hourExpr.B} = {nextHour}");
+            Console.WriteLine($" Minute: {minuteExpr.A}{minuteExpr.Symbol}{minuteExpr.B} = {nextMinute}");
+            Console.WriteLine($" Second: {secondExpr.A}{secondExpr.Symbol}{secondExpr.B} = {nextSecond}");
             Console.WriteLine();
+
+            Console.ResetColor();
+
+            // Pause 10 seconds between run
+            if (i < ticks - 1)
+            {
+                Console.WriteLine("Pausing 10 seconds…\n");
+                Thread.Sleep(10_000);
+            }
+
+            // Update for the next run
+            currentHour = nextHour;
+            currentMinute = nextMinute;
+            currentSecond = nextSecond;
         }
-    }
-}
-public class TimeEquationGenerator
-{
-    private readonly Random random = new Random();
 
-    public class EquationResult
-    {
-        public string Equation { get; set; }
-        public string Label { get; set; }
-        public int Value { get; set; }
-
-        public override string ToString()
-        {
-            return $"{Equation} → {Label} ({Value})";
-        }
+        Console.WriteLine("Done!");
     }
 
-    private (string equation, int result) GenerateMultiplication()
+    static (int A, int B, string Symbol) GenerateExpression(int value)
     {
-        int num1 = random.Next(1, 13);  // small numbers for realistic hour
-        int num2 = random.Next(1, 3);   // small multiplier
-        int result = num1 * num2;
-        string equation = $"{num1} * {num2}";
-        return (equation, result % 24); // clamp to 0–23
-    }
+        var candidates = new List<(int A, int B, string Symbol)>();
 
-    private (string equation, int result) GenerateAddition()
-    {
-        int num1 = random.Next(1, 60);
-        int num2 = random.Next(1, 60);
-        int result = num1 + num2;
-        string equation = $"{num1} + {num2}";
-        return (equation, result % 60); // clamp to 0–59
-    }
+        // addition
+        int a1 = random.Next(0, value + 1);
+        candidates.Add((a1, value - a1, "+"));
 
-    private (string equation, int result) GenerateSubtraction()
-    {
-        int num1 = random.Next(1, 60);
-        int num2 = random.Next(0, num1); // ensure num2 ≤ num1 for non-negative result
-        int result = num1 - num2;
-        string equation = $"{num1} - {num2}";
-        return (equation, result); // already 0–59
-    }
+        // subtraction
+        int a2 = random.Next(value, value + 11);
+        candidates.Add((a2, a2 - value, "-"));
 
-    public List<EquationResult> GenerateFullTime()
-    {
-        var results = new List<EquationResult>();
+        // multiplication
+        for (int i = 1; i <= value; i++)
+            if (value % i == 0)
+                candidates.Add((i, value / i, "*"));
 
-        var (hourEq, hourVal) = GenerateMultiplication();
-        results.Add(new EquationResult { Equation = hourEq, Label = "Hour", Value = hourVal });
+        // division
+        for (int b = 2; b <= 10; b++)
+            candidates.Add((value * b, b, "/"));
 
-        var (minEq, minVal) = GenerateAddition();
-        results.Add(new EquationResult { Equation = minEq, Label = "Minute", Value = minVal });
-
-        var (secEq, secVal) = GenerateSubtraction();
-        results.Add(new EquationResult { Equation = secEq, Label = "Second", Value = secVal });
-
-        return results;
+        return candidates[random.Next(candidates.Count)];
     }
 }
