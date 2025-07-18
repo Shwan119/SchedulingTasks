@@ -1,98 +1,254 @@
-﻿using System;
-using System.Threading;
-using System.Collections.Generic;
+﻿CREATE VIEW vw_AttestationHistoryWithDueDates
+AS
+WITH AttestationCycles AS (
+    -- Calculate which 12-month cycle each attestation belongs to
+    SELECT 
+        a.ID AS AttestationID,
+        a.CreatedDate,
+        a.AttestedBy,
+        a.Status,
+        a.ReportInventoryID,
+        ri.Name AS ReportName,
+        ri.AttestationDueDate AS CurrentDueDate,
+        
+        -- Calculate months between current due date and attestation
+        DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) AS MonthsFromAttestationToDueDate,
+        
+        -- Calculate how many 12-month periods back this attestation was
+        CASE 
+            WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) >= 0 
+            THEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12
+            ELSE 0
+        END AS PeriodsBack,
+        
+        -- Calculate what the due date was when this attestation was created
+        CASE 
+            WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) >= 0 
+            THEN DATEADD(MONTH, -(DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12) * 12, ri.AttestationDueDate)
+            ELSE ri.AttestationDueDate
+        END AS CalculatedDueDateAtAttestation,
+        
+        -- Rank attestations within their period
+        ROW_NUMBER() OVER (
+            PARTITION BY a.ReportInventoryID, 
+            CASE 
+                WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) >= 0 
+                THEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12
+                ELSE 0
+            END
+            ORDER BY a.CreatedDate DESC
+        ) AS AttestationRankInPeriod,
+        
+        -- Overall ranking
+        ROW_NUMBER() OVER (PARTITION BY a.ReportInventoryID ORDER BY a.CreatedDate DESC) AS OverallRank,
+        COUNT(*) OVER (PARTITION BY a.ReportInventoryID) AS TotalAttestations
+        
+    FROM Attestation a
+        INNER JOIN ReportInventory ri ON a.ReportInventoryID = ri.ID
+)
+SELECT 
+    ac.ReportInventoryID,
+    ac.ReportName,
+    ac.CurrentDueDate,
+    ac.AttestationID,
+    ac.CreatedDate AS AttestationCreatedDate,
+    ac.AttestedBy,
+    ac.Status,
+    
+    -- Due date information
+    ac.CalculatedDueDateAtAttestation AS DueDateWhenCreated,
+    ac.PeriodsBack,
+    
+    -- Period description
+    CASE 
+        WHEN ac.PeriodsBack = 0 THEN 'Current Period'
+        WHEN ac.PeriodsBack = 1 THEN '1 Period Ago (12 months)'
+        ELSE CAST(ac.PeriodsBack AS NVARCHAR(10)) + ' Periods Ago (' + CAST(ac.PeriodsBack * 12 AS NVARCHAR(10)) + ' months)'
+    END AS PeriodDescription,
+    
+    -- Timing analysis
+    DATEDIFF(DAY, ac.CalculatedDueDateAtAttestation, ac.CreatedDate) AS DaysFromDueDate,
+    CASE 
+        WHEN ac.CreatedDate <= ac.CalculatedDueDateAtAttestation THEN 'On Time'
+        WHEN DATEDIFF(DAY, ac.CalculatedDueDateAtAttestation, ac.CreatedDate) <= 30 THEN 'Late (≤30 days)'
+        WHEN DATEDIFF(DAY, ac.CalculatedDueDateAtAttestation, ac.CreatedDate) <= 90 THEN 'Late (31-90 days)'
+        ELSE 'Very Late (>90 days)'
+    END AS TimingStatus,
+    
+    -- Position information
+    ac.AttestationRankInPeriod,
+    ac.OverallRank,
+    ac.TotalAttestations,
+    
+    -- Status indicators
+    CASE 
+        WHEN ac.OverallRank = 1 THEN 'Latest'
+        WHEN ac.AttestationRankInPeriod = 1 THEN 'Latest in Period'
+        ELSE 'Historical'
+    END AS RecordType,
+    
+    -- Cycle information
+    CASE 
+        WHEN ac.PeriodsBack = 0 THEN 'Current Cycle'
+        ELSE 'Cycle ' + CAST((SELECT MAX(PeriodsBack) FROM AttestationCycles WHERE ReportInventoryID = ac.ReportInventoryID) - ac.PeriodsBack + 1 AS NVARCHAR(10))
+    END AS CycleNumber
 
-class Program
-{
-    static Random random = new Random();
+FROM AttestationCycles ac;
 
-    static void Main()
-    {
-        // Seed time
-        DateTime now = DateTime.Now;
-        int currentHour = now.Hour;
-        int currentMinute = now.Minute;
-        int currentSecond = now.Second;
+-- ============================================================
+-- SIMPLIFIED ATTESTATION HISTORY VIEW
+-- ============================================================
 
-        // running it for 1 hour and we pause 10 seconds between each run
-        int ticks = 360;
+CREATE VIEW vw_AttestationHistorySimple
+AS
+SELECT 
+    ri.ID AS ReportID,
+    ri.Name AS ReportName,
+    ri.AttestationDueDate AS CurrentDueDate,
+    
+    a.ID AS AttestationID,
+    a.CreatedDate,
+    a.AttestedBy,
+    a.Status,
+    
+    -- Calculate estimated due date when attestation was created
+    -- Assumption: Due date gets updated in 12-month intervals
+    DATEADD(MONTH, 
+        -(DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12) * 12, 
+        ri.AttestationDueDate) AS EstimatedDueDateAtCreation,
+    
+    -- Period classification
+    CASE 
+        WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) < 12 THEN 'Current Period'
+        WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) < 24 THEN 'Previous Period'
+        WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) < 36 THEN '2 Periods Ago'
+        ELSE 'Older Periods'
+    END AS PeriodClassification,
+    
+    -- History position
+    ROW_NUMBER() OVER (PARTITION BY ri.ID ORDER BY a.CreatedDate DESC) AS HistoryRank,
+    
+    -- Months from attestation to current due date
+    DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) AS MonthsToCurrentDueDate
 
-        // making it more fun and visible
-        var backgroundColors = new[]
-        {
-            ConsoleColor.DarkBlue,
-            ConsoleColor.DarkGreen,
-            ConsoleColor.DarkGray,
-            ConsoleColor.DarkMagenta,
-            ConsoleColor.DarkCyan
-        };
+FROM ReportInventory ri
+    INNER JOIN Attestation a ON ri.ID = a.ReportInventoryID;
 
-        for (int i = 0; i < ticks; i++)
-        {
-            int rawSecond = currentSecond + 10;
-            bool secondOverflow = rawSecond >= 60;
-            int nextSecond = secondOverflow ? rawSecond - 60 : rawSecond;
+-- ============================================================
+-- LATEST ATTESTATION PER PERIOD VIEW
+-- ============================================================
 
-            int rawMinute = currentMinute + (secondOverflow ? 1 : 0);
-            bool minuteOverflow = rawMinute >= 60;
-            int nextMinute = minuteOverflow ? rawMinute - 60 : rawMinute;
+CREATE VIEW vw_LatestAttestationPerPeriod
+AS
+WITH PeriodGroups AS (
+    SELECT 
+        a.*,
+        ri.Name AS ReportName,
+        ri.AttestationDueDate,
+        -- Group attestations by 12-month periods
+        DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12 AS PeriodGroup,
+        ROW_NUMBER() OVER (
+            PARTITION BY a.ReportInventoryID, 
+                        DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12 
+            ORDER BY a.CreatedDate DESC
+        ) AS RankInPeriod
+    FROM Attestation a
+        INNER JOIN ReportInventory ri ON a.ReportInventoryID = ri.ID
+)
+SELECT 
+    ReportInventoryID,
+    ReportName,
+    AttestationDueDate AS CurrentDueDate,
+    ID AS AttestationID,
+    CreatedDate,
+    AttestedBy,
+    Status,
+    PeriodGroup,
+    CASE 
+        WHEN PeriodGroup = 0 THEN 'Current Period'
+        WHEN PeriodGroup = 1 THEN 'Previous Period'
+        ELSE CAST(PeriodGroup AS NVARCHAR(10)) + ' Periods Ago'
+    END AS PeriodDescription,
+    
+    -- Calculate the due date for this period
+    DATEADD(MONTH, -PeriodGroup * 12, AttestationDueDate) AS PeriodDueDate
 
-            int rawHour = currentHour + (minuteOverflow ? 1 : 0);
-            int nextHour = rawHour >= 24 ? rawHour - 24 : rawHour;
+FROM PeriodGroups
+WHERE RankInPeriod = 1; -- Only latest attestation per period
 
-            var hourExpr = GenerateExpression(nextHour);
-            var minuteExpr = GenerateExpression(nextMinute);
-            var secondExpr = GenerateExpression(nextSecond);
+-- ============================================================
+-- COMPREHENSIVE ATTESTATION ANALYTICS VIEW
+-- ============================================================
 
-            // Apply different background color
-            var bg = backgroundColors[i % backgroundColors.Length];
-            Console.BackgroundColor = bg;
-            Console.ForegroundColor = ConsoleColor.White;
+CREATE VIEW vw_AttestationAnalytics
+AS
+WITH AttestationMetrics AS (
+    SELECT 
+        ri.ID AS ReportID,
+        ri.Name AS ReportName,
+        ri.AttestationDueDate,
+        
+        -- Current status
+        (SELECT TOP 1 Status 
+         FROM Attestation a1 
+         WHERE a1.ReportInventoryID = ri.ID 
+         ORDER BY a1.CreatedDate DESC) AS LatestStatus,
+        
+        (SELECT TOP 1 CreatedDate 
+         FROM Attestation a2 
+         WHERE a2.ReportInventoryID = ri.ID 
+         ORDER BY a2.CreatedDate DESC) AS LatestAttestationDate,
+        
+        -- Counts
+        (SELECT COUNT(*) 
+         FROM Attestation a3 
+         WHERE a3.ReportInventoryID = ri.ID) AS TotalAttestations,
+        
+        (SELECT COUNT(*) 
+         FROM Attestation a4 
+         WHERE a4.ReportInventoryID = ri.ID 
+           AND a4.Status IN ('Approved', 'Completed')) AS ApprovedAttestations,
+        
+        -- Current period attestations (last 12 months from due date)
+        (SELECT COUNT(*) 
+         FROM Attestation a5 
+         WHERE a5.ReportInventoryID = ri.ID 
+           AND a5.CreatedDate > DATEADD(MONTH, -12, ri.AttestationDueDate)) AS CurrentPeriodAttestations,
+        
+        -- Previous period attestations
+        (SELECT COUNT(*) 
+         FROM Attestation a6 
+         WHERE a6.ReportInventoryID = ri.ID 
+           AND a6.CreatedDate BETWEEN DATEADD(MONTH, -24, ri.AttestationDueDate) 
+                                  AND DATEADD(MONTH, -12, ri.AttestationDueDate)) AS PreviousPeriodAttestations,
+        
+        -- First attestation date
+        (SELECT MIN(CreatedDate) 
+         FROM Attestation a7 
+         WHERE a7.ReportInventoryID = ri.ID) AS FirstAttestationDate
+    
+    FROM ReportInventory ri
+)
+SELECT 
+    *,
+    -- Calculate total months covered
+    DATEDIFF(MONTH, FirstAttestationDate, AttestationDueDate) AS TotalMonthsCovered,
+    
+    -- Calculate number of 12-month periods
+    DATEDIFF(MONTH, FirstAttestationDate, AttestationDueDate) / 12 AS ExpectedPeriods,
+    
+    -- Compliance rate
+    CASE 
+        WHEN TotalAttestations > 0 
+        THEN CAST(ApprovedAttestations AS FLOAT) / TotalAttestations * 100
+        ELSE 0
+    END AS ApprovalRate,
+    
+    -- Current period status
+    CASE 
+        WHEN LatestAttestationDate > DATEADD(MONTH, -12, AttestationDueDate) THEN 'Current'
+        WHEN DATEDIFF(MONTH, LatestAttestationDate, GETDATE()) < 15 THEN 'Due Soon'
+        ELSE 'Overdue'
+    END AS ComplianceStatus
 
-            Console.WriteLine($" Hour:   {hourExpr.A}{hourExpr.Symbol}{hourExpr.B} = {nextHour}");
-            Console.WriteLine($" Minute: {minuteExpr.A}{minuteExpr.Symbol}{minuteExpr.B} = {nextMinute}");
-            Console.WriteLine($" Second: {secondExpr.A}{secondExpr.Symbol}{secondExpr.B} = {nextSecond}");
-            Console.WriteLine();
-
-            Console.ResetColor();
-
-            // Pause 10 seconds between run
-            if (i < ticks - 1)
-            {
-                Console.WriteLine("Pausing 10 seconds…\n");
-                Thread.Sleep(10_000);
-            }
-
-            // Update for the next run
-            currentHour = nextHour;
-            currentMinute = nextMinute;
-            currentSecond = nextSecond;
-        }
-
-        Console.WriteLine("Done!");
-    }
-
-    static (int A, int B, string Symbol) GenerateExpression(int value)
-    {
-        var candidates = new List<(int A, int B, string Symbol)>();
-
-        // addition
-        int a1 = random.Next(0, value + 1);
-        candidates.Add((a1, value - a1, "+"));
-
-        // subtraction
-        int a2 = random.Next(value, value + 11);
-        candidates.Add((a2, a2 - value, "-"));
-
-        // multiplication
-        for (int i = 1; i <= value; i++)
-            if (value % i == 0)
-                candidates.Add((i, value / i, "*"));
-
-        // division
-        for (int b = 2; b <= 10; b++)
-            candidates.Add((value * b, b, "/"));
-
-        return candidates[random.Next(candidates.Count)];
-    }
-}
+FROM AttestationMetrics;
