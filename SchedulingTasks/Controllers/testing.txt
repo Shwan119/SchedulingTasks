@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Table Modal - MVC5</title>
+    <title>Table Modal - MVC5 Final</title>
     
     <!-- Bootstrap 3 CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet" />
@@ -16,8 +16,8 @@
         }
         
         .modal-dialog {
-            width: 90%;
-            max-width: 1000px;
+            width: 95%;
+            max-width: 1200px;
         }
         
         .modal-content {
@@ -72,11 +72,13 @@
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 6px;
-            margin: 20px;
+            margin: 0 15px 20px 15px;
         }
         
         .table {
             margin-bottom: 0;
+            width: 100%;
+            table-layout: fixed;
         }
         
         .table thead th {
@@ -87,10 +89,16 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            vertical-align: middle;
         }
         
         .table tbody tr:hover {
             background-color: #f8f9fa;
+        }
+        
+        .table tbody td {
+            vertical-align: middle;
+            padding: 12px 8px;
         }
         
         .table tbody tr.selected {
@@ -139,12 +147,20 @@
         }
         
         .checkbox-cell {
-            width: 40px;
+            width: 60px;
             text-align: center;
         }
         
         .ait-cell {
-            width: 120px;
+            width: 130px;
+            text-align: center;
+        }
+        
+        .title-cell {
+            width: auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            padding-left: 15px;
         }
         
         .no-results {
@@ -159,7 +175,6 @@
             opacity: 0.5;
         }
         
-        /* Custom checkbox styling */
         .checkbox-wrapper {
             position: relative;
             display: inline-block;
@@ -169,7 +184,6 @@
             transform: scale(1.2);
         }
         
-        /* Loading state */
         .loading {
             text-align: center;
             padding: 40px;
@@ -179,6 +193,14 @@
         .loading .fa-spinner {
             font-size: 24px;
             margin-bottom: 10px;
+        }
+        
+        .custom-hidden {
+            display: none;
+        }
+        
+        .custom-visible {
+            display: block;
         }
     </style>
 </head>
@@ -217,17 +239,17 @@
                         <i class="fa fa-search"></i>
                         <input type="text" id="searchInput" class="form-control" placeholder="Search by title or AIT...">
                     </div>
-                    <div id="searchResults" class="search-results" style="display: none;"></div>
+                    <div id="searchResults" class="search-results custom-hidden"></div>
                 </div>
                 
                 <!-- Table Container -->
                 <div class="table-container">
-                    <div id="loadingState" class="loading">
+                    <div id="loadingState" class="loading custom-hidden">
                         <div><i class="fa fa-spinner fa-spin"></i></div>
                         <div>Loading data...</div>
                     </div>
                     
-                    <table class="table table-striped table-hover" id="itemsTable" style="display: none;">
+                    <table class="table table-striped table-hover" id="itemsTable">
                         <thead>
                             <tr>
                                 <th class="checkbox-cell">
@@ -235,16 +257,73 @@
                                         <input type="checkbox" id="selectAll">
                                     </div>
                                 </th>
-                                <th>Title</th>
+                                <th class="title-cell">Title</th>
                                 <th class="ait-cell">AIT</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
-                            <!-- Data will be populated here -->
+                            <!-- Replace this section with your Razor code: -->
+                            <!-- @foreach(var item in Model.TheReport) { -->
+                                <tr>
+                                    <td class="checkbox-cell">
+                                        <div class="checkbox-wrapper">
+                                            <input type="checkbox" class="item-checkbox" data-id="1">
+                                        </div>
+                                    </td>
+                                    <td class="title-cell">Project Management System</td>
+                                    <td class="ait-cell">
+                                        <span class="ait-badge">AIT-001</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="checkbox-cell">
+                                        <div class="checkbox-wrapper">
+                                            <input type="checkbox" class="item-checkbox" data-id="2">
+                                        </div>
+                                    </td>
+                                    <td class="title-cell">Customer Support Portal</td>
+                                    <td class="ait-cell">
+                                        <span class="ait-badge">AIT-002</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="checkbox-cell">
+                                        <div class="checkbox-wrapper">
+                                            <input type="checkbox" class="item-checkbox" data-id="3">
+                                        </div>
+                                    </td>
+                                    <td class="title-cell">E-commerce Platform</td>
+                                    <td class="ait-cell">
+                                        <span class="ait-badge">AIT-003</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="checkbox-cell">
+                                        <div class="checkbox-wrapper">
+                                            <input type="checkbox" class="item-checkbox" data-id="4">
+                                        </div>
+                                    </td>
+                                    <td class="title-cell">Inventory Management</td>
+                                    <td class="ait-cell">
+                                        <span class="ait-badge">AIT-004</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="checkbox-cell">
+                                        <div class="checkbox-wrapper">
+                                            <input type="checkbox" class="item-checkbox" data-id="5">
+                                        </div>
+                                    </td>
+                                    <td class="title-cell">Financial Dashboard</td>
+                                    <td class="ait-cell">
+                                        <span class="ait-badge">AIT-005</span>
+                                    </td>
+                                </tr>
+                            <!-- } -->
                         </tbody>
                     </table>
                     
-                    <div id="noResults" class="no-results" style="display: none;">
+                    <div id="noResults" class="no-results custom-hidden">
                         <div><i class="fa fa-search"></i></div>
                         <div><strong>No items found</strong></div>
                         <div>Try adjusting your search criteria</div>
@@ -276,121 +355,56 @@
 
     <script>
         $(document).ready(function() {
-            var allData = [];
-            var filteredData = [];
             var selectedItems = new Set();
-            
-            // Sample data - In real app, this would come from your controller
-            var sampleData = [
-                { id: 1, title: 'Project Management System', ait: 'AIT-001' },
-                { id: 2, title: 'Customer Support Portal', ait: 'AIT-002' },
-                { id: 3, title: 'E-commerce Platform', ait: 'AIT-003' },
-                { id: 4, title: 'Inventory Management', ait: 'AIT-004' },
-                { id: 5, title: 'Financial Dashboard', ait: 'AIT-005' },
-                { id: 6, title: 'User Authentication Service', ait: 'AIT-006' },
-                { id: 7, title: 'Report Generation Tool', ait: 'AIT-007' },
-                { id: 8, title: 'Data Analytics Platform', ait: 'AIT-008' },
-                { id: 9, title: 'Content Management System', ait: 'AIT-009' },
-                { id: 10, title: 'Mobile Application Backend', ait: 'AIT-010' }
-            ];
             
             // Initialize modal when opened
             $('#tableModal').on('show.bs.modal', function() {
-                loadData();
                 resetModal();
-            });
-            
-            // Load data function
-            function loadData() {
-                $('#loadingState').show();
-                $('#itemsTable').hide();
-                $('#noResults').hide();
-                
-                // Simulate AJAX call - Replace with actual AJAX call to your controller
-                setTimeout(function() {
-                    // In real app, replace this with actual AJAX call:
-                    /*
-                    $.ajax({
-                        url: '@Url.Action("GetTableData", "YourController")',
-                        type: 'GET',
-                        dataType: 'json',
-                        success: function(data) {
-                            allData = data;
-                            filteredData = data;
-                            renderTable();
-                        },
-                        error: function() {
-                            showError('Failed to load data');
-                        }
-                    });
-                    */
-                    
-                    allData = sampleData;
-                    filteredData = sampleData;
-                    renderTable();
-                }, 800);
-            }
-            
-            // Render table
-            function renderTable() {
-                $('#loadingState').hide();
-                
-                if (filteredData.length === 0) {
-                    $('#itemsTable').hide();
-                    $('#noResults').show();
-                    return;
-                }
-                
-                $('#noResults').hide();
-                $('#itemsTable').show();
-                
-                var tbody = $('#tableBody');
-                tbody.empty();
-                
-                $.each(filteredData, function(index, item) {
-                    var isSelected = selectedItems.has(item.id);
-                    var row = $('<tr>')
-                        .addClass(isSelected ? 'selected' : '')
-                        .append(
-                            $('<td class="checkbox-cell">').append(
-                                $('<div class="checkbox-wrapper">').append(
-                                    $('<input type="checkbox" class="item-checkbox">')
-                                        .attr('data-id', item.id)
-                                        .prop('checked', isSelected)
-                                )
-                            )
-                        )
-                        .append($('<td>').text(item.title))
-                        .append($('<td class="ait-cell">').append(
-                            $('<span class="ait-badge">').text(item.ait)
-                        ));
-                    
-                    tbody.append(row);
-                });
-                
                 updateSelectAllCheckbox();
                 updateSelectionCount();
-            }
+            });
             
             // Search functionality
             $('#searchInput').on('input', function() {
                 var searchTerm = $(this).val().toLowerCase();
                 
                 if (searchTerm === '') {
-                    filteredData = allData;
-                    $('#searchResults').hide();
+                    // Show all rows
+                    $('#tableBody tr').removeClass('custom-hidden');
+                    $('#searchResults').addClass('custom-hidden');
                 } else {
-                    filteredData = allData.filter(function(item) {
-                        return item.title.toLowerCase().includes(searchTerm) ||
-                               item.ait.toLowerCase().includes(searchTerm);
+                    // Filter and show/hide rows
+                    var visibleCount = 0;
+                    
+                    $('#tableBody tr').each(function() {
+                        var row = $(this);
+                        var title = row.find('.title-cell').text().toLowerCase();
+                        var ait = row.find('.ait-badge').text().toLowerCase();
+                        
+                        if (title.includes(searchTerm) || ait.includes(searchTerm)) {
+                            row.removeClass('custom-hidden');
+                            visibleCount++;
+                        } else {
+                            row.addClass('custom-hidden');
+                        }
                     });
                     
                     $('#searchResults')
-                        .text('Found ' + filteredData.length + ' result' + (filteredData.length !== 1 ? 's' : ''))
-                        .show();
+                        .text('Found ' + visibleCount + ' result' + (visibleCount !== 1 ? 's' : ''))
+                        .removeClass('custom-hidden');
                 }
                 
-                renderTable();
+                // Show no results if nothing visible
+                var hasVisibleRows = $('#tableBody tr:not(.custom-hidden)').length > 0;
+                if (hasVisibleRows) {
+                    $('#noResults').addClass('custom-hidden');
+                    $('#itemsTable').removeClass('custom-hidden');
+                } else {
+                    $('#noResults').removeClass('custom-hidden');
+                    $('#itemsTable').addClass('custom-hidden');
+                }
+                
+                updateSelectAllCheckbox();
             });
             
             // Individual checkbox change
@@ -414,24 +428,21 @@
             $('#selectAll').on('change', function() {
                 var isChecked = $(this).is(':checked');
                 
-                if (isChecked) {
-                    // Select all visible items
-                    $.each(filteredData, function(index, item) {
-                        selectedItems.add(item.id);
-                    });
-                } else {
-                    // Deselect all visible items
-                    $.each(filteredData, function(index, item) {
-                        selectedItems.delete(item.id);
-                    });
-                }
-                
-                // Update individual checkboxes
-                $('.item-checkbox').each(function() {
-                    var id = parseInt($(this).attr('data-id'));
-                    var shouldBeChecked = selectedItems.has(id);
-                    $(this).prop('checked', shouldBeChecked);
-                    $(this).closest('tr').toggleClass('selected', shouldBeChecked);
+                // Only affect visible rows
+                $('#tableBody tr:not(.custom-hidden)').each(function() {
+                    var row = $(this);
+                    var checkbox = row.find('.item-checkbox');
+                    var id = parseInt(checkbox.attr('data-id'));
+                    
+                    checkbox.prop('checked', isChecked);
+                    
+                    if (isChecked) {
+                        selectedItems.add(id);
+                        row.addClass('selected');
+                    } else {
+                        selectedItems.delete(id);
+                        row.removeClass('selected');
+                    }
                 });
                 
                 updateSelectionCount();
@@ -439,16 +450,15 @@
             
             // Update select all checkbox state
             function updateSelectAllCheckbox() {
-                var visibleIds = filteredData.map(function(item) { return item.id; });
-                var visibleSelectedCount = visibleIds.filter(function(id) {
-                    return selectedItems.has(id);
-                }).length;
+                var visibleCheckboxes = $('#tableBody tr:not(.custom-hidden) .item-checkbox');
+                var checkedCount = visibleCheckboxes.filter(':checked').length;
+                var totalCount = visibleCheckboxes.length;
                 
                 var selectAllCheckbox = $('#selectAll')[0];
-                if (visibleSelectedCount === 0) {
+                if (checkedCount === 0) {
                     selectAllCheckbox.checked = false;
                     selectAllCheckbox.indeterminate = false;
-                } else if (visibleSelectedCount === visibleIds.length) {
+                } else if (checkedCount === totalCount) {
                     selectAllCheckbox.checked = true;
                     selectAllCheckbox.indeterminate = false;
                 } else {
@@ -476,32 +486,28 @@
             $('#saveSelection').on('click', function() {
                 var selectedIds = Array.from(selectedItems);
                 
-                // In real app, send selected IDs to server
-                /*
+                // Send selected IDs to server
                 $.ajax({
                     url: '@Url.Action("SaveSelection", "YourController")',
                     type: 'POST',
                     data: { selectedIds: selectedIds },
                     success: function(result) {
                         $('#tableModal').modal('hide');
-                        // Handle success
+                        alert('Selection saved successfully!');
                     },
                     error: function() {
                         alert('Failed to save selection');
                     }
                 });
-                */
-                
-                console.log('Selected IDs:', selectedIds);
-                alert('Selection saved! Check console for selected IDs.');
-                $('#tableModal').modal('hide');
             });
             
             // Reset modal state
             function resetModal() {
                 selectedItems.clear();
                 $('#searchInput').val('');
-                $('#searchResults').hide();
+                $('#searchResults').addClass('custom-hidden');
+                $('.item-checkbox').prop('checked', false);
+                $('#tableBody tr').removeClass('selected custom-hidden');
                 updateSelectionCount();
             }
             
