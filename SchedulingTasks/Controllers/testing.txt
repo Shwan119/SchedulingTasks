@@ -1,254 +1,515 @@
-﻿CREATE VIEW vw_AttestationHistoryWithDueDates
-AS
-WITH AttestationCycles AS (
-    -- Calculate which 12-month cycle each attestation belongs to
-    SELECT 
-        a.ID AS AttestationID,
-        a.CreatedDate,
-        a.AttestedBy,
-        a.Status,
-        a.ReportInventoryID,
-        ri.Name AS ReportName,
-        ri.AttestationDueDate AS CurrentDueDate,
-        
-        -- Calculate months between current due date and attestation
-        DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) AS MonthsFromAttestationToDueDate,
-        
-        -- Calculate how many 12-month periods back this attestation was
-        CASE 
-            WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) >= 0 
-            THEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12
-            ELSE 0
-        END AS PeriodsBack,
-        
-        -- Calculate what the due date was when this attestation was created
-        CASE 
-            WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) >= 0 
-            THEN DATEADD(MONTH, -(DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12) * 12, ri.AttestationDueDate)
-            ELSE ri.AttestationDueDate
-        END AS CalculatedDueDateAtAttestation,
-        
-        -- Rank attestations within their period
-        ROW_NUMBER() OVER (
-            PARTITION BY a.ReportInventoryID, 
-            CASE 
-                WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) >= 0 
-                THEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12
-                ELSE 0
-            END
-            ORDER BY a.CreatedDate DESC
-        ) AS AttestationRankInPeriod,
-        
-        -- Overall ranking
-        ROW_NUMBER() OVER (PARTITION BY a.ReportInventoryID ORDER BY a.CreatedDate DESC) AS OverallRank,
-        COUNT(*) OVER (PARTITION BY a.ReportInventoryID) AS TotalAttestations
-        
-    FROM Attestation a
-        INNER JOIN ReportInventory ri ON a.ReportInventoryID = ri.ID
-)
-SELECT 
-    ac.ReportInventoryID,
-    ac.ReportName,
-    ac.CurrentDueDate,
-    ac.AttestationID,
-    ac.CreatedDate AS AttestationCreatedDate,
-    ac.AttestedBy,
-    ac.Status,
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Modal - MVC5</title>
     
-    -- Due date information
-    ac.CalculatedDueDateAtAttestation AS DueDateWhenCreated,
-    ac.PeriodsBack,
+    <!-- Bootstrap 3 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
     
-    -- Period description
-    CASE 
-        WHEN ac.PeriodsBack = 0 THEN 'Current Period'
-        WHEN ac.PeriodsBack = 1 THEN '1 Period Ago (12 months)'
-        ELSE CAST(ac.PeriodsBack AS NVARCHAR(10)) + ' Periods Ago (' + CAST(ac.PeriodsBack * 12 AS NVARCHAR(10)) + ' months)'
-    END AS PeriodDescription,
-    
-    -- Timing analysis
-    DATEDIFF(DAY, ac.CalculatedDueDateAtAttestation, ac.CreatedDate) AS DaysFromDueDate,
-    CASE 
-        WHEN ac.CreatedDate <= ac.CalculatedDueDateAtAttestation THEN 'On Time'
-        WHEN DATEDIFF(DAY, ac.CalculatedDueDateAtAttestation, ac.CreatedDate) <= 30 THEN 'Late (≤30 days)'
-        WHEN DATEDIFF(DAY, ac.CalculatedDueDateAtAttestation, ac.CreatedDate) <= 90 THEN 'Late (31-90 days)'
-        ELSE 'Very Late (>90 days)'
-    END AS TimingStatus,
-    
-    -- Position information
-    ac.AttestationRankInPeriod,
-    ac.OverallRank,
-    ac.TotalAttestations,
-    
-    -- Status indicators
-    CASE 
-        WHEN ac.OverallRank = 1 THEN 'Latest'
-        WHEN ac.AttestationRankInPeriod = 1 THEN 'Latest in Period'
-        ELSE 'Historical'
-    END AS RecordType,
-    
-    -- Cycle information
-    CASE 
-        WHEN ac.PeriodsBack = 0 THEN 'Current Cycle'
-        ELSE 'Cycle ' + CAST((SELECT MAX(PeriodsBack) FROM AttestationCycles WHERE ReportInventoryID = ac.ReportInventoryID) - ac.PeriodsBack + 1 AS NVARCHAR(10))
-    END AS CycleNumber
+    <style>
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .modal-dialog {
+            width: 90%;
+            max-width: 1000px;
+        }
+        
+        .modal-content {
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .search-container {
+            padding: 20px;
+            background-color: #fff;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box .form-control {
+            padding-left: 40px;
+            height: 42px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .search-box .fa-search {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+        
+        .search-results {
+            margin-top: 10px;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin: 20px;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .table tbody tr.selected {
+            background-color: #e3f2fd !important;
+        }
+        
+        .ait-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: #e9ecef;
+            color: #495057;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .modal-footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .selection-count {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .selection-count.has-selection {
+            color: #007bff;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            border-radius: 6px;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        
+        .btn-default {
+            border-radius: 6px;
+        }
+        
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+        
+        .ait-cell {
+            width: 120px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .no-results .fa {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        /* Custom checkbox styling */
+        .checkbox-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .checkbox-wrapper input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+        
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .loading .fa-spinner {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Table Modal Demo</h2>
+                <p class="text-muted">Click the button below to open the redesigned table modal.</p>
+                
+                <!-- Trigger Button -->
+                <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#tableModal">
+                    <i class="fa fa-table"></i> Open Table Modal
+                </button>
+            </div>
+        </div>
+    </div>
 
-FROM AttestationCycles ac;
+    <!-- Modal -->
+    <div class="modal fade" id="tableModal" tabindex="-1" role="dialog" aria-labelledby="tableModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="tableModalLabel">
+                        <i class="fa fa-list-alt"></i> Select Items
+                    </h4>
+                </div>
+                
+                <!-- Search Container -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="fa fa-search"></i>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search by title or AIT...">
+                    </div>
+                    <div id="searchResults" class="search-results" style="display: none;"></div>
+                </div>
+                
+                <!-- Table Container -->
+                <div class="table-container">
+                    <div id="loadingState" class="loading">
+                        <div><i class="fa fa-spinner fa-spin"></i></div>
+                        <div>Loading data...</div>
+                    </div>
+                    
+                    <table class="table table-striped table-hover" id="itemsTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-cell">
+                                    <div class="checkbox-wrapper">
+                                        <input type="checkbox" id="selectAll">
+                                    </div>
+                                </th>
+                                <th>Title</th>
+                                <th class="ait-cell">AIT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    
+                    <div id="noResults" class="no-results" style="display: none;">
+                        <div><i class="fa fa-search"></i></div>
+                        <div><strong>No items found</strong></div>
+                        <div>Try adjusting your search criteria</div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="modal-footer">
+                    <div class="pull-left">
+                        <span id="selectionCount" class="selection-count">No items selected</span>
+                    </div>
+                    <div class="pull-right">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">
+                            <i class="fa fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="saveSelection" disabled>
+                            <i class="fa fa-check"></i> Save Selection
+                        </button>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
--- ============================================================
--- SIMPLIFIED ATTESTATION HISTORY VIEW
--- ============================================================
+    <!-- jQuery and Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
 
-CREATE VIEW vw_AttestationHistorySimple
-AS
-SELECT 
-    ri.ID AS ReportID,
-    ri.Name AS ReportName,
-    ri.AttestationDueDate AS CurrentDueDate,
-    
-    a.ID AS AttestationID,
-    a.CreatedDate,
-    a.AttestedBy,
-    a.Status,
-    
-    -- Calculate estimated due date when attestation was created
-    -- Assumption: Due date gets updated in 12-month intervals
-    DATEADD(MONTH, 
-        -(DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12) * 12, 
-        ri.AttestationDueDate) AS EstimatedDueDateAtCreation,
-    
-    -- Period classification
-    CASE 
-        WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) < 12 THEN 'Current Period'
-        WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) < 24 THEN 'Previous Period'
-        WHEN DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) < 36 THEN '2 Periods Ago'
-        ELSE 'Older Periods'
-    END AS PeriodClassification,
-    
-    -- History position
-    ROW_NUMBER() OVER (PARTITION BY ri.ID ORDER BY a.CreatedDate DESC) AS HistoryRank,
-    
-    -- Months from attestation to current due date
-    DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) AS MonthsToCurrentDueDate
-
-FROM ReportInventory ri
-    INNER JOIN Attestation a ON ri.ID = a.ReportInventoryID;
-
--- ============================================================
--- LATEST ATTESTATION PER PERIOD VIEW
--- ============================================================
-
-CREATE VIEW vw_LatestAttestationPerPeriod
-AS
-WITH PeriodGroups AS (
-    SELECT 
-        a.*,
-        ri.Name AS ReportName,
-        ri.AttestationDueDate,
-        -- Group attestations by 12-month periods
-        DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12 AS PeriodGroup,
-        ROW_NUMBER() OVER (
-            PARTITION BY a.ReportInventoryID, 
-                        DATEDIFF(MONTH, a.CreatedDate, ri.AttestationDueDate) / 12 
-            ORDER BY a.CreatedDate DESC
-        ) AS RankInPeriod
-    FROM Attestation a
-        INNER JOIN ReportInventory ri ON a.ReportInventoryID = ri.ID
-)
-SELECT 
-    ReportInventoryID,
-    ReportName,
-    AttestationDueDate AS CurrentDueDate,
-    ID AS AttestationID,
-    CreatedDate,
-    AttestedBy,
-    Status,
-    PeriodGroup,
-    CASE 
-        WHEN PeriodGroup = 0 THEN 'Current Period'
-        WHEN PeriodGroup = 1 THEN 'Previous Period'
-        ELSE CAST(PeriodGroup AS NVARCHAR(10)) + ' Periods Ago'
-    END AS PeriodDescription,
-    
-    -- Calculate the due date for this period
-    DATEADD(MONTH, -PeriodGroup * 12, AttestationDueDate) AS PeriodDueDate
-
-FROM PeriodGroups
-WHERE RankInPeriod = 1; -- Only latest attestation per period
-
--- ============================================================
--- COMPREHENSIVE ATTESTATION ANALYTICS VIEW
--- ============================================================
-
-CREATE VIEW vw_AttestationAnalytics
-AS
-WITH AttestationMetrics AS (
-    SELECT 
-        ri.ID AS ReportID,
-        ri.Name AS ReportName,
-        ri.AttestationDueDate,
-        
-        -- Current status
-        (SELECT TOP 1 Status 
-         FROM Attestation a1 
-         WHERE a1.ReportInventoryID = ri.ID 
-         ORDER BY a1.CreatedDate DESC) AS LatestStatus,
-        
-        (SELECT TOP 1 CreatedDate 
-         FROM Attestation a2 
-         WHERE a2.ReportInventoryID = ri.ID 
-         ORDER BY a2.CreatedDate DESC) AS LatestAttestationDate,
-        
-        -- Counts
-        (SELECT COUNT(*) 
-         FROM Attestation a3 
-         WHERE a3.ReportInventoryID = ri.ID) AS TotalAttestations,
-        
-        (SELECT COUNT(*) 
-         FROM Attestation a4 
-         WHERE a4.ReportInventoryID = ri.ID 
-           AND a4.Status IN ('Approved', 'Completed')) AS ApprovedAttestations,
-        
-        -- Current period attestations (last 12 months from due date)
-        (SELECT COUNT(*) 
-         FROM Attestation a5 
-         WHERE a5.ReportInventoryID = ri.ID 
-           AND a5.CreatedDate > DATEADD(MONTH, -12, ri.AttestationDueDate)) AS CurrentPeriodAttestations,
-        
-        -- Previous period attestations
-        (SELECT COUNT(*) 
-         FROM Attestation a6 
-         WHERE a6.ReportInventoryID = ri.ID 
-           AND a6.CreatedDate BETWEEN DATEADD(MONTH, -24, ri.AttestationDueDate) 
-                                  AND DATEADD(MONTH, -12, ri.AttestationDueDate)) AS PreviousPeriodAttestations,
-        
-        -- First attestation date
-        (SELECT MIN(CreatedDate) 
-         FROM Attestation a7 
-         WHERE a7.ReportInventoryID = ri.ID) AS FirstAttestationDate
-    
-    FROM ReportInventory ri
-)
-SELECT 
-    *,
-    -- Calculate total months covered
-    DATEDIFF(MONTH, FirstAttestationDate, AttestationDueDate) AS TotalMonthsCovered,
-    
-    -- Calculate number of 12-month periods
-    DATEDIFF(MONTH, FirstAttestationDate, AttestationDueDate) / 12 AS ExpectedPeriods,
-    
-    -- Compliance rate
-    CASE 
-        WHEN TotalAttestations > 0 
-        THEN CAST(ApprovedAttestations AS FLOAT) / TotalAttestations * 100
-        ELSE 0
-    END AS ApprovalRate,
-    
-    -- Current period status
-    CASE 
-        WHEN LatestAttestationDate > DATEADD(MONTH, -12, AttestationDueDate) THEN 'Current'
-        WHEN DATEDIFF(MONTH, LatestAttestationDate, GETDATE()) < 15 THEN 'Due Soon'
-        ELSE 'Overdue'
-    END AS ComplianceStatus
-
-FROM AttestationMetrics;
+    <script>
+        $(document).ready(function() {
+            var allData = [];
+            var filteredData = [];
+            var selectedItems = new Set();
+            
+            // Sample data - In real app, this would come from your controller
+            var sampleData = [
+                { id: 1, title: 'Project Management System', ait: 'AIT-001' },
+                { id: 2, title: 'Customer Support Portal', ait: 'AIT-002' },
+                { id: 3, title: 'E-commerce Platform', ait: 'AIT-003' },
+                { id: 4, title: 'Inventory Management', ait: 'AIT-004' },
+                { id: 5, title: 'Financial Dashboard', ait: 'AIT-005' },
+                { id: 6, title: 'User Authentication Service', ait: 'AIT-006' },
+                { id: 7, title: 'Report Generation Tool', ait: 'AIT-007' },
+                { id: 8, title: 'Data Analytics Platform', ait: 'AIT-008' },
+                { id: 9, title: 'Content Management System', ait: 'AIT-009' },
+                { id: 10, title: 'Mobile Application Backend', ait: 'AIT-010' }
+            ];
+            
+            // Initialize modal when opened
+            $('#tableModal').on('show.bs.modal', function() {
+                loadData();
+                resetModal();
+            });
+            
+            // Load data function
+            function loadData() {
+                $('#loadingState').show();
+                $('#itemsTable').hide();
+                $('#noResults').hide();
+                
+                // Simulate AJAX call - Replace with actual AJAX call to your controller
+                setTimeout(function() {
+                    // In real app, replace this with actual AJAX call:
+                    /*
+                    $.ajax({
+                        url: '@Url.Action("GetTableData", "YourController")',
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(data) {
+                            allData = data;
+                            filteredData = data;
+                            renderTable();
+                        },
+                        error: function() {
+                            showError('Failed to load data');
+                        }
+                    });
+                    */
+                    
+                    allData = sampleData;
+                    filteredData = sampleData;
+                    renderTable();
+                }, 800);
+            }
+            
+            // Render table
+            function renderTable() {
+                $('#loadingState').hide();
+                
+                if (filteredData.length === 0) {
+                    $('#itemsTable').hide();
+                    $('#noResults').show();
+                    return;
+                }
+                
+                $('#noResults').hide();
+                $('#itemsTable').show();
+                
+                var tbody = $('#tableBody');
+                tbody.empty();
+                
+                $.each(filteredData, function(index, item) {
+                    var isSelected = selectedItems.has(item.id);
+                    var row = $('<tr>')
+                        .addClass(isSelected ? 'selected' : '')
+                        .append(
+                            $('<td class="checkbox-cell">').append(
+                                $('<div class="checkbox-wrapper">').append(
+                                    $('<input type="checkbox" class="item-checkbox">')
+                                        .attr('data-id', item.id)
+                                        .prop('checked', isSelected)
+                                )
+                            )
+                        )
+                        .append($('<td>').text(item.title))
+                        .append($('<td class="ait-cell">').append(
+                            $('<span class="ait-badge">').text(item.ait)
+                        ));
+                    
+                    tbody.append(row);
+                });
+                
+                updateSelectAllCheckbox();
+                updateSelectionCount();
+            }
+            
+            // Search functionality
+            $('#searchInput').on('input', function() {
+                var searchTerm = $(this).val().toLowerCase();
+                
+                if (searchTerm === '') {
+                    filteredData = allData;
+                    $('#searchResults').hide();
+                } else {
+                    filteredData = allData.filter(function(item) {
+                        return item.title.toLowerCase().includes(searchTerm) ||
+                               item.ait.toLowerCase().includes(searchTerm);
+                    });
+                    
+                    $('#searchResults')
+                        .text('Found ' + filteredData.length + ' result' + (filteredData.length !== 1 ? 's' : ''))
+                        .show();
+                }
+                
+                renderTable();
+            });
+            
+            // Individual checkbox change
+            $(document).on('change', '.item-checkbox', function() {
+                var id = parseInt($(this).attr('data-id'));
+                var row = $(this).closest('tr');
+                
+                if ($(this).is(':checked')) {
+                    selectedItems.add(id);
+                    row.addClass('selected');
+                } else {
+                    selectedItems.delete(id);
+                    row.removeClass('selected');
+                }
+                
+                updateSelectAllCheckbox();
+                updateSelectionCount();
+            });
+            
+            // Select all checkbox
+            $('#selectAll').on('change', function() {
+                var isChecked = $(this).is(':checked');
+                
+                if (isChecked) {
+                    // Select all visible items
+                    $.each(filteredData, function(index, item) {
+                        selectedItems.add(item.id);
+                    });
+                } else {
+                    // Deselect all visible items
+                    $.each(filteredData, function(index, item) {
+                        selectedItems.delete(item.id);
+                    });
+                }
+                
+                // Update individual checkboxes
+                $('.item-checkbox').each(function() {
+                    var id = parseInt($(this).attr('data-id'));
+                    var shouldBeChecked = selectedItems.has(id);
+                    $(this).prop('checked', shouldBeChecked);
+                    $(this).closest('tr').toggleClass('selected', shouldBeChecked);
+                });
+                
+                updateSelectionCount();
+            });
+            
+            // Update select all checkbox state
+            function updateSelectAllCheckbox() {
+                var visibleIds = filteredData.map(function(item) { return item.id; });
+                var visibleSelectedCount = visibleIds.filter(function(id) {
+                    return selectedItems.has(id);
+                }).length;
+                
+                var selectAllCheckbox = $('#selectAll')[0];
+                if (visibleSelectedCount === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (visibleSelectedCount === visibleIds.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+            
+            // Update selection count
+            function updateSelectionCount() {
+                var count = selectedItems.size;
+                var countElement = $('#selectionCount');
+                var saveButton = $('#saveSelection');
+                
+                if (count === 0) {
+                    countElement.text('No items selected').removeClass('has-selection');
+                    saveButton.prop('disabled', true);
+                } else {
+                    countElement.text(count + ' item' + (count !== 1 ? 's' : '') + ' selected').addClass('has-selection');
+                    saveButton.prop('disabled', false);
+                }
+            }
+            
+            // Save selection
+            $('#saveSelection').on('click', function() {
+                var selectedIds = Array.from(selectedItems);
+                
+                // In real app, send selected IDs to server
+                /*
+                $.ajax({
+                    url: '@Url.Action("SaveSelection", "YourController")',
+                    type: 'POST',
+                    data: { selectedIds: selectedIds },
+                    success: function(result) {
+                        $('#tableModal').modal('hide');
+                        // Handle success
+                    },
+                    error: function() {
+                        alert('Failed to save selection');
+                    }
+                });
+                */
+                
+                console.log('Selected IDs:', selectedIds);
+                alert('Selection saved! Check console for selected IDs.');
+                $('#tableModal').modal('hide');
+            });
+            
+            // Reset modal state
+            function resetModal() {
+                selectedItems.clear();
+                $('#searchInput').val('');
+                $('#searchResults').hide();
+                updateSelectionCount();
+            }
+            
+            // Reset on modal close
+            $('#tableModal').on('hidden.bs.modal', function() {
+                resetModal();
+            });
+        });
+    </script>
+</body>
+</html>
