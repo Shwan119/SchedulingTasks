@@ -1,379 +1,53 @@
-﻿<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Table Modal - MVC5 Final</title>
-    
-    <!-- Bootstrap 3 CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
-    
-    <style>
-        body {
-            background-color: #f5f5f5;
-            padding: 20px;
-        }
-        
-        .modal-dialog {
-            width: 95%;
-            max-width: 1200px;
-        }
-        
-        .modal-content {
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .modal-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            border-radius: 8px 8px 0 0;
-        }
-        
-        .modal-title {
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .search-container {
-            padding: 20px;
-            background-color: #fff;
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        .search-box {
-            position: relative;
-        }
-        
-        .search-box .form-control {
-            padding-left: 40px;
-            height: 42px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-        }
-        
-        .search-box .fa-search {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
-        
-        .search-results {
-            margin-top: 10px;
-            color: #666;
-            font-size: 13px;
-        }
-        
-        .table-container {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin: 0 15px 20px 15px;
-        }
-        
-        .table {
-            margin-bottom: 0;
-            width: 100%;
-            table-layout: fixed;
-        }
-        
-        .table thead th {
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
-            font-weight: 600;
-            color: #495057;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            vertical-align: middle;
-        }
-        
-        .table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .table tbody td {
-            vertical-align: middle;
-            padding: 12px 8px;
-        }
-        
-        .table tbody tr.selected {
-            background-color: #e3f2fd !important;
-        }
-        
-        .ait-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background-color: #e9ecef;
-            color: #495057;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .modal-footer {
-            background-color: #f8f9fa;
-            border-top: 1px solid #dee2e6;
-            border-radius: 0 0 8px 8px;
-        }
-        
-        .selection-count {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .selection-count.has-selection {
-            color: #007bff;
-            font-weight: 600;
-        }
-        
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            border-radius: 6px;
-        }
-        
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-        }
-        
-        .btn-default {
-            border-radius: 6px;
-        }
-        
-        .checkbox-cell {
-            width: 60px;
-            text-align: center;
-        }
-        
-        .ait-cell {
-            width: 130px;
-            text-align: center;
-        }
-        
-        .title-cell {
-            width: auto;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            padding-left: 15px;
-        }
-        
-        .no-results {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-        
-        .no-results .fa {
-            font-size: 48px;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-        
-        .checkbox-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .checkbox-wrapper input[type="checkbox"] {
-            transform: scale(1.2);
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-        }
-        
-        .loading .fa-spinner {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        
-        .custom-hidden {
-            display: none;
-        }
-        
-        .custom-visible {
-            display: block;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12">
-                <h2>Table Modal Demo</h2>
-                <p class="text-muted">Click the button below to open the redesigned table modal.</p>
-                
-                <!-- Trigger Button -->
-                <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#tableModal">
-                    <i class="fa fa-table"></i> Open Table Modal
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal -->
-    <div class="modal fade" id="tableModal" tabindex="-1" role="dialog" aria-labelledby="tableModalLabel">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <!-- Modal Header -->
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <h4 class="modal-title" id="tableModalLabel">
-                        <i class="fa fa-list-alt"></i> Select Items
-                    </h4>
-                </div>
-                
-                <!-- Search Container -->
-                <div class="search-container">
-                    <div class="search-box">
-                        <i class="fa fa-search"></i>
-                        <input type="text" id="searchInput" class="form-control" placeholder="Search by title or AIT...">
-                    </div>
-                    <div id="searchResults" class="search-results custom-hidden"></div>
-                </div>
-                
-                <!-- Table Container -->
-                <div class="table-container">
-                    <div id="loadingState" class="loading custom-hidden">
-                        <div><i class="fa fa-spinner fa-spin"></i></div>
-                        <div>Loading data...</div>
-                    </div>
-                    
-                    <table class="table table-striped table-hover" id="itemsTable">
-                        <thead>
-                            <tr>
-                                <th class="checkbox-cell">
-                                    <div class="checkbox-wrapper">
-                                        <input type="checkbox" id="selectAll">
-                                    </div>
-                                </th>
-                                <th class="title-cell">Title</th>
-                                <th class="ait-cell">AIT</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            <!-- Replace this section with your Razor code: -->
-                            <!-- @foreach(var item in Model.TheReport) { -->
-                                <tr>
-                                    <td class="checkbox-cell">
-                                        <div class="checkbox-wrapper">
-                                            <input type="checkbox" class="item-checkbox" data-id="1">
-                                        </div>
-                                    </td>
-                                    <td class="title-cell">Project Management System</td>
-                                    <td class="ait-cell">
-                                        <span class="ait-badge">AIT-001</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="checkbox-cell">
-                                        <div class="checkbox-wrapper">
-                                            <input type="checkbox" class="item-checkbox" data-id="2">
-                                        </div>
-                                    </td>
-                                    <td class="title-cell">Customer Support Portal</td>
-                                    <td class="ait-cell">
-                                        <span class="ait-badge">AIT-002</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="checkbox-cell">
-                                        <div class="checkbox-wrapper">
-                                            <input type="checkbox" class="item-checkbox" data-id="3">
-                                        </div>
-                                    </td>
-                                    <td class="title-cell">E-commerce Platform</td>
-                                    <td class="ait-cell">
-                                        <span class="ait-badge">AIT-003</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="checkbox-cell">
-                                        <div class="checkbox-wrapper">
-                                            <input type="checkbox" class="item-checkbox" data-id="4">
-                                        </div>
-                                    </td>
-                                    <td class="title-cell">Inventory Management</td>
-                                    <td class="ait-cell">
-                                        <span class="ait-badge">AIT-004</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="checkbox-cell">
-                                        <div class="checkbox-wrapper">
-                                            <input type="checkbox" class="item-checkbox" data-id="5">
-                                        </div>
-                                    </td>
-                                    <td class="title-cell">Financial Dashboard</td>
-                                    <td class="ait-cell">
-                                        <span class="ait-badge">AIT-005</span>
-                                    </td>
-                                </tr>
-                            <!-- } -->
-                        </tbody>
-                    </table>
-                    
-                    <div id="noResults" class="no-results custom-hidden">
-                        <div><i class="fa fa-search"></i></div>
-                        <div><strong>No items found</strong></div>
-                        <div>Try adjusting your search criteria</div>
-                    </div>
-                </div>
-                
-                <!-- Modal Footer -->
-                <div class="modal-footer">
-                    <div class="pull-left">
-                        <span id="selectionCount" class="selection-count">No items selected</span>
-                    </div>
-                    <div class="pull-right">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">
-                            <i class="fa fa-times"></i> Cancel
-                        </button>
-                        <button type="button" class="btn btn-primary" id="saveSelection" disabled>
-                            <i class="fa fa-check"></i> Save Selection
-                        </button>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- jQuery and Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
+﻿$(document).ready(function() {
             var selectedItems = new Set();
+            var originalSelectedItems = new Set();
             
             // Initialize modal when opened
             $('#tableModal').on('show.bs.modal', function() {
+                initializeSelections();
                 resetModal();
-                updateSelectAllCheckbox();
-                updateSelectionCount();
+                updateSaveButton();
             });
+            
+            // Initialize selections from pre-checked checkboxes
+            function initializeSelections() {
+                selectedItems.clear();
+                originalSelectedItems.clear();
+                
+                // Get pre-checked items from DB using id
+                $('.item-checkbox:checked').each(function() {
+                    var id = parseInt($(this).attr('id'));
+                    selectedItems.add(id);
+                    originalSelectedItems.add(id);
+                    $(this).closest('tr').addClass('selected');
+                });
+            }
+            
+            // Restore original DB selections
+            function restoreOriginalSelections() {
+                selectedItems.clear();
+                $('.item-checkbox').prop('checked', false);
+                $('#tableBody tr').removeClass('selected');
+                
+                // Restore original selections using id
+                originalSelectedItems.forEach(function(id) {
+                    selectedItems.add(id);
+                    var checkbox = $('.item-checkbox[id="' + id + '"]');
+                    checkbox.prop('checked', true);
+                    checkbox.closest('tr').addClass('selected');
+                });
+                
+                updateSaveButton();
+            }
             
             // Search functionality
             $('#searchInput').on('input', function() {
                 var searchTerm = $(this).val().toLowerCase();
                 
                 if (searchTerm === '') {
-                    // Show all rows
                     $('#tableBody tr').removeClass('custom-hidden');
                     $('#searchResults').addClass('custom-hidden');
                 } else {
-                    // Filter and show/hide rows
                     var visibleCount = 0;
                     
                     $('#tableBody tr').each(function() {
@@ -394,7 +68,6 @@
                         .removeClass('custom-hidden');
                 }
                 
-                // Show no results if nothing visible
                 var hasVisibleRows = $('#tableBody tr:not(.custom-hidden)').length > 0;
                 if (hasVisibleRows) {
                     $('#noResults').addClass('custom-hidden');
@@ -403,13 +76,11 @@
                     $('#noResults').removeClass('custom-hidden');
                     $('#itemsTable').addClass('custom-hidden');
                 }
-                
-                updateSelectAllCheckbox();
             });
             
             // Individual checkbox change
             $(document).on('change', '.item-checkbox', function() {
-                var id = parseInt($(this).attr('data-id'));
+                var id = parseInt($(this).attr('id'));
                 var row = $(this).closest('tr');
                 
                 if ($(this).is(':checked')) {
@@ -420,102 +91,45 @@
                     row.removeClass('selected');
                 }
                 
-                updateSelectAllCheckbox();
-                updateSelectionCount();
+                updateSaveButton();
             });
             
-            // Select all checkbox
-            $('#selectAll').on('change', function() {
-                var isChecked = $(this).is(':checked');
-                
-                // Only affect visible rows
-                $('#tableBody tr:not(.custom-hidden)').each(function() {
-                    var row = $(this);
-                    var checkbox = row.find('.item-checkbox');
-                    var id = parseInt(checkbox.attr('data-id'));
-                    
-                    checkbox.prop('checked', isChecked);
-                    
-                    if (isChecked) {
-                        selectedItems.add(id);
-                        row.addClass('selected');
-                    } else {
-                        selectedItems.delete(id);
-                        row.removeClass('selected');
-                    }
-                });
-                
-                updateSelectionCount();
-            });
-            
-            // Update select all checkbox state
-            function updateSelectAllCheckbox() {
-                var visibleCheckboxes = $('#tableBody tr:not(.custom-hidden) .item-checkbox');
-                var checkedCount = visibleCheckboxes.filter(':checked').length;
-                var totalCount = visibleCheckboxes.length;
-                
-                var selectAllCheckbox = $('#selectAll')[0];
-                if (checkedCount === 0) {
-                    selectAllCheckbox.checked = false;
-                    selectAllCheckbox.indeterminate = false;
-                } else if (checkedCount === totalCount) {
-                    selectAllCheckbox.checked = true;
-                    selectAllCheckbox.indeterminate = false;
-                } else {
-                    selectAllCheckbox.checked = false;
-                    selectAllCheckbox.indeterminate = true;
-                }
-            }
-            
-            // Update selection count
-            function updateSelectionCount() {
-                var count = selectedItems.size;
-                var countElement = $('#selectionCount');
+            // Update save button enable/disable state
+            function updateSaveButton() {
                 var saveButton = $('#saveSelection');
                 
-                if (count === 0) {
-                    countElement.text('No items selected').removeClass('has-selection');
+                if (selectedItems.size === 0) {
                     saveButton.prop('disabled', true);
                 } else {
-                    countElement.text(count + ' item' + (count !== 1 ? 's' : '') + ' selected').addClass('has-selection');
                     saveButton.prop('disabled', false);
                 }
             }
             
-            // Save selection
-            $('#saveSelection').on('click', function() {
-                var selectedIds = Array.from(selectedItems);
-                
-                // Send selected IDs to server
-                $.ajax({
-                    url: '@Url.Action("SaveSelection", "YourController")',
-                    type: 'POST',
-                    data: { selectedIds: selectedIds },
-                    success: function(result) {
-                        $('#tableModal').modal('hide');
-                        alert('Selection saved successfully!');
-                    },
-                    error: function() {
-                        alert('Failed to save selection');
-                    }
-                });
-            });
-            
-            // Reset modal state
             function resetModal() {
-                selectedItems.clear();
                 $('#searchInput').val('');
                 $('#searchResults').addClass('custom-hidden');
-                $('.item-checkbox').prop('checked', false);
-                $('#tableBody tr').removeClass('selected custom-hidden');
-                updateSelectionCount();
+                $('#tableBody tr').removeClass('custom-hidden');
             }
             
-            // Reset on modal close
+            // Reset on modal close - restore original selections
             $('#tableModal').on('hidden.bs.modal', function() {
-                resetModal();
+                restoreOriginalSelections();
+            });
+            
+            // Public function to get selected items (for your old implementation)
+            window.getSelectedItems = function() {
+                return Array.from(selectedItems);
+            };
+            
+            // Example of how to use with your old save implementation
+            $('#saveSelection').on('click', function() {
+                var selectedIds = getSelectedItems();
+                console.log('Selected IDs:', selectedIds);
+                
+                // Call your existing save function here
+                // yourExistingSaveFunction(selectedIds);
+                
+                alert('Selected IDs: ' + selectedIds.join(', '));
+                $('#tableModal').modal('hide');
             });
         });
-    </script>
-</body>
-</html>
