@@ -1,135 +1,137 @@
 ﻿$(document).ready(function() {
-            var selectedItems = new Set();
-            var originalSelectedItems = new Set();
-            
-            // Initialize modal when opened
-            $('#tableModal').on('show.bs.modal', function() {
-                initializeSelections();
-                resetModal();
-                updateSaveButton();
-            });
-            
-            // Initialize selections from pre-checked checkboxes
-            function initializeSelections() {
-                selectedItems.clear();
-                originalSelectedItems.clear();
-                
-                // Get pre-checked items from DB using id
-                $('.item-checkbox:checked').each(function() {
-                    var id = parseInt($(this).attr('id'));
-                    selectedItems.add(id);
-                    originalSelectedItems.add(id);
-                    $(this).closest('tr').addClass('selected');
-                });
-            }
-            
-            // Restore original DB selections
-            function restoreOriginalSelections() {
-                selectedItems.clear();
-                $('.item-checkbox').prop('checked', false);
-                $('#tableBody tr').removeClass('selected');
-                
-                // Restore original selections using id
-                originalSelectedItems.forEach(function(id) {
-                    selectedItems.add(id);
-                    var checkbox = $('.item-checkbox[id="' + id + '"]');
-                    checkbox.prop('checked', true);
-                    checkbox.closest('tr').addClass('selected');
-                });
-                
-                updateSaveButton();
-            }
-            
-            // Search functionality
-            $('#searchInput').on('input', function() {
-                var searchTerm = $(this).val().toLowerCase();
-                
-                if (searchTerm === '') {
-                    $('#tableBody tr').removeClass('custom-hidden');
-                    $('#searchResults').addClass('custom-hidden');
-                } else {
-                    var visibleCount = 0;
-                    
-                    $('#tableBody tr').each(function() {
-                        var row = $(this);
-                        var title = row.find('.title-cell').text().toLowerCase();
-                        var ait = row.find('.ait-badge').text().toLowerCase();
-                        
-                        if (title.includes(searchTerm) || ait.includes(searchTerm)) {
-                            row.removeClass('custom-hidden');
-                            visibleCount++;
-                        } else {
-                            row.addClass('custom-hidden');
-                        }
-                    });
-                    
-                    $('#searchResults')
-                        .text('Found ' + visibleCount + ' result' + (visibleCount !== 1 ? 's' : ''))
-                        .removeClass('custom-hidden');
-                }
-                
-                var hasVisibleRows = $('#tableBody tr:not(.custom-hidden)').length > 0;
-                if (hasVisibleRows) {
-                    $('#noResults').addClass('custom-hidden');
-                    $('#itemsTable').removeClass('custom-hidden');
-                } else {
-                    $('#noResults').removeClass('custom-hidden');
-                    $('#itemsTable').addClass('custom-hidden');
-                }
-            });
-            
-            // Individual checkbox change
-            $(document).on('change', '.item-checkbox', function() {
-                var id = parseInt($(this).attr('id'));
-                var row = $(this).closest('tr');
-                
-                if ($(this).is(':checked')) {
-                    selectedItems.add(id);
-                    row.addClass('selected');
-                } else {
-                    selectedItems.delete(id);
-                    row.removeClass('selected');
-                }
-                
-                updateSaveButton();
-            });
-            
-            // Update save button enable/disable state
-            function updateSaveButton() {
-                var saveButton = $('#saveSelection');
-                
-                if (selectedItems.size === 0) {
-                    saveButton.prop('disabled', true);
-                } else {
-                    saveButton.prop('disabled', false);
-                }
-            }
-            
-            function resetModal() {
-                $('#searchInput').val('');
-                $('#searchResults').addClass('custom-hidden');
-                $('#tableBody tr').removeClass('custom-hidden');
-            }
-            
-            // Reset on modal close - restore original selections
-            $('#tableModal').on('hidden.bs.modal', function() {
-                restoreOriginalSelections();
-            });
-            
-            // Public function to get selected items (for your old implementation)
-            window.getSelectedItems = function() {
-                return Array.from(selectedItems);
-            };
-            
-            // Example of how to use with your old save implementation
-            $('#saveSelection').on('click', function() {
-                var selectedIds = getSelectedItems();
-                console.log('Selected IDs:', selectedIds);
-                
-                // Call your existing save function here
-                // yourExistingSaveFunction(selectedIds);
-                
-                alert('Selected IDs: ' + selectedIds.join(', '));
-                $('#tableModal').modal('hide');
-            });
+    var modalSelections = {};
+    var modalOriginalSelections = {};
+    
+    // Works for any modal with class 'table-modal'
+    $('.table-modal').on('show.bs.modal', function() {
+        var modalId = $(this).attr('id');
+        initializeSelections(modalId);
+        resetModal(modalId);
+        updateSaveButton(modalId);
+    });
+    
+    $('.table-modal').on('hidden.bs.modal', function() {
+        var modalId = $(this).attr('id');
+        restoreOriginalSelections(modalId);
+    });
+    
+    function initializeSelections(modalId) {
+        if (!modalSelections[modalId]) modalSelections[modalId] = new Set();
+        if (!modalOriginalSelections[modalId]) modalOriginalSelections[modalId] = new Set();
+        
+        modalSelections[modalId].clear();
+        modalOriginalSelections[modalId].clear();
+        
+        $('#' + modalId + ' .item-checkbox:checked').each(function() {
+            var id = $(this).attr('id');
+            modalSelections[modalId].add(id);
+            modalOriginalSelections[modalId].add(id);
+            $(this).closest('tr').addClass('selected');
         });
+    }
+    
+    function restoreOriginalSelections(modalId) {
+        if (!modalSelections[modalId]) return;
+        
+        modalSelections[modalId].clear();
+        $('#' + modalId + ' .item-checkbox').prop('checked', false);
+        $('#' + modalId + ' tbody tr').removeClass('selected');
+        
+        modalOriginalSelections[modalId].forEach(function(id) {
+            modalSelections[modalId].add(id);
+            var checkbox = $('#' + modalId + ' .item-checkbox[id="' + id + '"]');
+            checkbox.prop('checked', true);
+            checkbox.closest('tr').addClass('selected');
+        });
+        
+        updateSaveButton(modalId);
+    }
+    
+    // Search functionality
+    $(document).on('input', '.search-input', function() {
+        var modal = $(this).closest('.modal');
+        var modalId = modal.attr('id');
+        var searchTerm = $(this).val().toLowerCase();
+        
+        if (searchTerm === '') {
+            modal.find('tbody tr').removeClass('custom-hidden');
+            modal.find('.search-results').addClass('custom-hidden');
+        } else {
+            var visibleCount = 0;
+            modal.find('tbody tr').each(function() {
+                var row = $(this);
+                var title = row.find('.title-cell').text().toLowerCase();
+                var ait = row.find('.ait-badge').text().toLowerCase();
+                
+                if (title.includes(searchTerm) || ait.includes(searchTerm)) {
+                    row.removeClass('custom-hidden');
+                    visibleCount++;
+                } else {
+                    row.addClass('custom-hidden');
+                }
+            });
+            
+            modal.find('.search-results')
+                .text('Found ' + visibleCount + ' result' + (visibleCount !== 1 ? 's' : ''))
+                .removeClass('custom-hidden');
+        }
+        
+        var hasVisibleRows = modal.find('tbody tr:not(.custom-hidden)').length > 0;
+        if (hasVisibleRows) {
+            modal.find('.no-results').addClass('custom-hidden');
+            modal.find('.table').removeClass('custom-hidden');
+        } else {
+            modal.find('.no-results').removeClass('custom-hidden');
+            modal.find('.table').addClass('custom-hidden');
+        }
+    });
+    
+    // Individual checkbox change
+    $(document).on('change', '.item-checkbox', function() {
+        var modal = $(this).closest('.modal');
+        var modalId = modal.attr('id');
+        var id = $(this).attr('id');
+        var row = $(this).closest('tr');
+        
+        if (!modalSelections[modalId]) modalSelections[modalId] = new Set();
+        
+        if ($(this).is(':checked')) {
+            modalSelections[modalId].add(id);
+            row.addClass('selected');
+        } else {
+            modalSelections[modalId].delete(id);
+            row.removeClass('selected');
+        }
+        
+        updateSaveButton(modalId);
+    });
+    
+    function updateSaveButton(modalId) {
+        var saveButton = $('#' + modalId + ' .save-selection');
+        
+        if (!modalSelections[modalId] || modalSelections[modalId].size === 0) {
+            saveButton.prop('disabled', true);
+        } else {
+            saveButton.prop('disabled', false);
+        }
+    }
+    
+    function resetModal(modalId) {
+        $('#' + modalId + ' .search-input').val('');
+        $('#' + modalId + ' .search-results').addClass('custom-hidden');
+        $('#' + modalId + ' tbody tr').removeClass('custom-hidden');
+        $('#' + modalId + ' .no-results').addClass('custom-hidden');
+        $('#' + modalId + ' .table').removeClass('custom-hidden');
+    }
+    
+    // Save button click
+    $(document).on('click', '.save-selection', function() {
+        var modal = $(this).closest('.modal');
+        var modalId = modal.attr('id');
+        var selectedIds = modalSelections[modalId] ? Array.from(modalSelections[modalId]) : [];
+        
+        console.log('Selected IDs for ' + modalId + ':', selectedIds);
+        // yourExistingSaveFunction(selectedIds, modalId);
+        modal.modal('hide');
+    });
+});
