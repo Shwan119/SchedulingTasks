@@ -1,87 +1,40 @@
-﻿-- Create a temporary table to store the original data
-CREATE TEMP TABLE temp_table AS
-SELECT id, title, ait
-FROM your_table;
-
--- Update the original table
-UPDATE your_table
-SET 
-    title = REGEXP_REPLACE(title, ' - \d+$', ''),
-    ait = REGEXP_REPLACE(title, '.* - (\d+)$', '\1')
-WHERE title ~ ' - \d+$';
-
--- Verify the changes by comparing original and updated data
-SELECT 
-    t.id,
-    t.title AS original_title,
-    t.ait AS original_ait,
-    y.title AS updated_title,
-    y.ait AS updated_ait
-FROM temp_table t
-JOIN your_table y ON t.id = y.id
-WHERE t.title ~ ' - \d+$'
-LIMIT 10;
-
--- Rollback changes if needed (run this only if updates are incorrect)
-UPDATE your_table y
-SET 
-    title = t.title,
-    ait = t.ait
-FROM temp_table t
-WHERE t.id = y.id;
-
--- Drop the temporary table when changes are confirmed
-DROP TABLE temp_table;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--- Step 1: Create a temp table capturing id, original title, extracted number, and new title
+﻿-- Step 1: Create a temp table capturing id, original title, extracted number, and new title
 SELECT
   id,
   title AS OriginalTitle,
-  -- Extract the numeric suffix after " - " if present
-  CASE
-    WHEN title LIKE '% - [0-9]%' THEN RIGHT(title, LEN(title) - CHARINDEX(' - ', title) - 2)
-    ELSE NULL
-  END AS ExtractedNumber,
-  -- Remove the numeric suffix and separator from the title
-  CASE
-    WHEN title LIKE '% - [0-9]%' THEN LEFT(title, CHARINDEX(' - ', title) - 1)
-    ELSE title
-  END AS NewTitle
+  -- Find the last ' - ' by searching in the reversed title
+  CHARINDEX(' - ', REVERSE(title)) AS RevPos,
+  -- Extract the suffix after the final ' - ' (digits only)
+  RIGHT(title, CHARINDEX(' - ', REVERSE(title)) - 1) AS ExtractedNumber,
+  -- Remove only the trailing ' - ' plus number, preserving any prior ' - ' occurrences
+  LEFT(title,
+       LEN(title)
+     - CHARINDEX(' - ', REVERSE(title))
+     - LEN(' - ')
+     + 1
+  ) AS NewTitle
 INTO #TempTitleNumbers
-FROM MyTable;
+FROM MyTable
+WHERE
+  -- Only include rows that have at least one ' - '
+  CHARINDEX(' - ', REVERSE(title)) > 0
+  -- And ensure the extracted suffix is purely numeric
+  AND RIGHT(title, CHARINDEX(' - ', REVERSE(title)) - 1) NOT LIKE '%[^0-9]%';
 
--- Step 2: Verify the extracted data before making changes
-SELECT *
+-- Step 2: Preview the transformed rows before applying changes
+SELECT id, OriginalTitle, ExtractedNumber, NewTitle
 FROM #TempTitleNumbers;
 
--- Step 3: Update the original table using the temp data
+-- Step 3: Update the main table using our temp data
 UPDATE t
 SET
   t.ait   = tt.ExtractedNumber,
   t.title = tt.NewTitle
 FROM MyTable t
 INNER JOIN #TempTitleNumbers tt
-  ON t.id = tt.id
-WHERE tt.ExtractedNumber IS NOT NULL;
+  ON t.id = tt.id;
 
--- Step 4: Clean up the temp table
+-- Step 4: Drop the temp table when finished
 DROP TABLE #TempTitleNumbers;
 
 
@@ -96,74 +49,190 @@ DROP TABLE #TempTitleNumbers;
 
 
 
+
+
+
+
+
+
+-- Create a temporary table to store the original data
+SELECT id, title, ait
+INTO #temp_table
+FROM your_table;
+
+-- Update the original table
+UPDATE your_table
+SET 
+    title = CASE 
+                WHEN PATINDEX('% - [0-9]%', title) > 0 
+                THEN LEFT(title, PATINDEX('% - [0-9]%', title) - 1)
+                ELSE title 
+            END,
+    ait = CASE 
+              WHEN PATINDEX('% - [0-9]%', title) > 0 
+              THEN RIGHT(title, LEN(title) - PATINDEX('% - [0-9]%', title) - 2)
+              ELSE ait 
+          END
+WHERE PATINDEX('% - [0-9]%', title) > 0
+AND ISNUMERIC(RIGHT(title, LEN(title) - PATINDEX('% - [0-9]%', title) - 2)) = 1;
+
+-- Verify the changes by comparing original and updated data
+SELECT 
+    t.id,
+    t.title AS original_title,
+    t.ait AS original_ait,
+    y.title AS updated_title,
+    y.ait AS updated_ait
+FROM #temp_table t
+INNER JOIN your_table y ON t.id = y.id
+WHERE t.title LIKE '% - [0-9]%'
+AND ISNUMERIC(RIGHT(t.title, LEN(t.title) - PATINDEX('% - [0-9]%', t.title) - 2)) = 1
+ORDER BY t.id
+OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+
+-- Rollback changes if needed (run this only if updates are incorrect)
+UPDATE y
+SET 
+    title = t.title,
+    ait = t.ait
+FROM your_table y
+INNER JOIN #temp_table t ON t.id = y.id;
+
+-- Drop the temporary table when changes are confirmed
+DROP TABLE #temp_table;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- Create temporary table with same structure
-CREATE TEMP TABLE temp_backup AS 
 SELECT id, title, ait 
+INTO #temp_backup
 FROM your_table_name;
 
 -- Verify the backup was created successfully
-SELECT COUNT(*) as backup_count FROM temp_backup;
+SELECT COUNT(*) as backup_count FROM #temp_backup;
 
 
-
-
--- Preview records that match the pattern "text - numbers"
+-- Preview records that will be affected
 SELECT 
     id,
     title as original_title,
     ait as original_ait,
-    TRIM(SUBSTRING(title FROM 1 FOR POSITION(' - ' IN title) - 1)) as new_title,
-    TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) as extracted_numbers
+    -- Extract everything before the last " - [numbers]"
+    CASE 
+        WHEN title LIKE '% - [0-9]%' AND 
+             PATINDEX('% - [0-9]%', REVERSE(title)) > 0
+        THEN LEFT(title, LEN(title) - PATINDEX('% - [0-9]%', REVERSE(title)) + 1)
+        ELSE title 
+    END as new_title,
+    -- Extract only the numbers after the last " - "
+    CASE 
+        WHEN title LIKE '% - [0-9]%' AND 
+             PATINDEX('% - [0-9]%', REVERSE(title)) > 0
+        THEN LTRIM(RTRIM(SUBSTRING(title, LEN(title) - PATINDEX('% - [0-9]%', REVERSE(title)) + 4, LEN(title))))
+        ELSE NULL
+    END as extracted_numbers
 FROM your_table_name 
-WHERE title LIKE '% - %' 
-  AND TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) ~ '^[0-9]+$';
+WHERE title LIKE '% - [0-9]%'
+  AND PATINDEX('% - [0-9]%', REVERSE(title)) > 0;
 
 
 
-  -- Update the original table
-UPDATE your_table_name 
+
+  -- Preview records that will be affected
+WITH parsed_data AS (
+    SELECT 
+        id,
+        title,
+        ait,
+        -- Find the position of the last " - " in the string
+        LEN(title) - CHARINDEX(' - ', REVERSE(title)) - 1 as last_dash_pos,
+        -- Extract the part after the last " - "
+        LTRIM(RTRIM(SUBSTRING(title, LEN(title) - CHARINDEX(' - ', REVERSE(title)) + 3, LEN(title)))) as after_last_dash
+    FROM your_table_name
+    WHERE CHARINDEX(' - ', title) > 0  -- Has at least one " - "
+)
+SELECT 
+    id,
+    title as original_title,
+    ait as original_ait,
+    -- New title (everything before the last " - numbers")
+    CASE 
+        WHEN after_last_dash LIKE '[0-9]%' AND after_last_dash NOT LIKE '%[^0-9]%'
+        THEN LEFT(title, last_dash_pos)
+        ELSE title
+    END as new_title,
+    -- Numbers to add to ait
+    CASE 
+        WHEN after_last_dash LIKE '[0-9]%' AND after_last_dash NOT LIKE '%[^0-9]%'
+        THEN after_last_dash
+        ELSE NULL
+    END as extracted_numbers
+FROM parsed_data
+WHERE after_last_dash LIKE '[0-9]%' AND after_last_dash NOT LIKE '%[^0-9]%';  -- Only pure numbers
+
+
+
+-- Update the original table
+WITH parsed_data AS (
+    SELECT 
+        id,
+        title,
+        ait,
+        LEN(title) - CHARINDEX(' - ', REVERSE(title)) - 1 as last_dash_pos,
+        LTRIM(RTRIM(SUBSTRING(title, LEN(title) - CHARINDEX(' - ', REVERSE(title)) + 3, LEN(title)))) as after_last_dash
+    FROM your_table_name
+    WHERE CHARINDEX(' - ', title) > 0
+)
+UPDATE your_table_name
 SET 
-    title = TRIM(SUBSTRING(title FROM 1 FOR POSITION(' - ' IN title) - 1)),
-    ait = TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3))
-WHERE title LIKE '% - %' 
-  AND TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) ~ '^[0-9]+$';
+    title = LEFT(parsed_data.title, parsed_data.last_dash_pos),
+    ait = parsed_data.after_last_dash
+FROM parsed_data
+WHERE your_table_name.id = parsed_data.id
+  AND parsed_data.after_last_dash LIKE '[0-9]%' 
+  AND parsed_data.after_last_dash NOT LIKE '%[^0-9]%';  -- Only pure numbers
 
 
 
   -- Check the updated records
-SELECT id, title, ait 
+SELECT 
+    'AFTER UPDATE' as status, 
+    id, title, ait 
 FROM your_table_name 
 WHERE id IN (
-    SELECT id FROM temp_backup 
-    WHERE title LIKE '% - %' 
-      AND TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) ~ '^[0-9]+$'
-);
+    SELECT id FROM #temp_backup 
+    WHERE CHARINDEX(' - ', title) > 0
+)
 
--- Compare with original data
-SELECT 
-    'BEFORE' as status, id, title, ait 
-FROM temp_backup 
-WHERE title LIKE '% - %'
 UNION ALL
+
 SELECT 
-    'AFTER' as status, id, title, ait 
-FROM your_table_name 
-WHERE id IN (SELECT id FROM temp_backup WHERE title LIKE '% - %')
-ORDER BY id, status;
+    'ORIGINAL' as status, 
+    id, title, ait 
+FROM #temp_backup 
+WHERE CHARINDEX(' - ', title) > 0
 
-
-
+ORDER BY id, status DESC;
 
 -- ONLY run this if you need to rollback
 UPDATE your_table_name 
-SET title = temp_backup.title, ait = temp_backup.ait
-FROM temp_backup 
-WHERE your_table_name.id = temp_backup.id;
-
-
-
-
-
+SET title = t.title, ait = t.ait
+FROM #temp_backup t
+WHERE your_table_name.id = t.id;
 
 
 
