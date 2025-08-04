@@ -1,55 +1,40 @@
-﻿-- Step 1: Create temp table capturing ID, original Title, first numeric segment and cleaned Title
+﻿-- Step 1: Build temp table with only the needed columns
 SELECT
   t.ID,
-  t.Title AS OriginalTitle,
-  -- Position of the first ' - ' followed by a digit
-  NumPos = PATINDEX('% - [0-9]%', t.Title),
-  -- Position of the next ' - ' after the number (or end of string)
-  NextDelimiter = CASE
-    WHEN PATINDEX('% - [0-9]%', t.Title) = 0 THEN NULL
-    WHEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) > 0
-      THEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3)
-    ELSE LEN(t.Title) + 1
-  END,
-  -- Extract just the digits
-  ExtractedNumber = CASE
-    WHEN PATINDEX('% - [0-9]%', t.Title) > 0 THEN
-      SUBSTRING(
-        t.Title,
-        PATINDEX('% - [0-9]%', t.Title) + 3,
-        CASE
-          WHEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) > 0
-            THEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3)
-          ELSE LEN(t.Title) + 1
-        END
-        - (PATINDEX('% - [0-9]%', t.Title) + 3)
-      )
-    ELSE NULL
-  END,
-  -- Build new Title: prefix + any suffix after the numeric block, trimming spaces
-  NewTitle = CASE
-    WHEN PATINDEX('% - [0-9]%', t.Title) = 0 THEN t.Title
-    ELSE RTRIM(
-      LEFT(t.Title, PATINDEX('% - [0-9]%', t.Title) - 1)
-      +
-      CASE
-        WHEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) > 0
-        THEN ' - ' + LTRIM(
-          SUBSTRING(
-            t.Title,
-            CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) + 3,
-            LEN(t.Title)
-          )
+  t.Title            AS OriginalTitle,
+  -- Extract just the digits after the last ' - '
+  ExtractedNumber = SUBSTRING(
+    t.Title,
+    PATINDEX('% - [0-9]%', t.Title) + 3,
+    CASE
+      -- find end of the number block (next dash or end-of-string)
+      WHEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) > 0
+        THEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3)
+      ELSE LEN(t.Title) + 1
+    END
+    - (PATINDEX('% - [0-9]%', t.Title) + 3)
+  ),
+  -- Reconstruct Title without the ' - NNNN' block, preserving any text before or after
+  NewTitle = RTRIM(
+    LEFT(t.Title, PATINDEX('% - [0-9]%', t.Title) - 1)
+    +
+    -- append trailing text if exists
+    ISNULL(
+      ' - ' + LTRIM(
+        SUBSTRING(
+          t.Title,
+          CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) + 3,
+          LEN(t.Title)
         )
-        ELSE ''
-      END
+      ),
+      ''
     )
-  END
+  )
 INTO #TempTitleNumbers
 FROM MyTable t
 WHERE
   PATINDEX('% - [0-9]%', t.Title) > 0
-  AND -- ensure the extracted segment is strictly digits
+  AND -- ensure the suffix is purely digits
   SUBSTRING(
     t.Title,
     PATINDEX('% - [0-9]%', t.Title) + 3,
@@ -65,11 +50,11 @@ WHERE
 SELECT ID, OriginalTitle, ExtractedNumber, NewTitle
 FROM #TempTitleNumbers;
 
--- Step 3: Apply to main table
+-- Step 3: Apply updates
 UPDATE m
 SET
-  m.ait     = tmp.ExtractedNumber,
-  m.Title   = tmp.NewTitle
+  m.ait   = tmp.ExtractedNumber,
+  m.Title = tmp.NewTitle
 FROM MyTable m
 JOIN #TempTitleNumbers tmp
   ON m.ID = tmp.ID;
