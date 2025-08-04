@@ -1,137 +1,169 @@
-﻿$(document).ready(function() {
-    var modalSelections = {};
-    var modalOriginalSelections = {};
-    
-    // Works for any modal with class 'table-modal'
-    $('.table-modal').on('show.bs.modal', function() {
-        var modalId = $(this).attr('id');
-        initializeSelections(modalId);
-        resetModal(modalId);
-        updateSaveButton(modalId);
-    });
-    
-    $('.table-modal').on('hidden.bs.modal', function() {
-        var modalId = $(this).attr('id');
-        restoreOriginalSelections(modalId);
-    });
-    
-    function initializeSelections(modalId) {
-        if (!modalSelections[modalId]) modalSelections[modalId] = new Set();
-        if (!modalOriginalSelections[modalId]) modalOriginalSelections[modalId] = new Set();
-        
-        modalSelections[modalId].clear();
-        modalOriginalSelections[modalId].clear();
-        
-        $('#' + modalId + ' .item-checkbox:checked').each(function() {
-            var id = $(this).attr('id');
-            modalSelections[modalId].add(id);
-            modalOriginalSelections[modalId].add(id);
-            $(this).closest('tr').addClass('selected');
-        });
-    }
-    
-    function restoreOriginalSelections(modalId) {
-        if (!modalSelections[modalId]) return;
-        
-        modalSelections[modalId].clear();
-        $('#' + modalId + ' .item-checkbox').prop('checked', false);
-        $('#' + modalId + ' tbody tr').removeClass('selected');
-        
-        modalOriginalSelections[modalId].forEach(function(id) {
-            modalSelections[modalId].add(id);
-            var checkbox = $('#' + modalId + ' .item-checkbox[id="' + id + '"]');
-            checkbox.prop('checked', true);
-            checkbox.closest('tr').addClass('selected');
-        });
-        
-        updateSaveButton(modalId);
-    }
-    
-    // Search functionality
-    $(document).on('input', '.search-input', function() {
-        var modal = $(this).closest('.modal');
-        var modalId = modal.attr('id');
-        var searchTerm = $(this).val().toLowerCase();
-        
-        if (searchTerm === '') {
-            modal.find('tbody tr').removeClass('custom-hidden');
-            modal.find('.search-results').addClass('custom-hidden');
-        } else {
-            var visibleCount = 0;
-            modal.find('tbody tr').each(function() {
-                var row = $(this);
-                var title = row.find('.title-cell').text().toLowerCase();
-                var ait = row.find('.ait-badge').text().toLowerCase();
-                
-                if (title.includes(searchTerm) || ait.includes(searchTerm)) {
-                    row.removeClass('custom-hidden');
-                    visibleCount++;
-                } else {
-                    row.addClass('custom-hidden');
-                }
-            });
-            
-            modal.find('.search-results')
-                .text('Found ' + visibleCount + ' result' + (visibleCount !== 1 ? 's' : ''))
-                .removeClass('custom-hidden');
-        }
-        
-        var hasVisibleRows = modal.find('tbody tr:not(.custom-hidden)').length > 0;
-        if (hasVisibleRows) {
-            modal.find('.no-results').addClass('custom-hidden');
-            modal.find('.table').removeClass('custom-hidden');
-        } else {
-            modal.find('.no-results').removeClass('custom-hidden');
-            modal.find('.table').addClass('custom-hidden');
-        }
-    });
-    
-    // Individual checkbox change
-    $(document).on('change', '.item-checkbox', function() {
-        var modal = $(this).closest('.modal');
-        var modalId = modal.attr('id');
-        var id = $(this).attr('id');
-        var row = $(this).closest('tr');
-        
-        if (!modalSelections[modalId]) modalSelections[modalId] = new Set();
-        
-        if ($(this).is(':checked')) {
-            modalSelections[modalId].add(id);
-            row.addClass('selected');
-        } else {
-            modalSelections[modalId].delete(id);
-            row.removeClass('selected');
-        }
-        
-        updateSaveButton(modalId);
-    });
-    
-    function updateSaveButton(modalId) {
-        var saveButton = $('#' + modalId + ' .save-selection');
-        
-        if (!modalSelections[modalId] || modalSelections[modalId].size === 0) {
-            saveButton.prop('disabled', true);
-        } else {
-            saveButton.prop('disabled', false);
-        }
-    }
-    
-    function resetModal(modalId) {
-        $('#' + modalId + ' .search-input').val('');
-        $('#' + modalId + ' .search-results').addClass('custom-hidden');
-        $('#' + modalId + ' tbody tr').removeClass('custom-hidden');
-        $('#' + modalId + ' .no-results').addClass('custom-hidden');
-        $('#' + modalId + ' .table').removeClass('custom-hidden');
-    }
-    
-    // Save button click
-    $(document).on('click', '.save-selection', function() {
-        var modal = $(this).closest('.modal');
-        var modalId = modal.attr('id');
-        var selectedIds = modalSelections[modalId] ? Array.from(modalSelections[modalId]) : [];
-        
-        console.log('Selected IDs for ' + modalId + ':', selectedIds);
-        // yourExistingSaveFunction(selectedIds, modalId);
-        modal.modal('hide');
-    });
-});
+﻿-- Create a temporary table to store the original data
+CREATE TEMP TABLE temp_table AS
+SELECT id, title, ait
+FROM your_table;
+
+-- Update the original table
+UPDATE your_table
+SET 
+    title = REGEXP_REPLACE(title, ' - \d+$', ''),
+    ait = REGEXP_REPLACE(title, '.* - (\d+)$', '\1')
+WHERE title ~ ' - \d+$';
+
+-- Verify the changes by comparing original and updated data
+SELECT 
+    t.id,
+    t.title AS original_title,
+    t.ait AS original_ait,
+    y.title AS updated_title,
+    y.ait AS updated_ait
+FROM temp_table t
+JOIN your_table y ON t.id = y.id
+WHERE t.title ~ ' - \d+$'
+LIMIT 10;
+
+-- Rollback changes if needed (run this only if updates are incorrect)
+UPDATE your_table y
+SET 
+    title = t.title,
+    ait = t.ait
+FROM temp_table t
+WHERE t.id = y.id;
+
+-- Drop the temporary table when changes are confirmed
+DROP TABLE temp_table;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Step 1: Create a temp table capturing id, original title, extracted number, and new title
+SELECT
+  id,
+  title AS OriginalTitle,
+  -- Extract the numeric suffix after " - " if present
+  CASE
+    WHEN title LIKE '% - [0-9]%' THEN RIGHT(title, LEN(title) - CHARINDEX(' - ', title) - 2)
+    ELSE NULL
+  END AS ExtractedNumber,
+  -- Remove the numeric suffix and separator from the title
+  CASE
+    WHEN title LIKE '% - [0-9]%' THEN LEFT(title, CHARINDEX(' - ', title) - 1)
+    ELSE title
+  END AS NewTitle
+INTO #TempTitleNumbers
+FROM MyTable;
+
+-- Step 2: Verify the extracted data before making changes
+SELECT *
+FROM #TempTitleNumbers;
+
+-- Step 3: Update the original table using the temp data
+UPDATE t
+SET
+  t.ait   = tt.ExtractedNumber,
+  t.title = tt.NewTitle
+FROM MyTable t
+INNER JOIN #TempTitleNumbers tt
+  ON t.id = tt.id
+WHERE tt.ExtractedNumber IS NOT NULL;
+
+-- Step 4: Clean up the temp table
+DROP TABLE #TempTitleNumbers;
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Create temporary table with same structure
+CREATE TEMP TABLE temp_backup AS 
+SELECT id, title, ait 
+FROM your_table_name;
+
+-- Verify the backup was created successfully
+SELECT COUNT(*) as backup_count FROM temp_backup;
+
+
+
+
+-- Preview records that match the pattern "text - numbers"
+SELECT 
+    id,
+    title as original_title,
+    ait as original_ait,
+    TRIM(SUBSTRING(title FROM 1 FOR POSITION(' - ' IN title) - 1)) as new_title,
+    TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) as extracted_numbers
+FROM your_table_name 
+WHERE title LIKE '% - %' 
+  AND TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) ~ '^[0-9]+$';
+
+
+
+  -- Update the original table
+UPDATE your_table_name 
+SET 
+    title = TRIM(SUBSTRING(title FROM 1 FOR POSITION(' - ' IN title) - 1)),
+    ait = TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3))
+WHERE title LIKE '% - %' 
+  AND TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) ~ '^[0-9]+$';
+
+
+
+  -- Check the updated records
+SELECT id, title, ait 
+FROM your_table_name 
+WHERE id IN (
+    SELECT id FROM temp_backup 
+    WHERE title LIKE '% - %' 
+      AND TRIM(SUBSTRING(title FROM POSITION(' - ' IN title) + 3)) ~ '^[0-9]+$'
+);
+
+-- Compare with original data
+SELECT 
+    'BEFORE' as status, id, title, ait 
+FROM temp_backup 
+WHERE title LIKE '% - %'
+UNION ALL
+SELECT 
+    'AFTER' as status, id, title, ait 
+FROM your_table_name 
+WHERE id IN (SELECT id FROM temp_backup WHERE title LIKE '% - %')
+ORDER BY id, status;
+
+
+
+
+-- ONLY run this if you need to rollback
+UPDATE your_table_name 
+SET title = temp_backup.title, ait = temp_backup.ait
+FROM temp_backup 
+WHERE your_table_name.id = temp_backup.id;
+
+
+
+
+
+
+
+
