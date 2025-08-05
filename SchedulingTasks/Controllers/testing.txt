@@ -1,63 +1,42 @@
-﻿-- Step 1: Build temp table with only the needed columns
-SELECT
-  t.ID,
-  t.Title            AS OriginalTitle,
-  -- Extract just the digits after the last ' - '
-  ExtractedNumber = SUBSTRING(
-    t.Title,
-    PATINDEX('% - [0-9]%', t.Title) + 3,
-    CASE
-      -- find end of the number block (next dash or end-of-string)
-      WHEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) > 0
-        THEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3)
-      ELSE LEN(t.Title) + 1
-    END
-    - (PATINDEX('% - [0-9]%', t.Title) + 3)
-  ),
-  -- Reconstruct Title without the ' - NNNN' block, preserving any text before or after
-  NewTitle = RTRIM(
-    LEFT(t.Title, PATINDEX('% - [0-9]%', t.Title) - 1)
-    +
-    -- append trailing text if exists
-    ISNULL(
-      ' - ' + LTRIM(
-        SUBSTRING(
-          t.Title,
-          CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) + 3,
-          LEN(t.Title)
-        )
-      ),
-      ''
-    )
-  )
-INTO #TempTitleNumbers
-FROM MyTable t
-WHERE
-  PATINDEX('% - [0-9]%', t.Title) > 0
-  AND -- ensure the suffix is purely digits
-  SUBSTRING(
-    t.Title,
-    PATINDEX('% - [0-9]%', t.Title) + 3,
-    CASE
-      WHEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3) > 0
-        THEN CHARINDEX(' - ', t.Title, PATINDEX('% - [0-9]%', t.Title) + 3)
-      ELSE LEN(t.Title) + 1
-    END
-    - (PATINDEX('% - [0-9]%', t.Title) + 3)
-  ) NOT LIKE '%[^0-9]%';
+﻿public void Print()
+{
+    if (Root == null) return;
 
--- Step 2: Preview changes
-SELECT ID, OriginalTitle, ExtractedNumber, NewTitle
-FROM #TempTitleNumbers;
+    // Stack for DFS traversal: node with its level
+    var stack = new Stack<(TreeNode node, int level)>();
+    stack.Push((Root, 0));
 
--- Step 3: Apply updates
-UPDATE m
-SET
-  m.ait   = tmp.ExtractedNumber,
-  m.Title = tmp.NewTitle
-FROM MyTable m
-JOIN #TempTitleNumbers tmp
-  ON m.ID = tmp.ID;
+    while (stack.Count > 0)
+    {
+        var (node, level) = stack.Pop();
 
--- Step 4: Clean up
-DROP TABLE #TempTitleNumbers;
+        // Print current node with indentation
+        Console.WriteLine(new string(' ', level * 2) + node.Value);
+
+        // Push children in reverse order so they print in the correct order
+        for (int i = node.Children.Count - 1; i >= 0; i--)
+        {
+            stack.Push((node.Children[i], level + 1));
+        }
+    }
+}
+
+
+public void Print()
+{
+    PrintNode(Root, 0);
+}
+
+private void PrintNode(TreeNode node, int level)
+{
+    if (node == null) return;
+
+    // Print the node with indentation
+    Console.WriteLine(new string(' ', level * 2) + node.Value);
+
+    // Recursively print children
+    foreach (var child in node.Children)
+    {
+        PrintNode(child, level + 1);
+    }
+}
