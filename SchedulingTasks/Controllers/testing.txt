@@ -1,42 +1,29 @@
-﻿public void Print()
-{
-    if (Root == null) return;
+﻿@Html.DropDownListFor(
+    model => model.SelectedOptionId,
+    new SelectList(
+        Model.reportselection.Select(x => new {
+            Value = x.ID,
+            Text = x.ID + " - " + x.Title
+        }),
+        "Value",
+        "Text",
+        Model.SelectedOptionId
+    ),
+    "Select an option",
+    new { @id = "dropdown", @class = "form-control" }
+)
 
-    // Stack for DFS traversal: node with its level
-    var stack = new Stack<(TreeNode node, int level)>();
-    stack.Push((Root, 0));
-
-    while (stack.Count > 0)
-    {
-        var (node, level) = stack.Pop();
-
-        // Print current node with indentation
-        Console.WriteLine(new string(' ', level * 2) + node.Value);
-
-        // Push children in reverse order so they print in the correct order
-        for (int i = node.Children.Count - 1; i >= 0; i--)
-        {
-            stack.Push((node.Children[i], level + 1));
-        }
-    }
-}
-
-
-public void Print()
-{
-    PrintNode(Root, 0);
-}
-
-private void PrintNode(TreeNode node, int level)
-{
-    if (node == null) return;
-
-    // Print the node with indentation
-    Console.WriteLine(new string(' ', level * 2) + node.Value);
-
-    // Recursively print children
-    foreach (var child in node.Children)
-    {
-        PrintNode(child, level + 1);
-    }
-}
+@Html.DropDownListFor(
+    model => model.SelectedOptionId,
+    new SelectList(
+        Model.reportselection.Select(x => new SelectListItem {
+            Value = x.ID.ToString(),
+            Text = x.ID + " - " + x.Title
+        }),
+        "Value",
+        "Text",
+        Model.SelectedOptionId
+    ),
+    "Select an option",
+    new { @id = "dropdown", @class = "form-control" }
+)
