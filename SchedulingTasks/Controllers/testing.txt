@@ -1,29 +1,16 @@
-﻿@Html.DropDownListFor(
-    model => model.SelectedOptionId,
-    new SelectList(
-        Model.reportselection.Select(x => new {
-            Value = x.ID,
-            Text = x.ID + " - " + x.Title
-        }),
-        "Value",
-        "Text",
-        Model.SelectedOptionId
-    ),
-    "Select an option",
-    new { @id = "dropdown", @class = "form-control" }
-)
+﻿-- Store IDs first
+DECLARE @IDsToDelete TABLE (ID INT);
 
-@Html.DropDownListFor(
-    model => model.SelectedOptionId,
-    new SelectList(
-        Model.reportselection.Select(x => new SelectListItem {
-            Value = x.ID.ToString(),
-            Text = x.ID + " - " + x.Title
-        }),
-        "Value",
-        "Text",
-        Model.SelectedOptionId
-    ),
-    "Select an option",
-    new { @id = "dropdown", @class = "form-control" }
-)
+INSERT INTO @IDsToDelete (ID)
+SELECT t1.ID 
+FROM MainTable t1
+INNER JOIN Table2 t2 ON t1.SomeID = t2.ID
+INNER JOIN Table3 t3 ON t2.AnotherID = t3.ID
+WHERE t3.Status = 'Inactive';
+
+-- Verify count
+SELECT COUNT(*) FROM @IDsToDelete;
+
+-- Delete
+DELETE FROM MainTable 
+WHERE ID IN (SELECT ID FROM @IDsToDelete);
