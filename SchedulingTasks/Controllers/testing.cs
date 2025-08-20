@@ -1527,3 +1527,104 @@ POST / api / reportaccess
 Alternative Minimal Approach (if you want less complexity):
 Just keep Data Annotations on DTOs + FluentValidation on Entities. Skip DTO FluentValidation unless you need database lookups or complex cross-field validation at the API layer.
 The key is: Data Annotations are still valuable for API documentation, client generation, and fast validation feedback.
+
+
+
+    // Infrastructure/Configurations/ReportAccessConfiguration.cs
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using YourProject.Domain.Entities; // Adjust namespace
+
+namespace YourProject.Infrastructure.Configurations
+{
+    public class ReportAccessConfiguration : IEntityTypeConfiguration<ReportAccess>
+    {
+        public void Configure(EntityTypeBuilder<ReportAccess> builder)
+        {
+            // Table configuration
+            builder.ToTable("ReportAccess");
+
+            // Primary Key
+            builder.HasKey(ra => ra.ID);
+            builder.Property(ra => ra.ID)
+                .ValueGeneratedOnAdd();
+
+            // Required fields with lengths
+            builder.Property(ra => ra.Justification)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            builder.Property(ra => ra.Status)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasConversion<string>(); // If using enum
+
+            // DateTime fields
+            builder.Property(ra => ra.RequestDt)
+                .HasColumnType("datetimeoffset(3)")
+                .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+            // Nullable DateTime fields
+            builder.Property(ra => ra.ReviewDt)
+                .HasColumnType("datetimeoffset(3)");
+
+            builder.Property(ra => ra.RevocationDt)
+                .HasColumnType("datetimeoffset(3)");
+
+            // String fields with max length
+            builder.Property(ra => ra.ReviewComment)
+                .HasMaxLength(1000);
+
+            builder.Property(ra => ra.RevocationComment)
+                .HasMaxLength(1000);
+
+            // Foreign Keys
+            builder.Property(ra => ra.Report_ID)
+                .IsRequired();
+
+            builder.Property(ra => ra.Requestor_ID)
+                .IsRequired();
+
+            // Foreign Key Constraints (without navigation properties)
+            // Since you don't have navigation properties, configure FK constraints directly
+
+            // Report_ID foreign key constraint
+            builder.HasIndex(ra => ra.Report_ID)
+                .HasDatabaseName("IX_ReportAccess_ReportID");
+
+            // Requestor_ID foreign key constraint  
+            builder.HasIndex(ra => ra.Requestor_ID)
+                .HasDatabaseName("IX_ReportAccess_RequestorID");
+
+            // Reviewer_ID foreign key constraint
+            builder.HasIndex(ra => ra.Reviewer_ID)
+                .HasDatabaseName("IX_ReportAccess_ReviewerID");
+
+            // Revoker_ID foreign key constraint
+            builder.HasIndex(ra => ra.Revoker_ID)
+                .HasDatabaseName("IX_ReportAccess_RevokerID");
+
+            // If you want actual FK constraints in the database (optional)
+            // You can add these if the referenced tables exist in the same database
+            /*
+            // Only add these if ReportInventory table exists in same DB
+            builder.HasCheckConstraint("CK_ReportAccess_ReportID_Positive", "Report_ID > 0");
+            builder.HasCheckConstraint("CK_ReportAccess_RequestorID_Positive", "Requestor_ID > 0");
+            builder.HasCheckConstraint("CK_ReportAccess_ReviewerID_Positive", "Reviewer_ID IS NULL OR Reviewer_ID > 0");
+            builder.HasCheckConstraint("CK_ReportAccess_RevokerID_Positive", "Revoker_ID IS NULL OR Revoker_ID > 0");
+            */
+
+            // Indexes for performance (already have some above, but adding composite ones)
+            builder.HasIndex(ra => new { ra.Report_ID, ra.Requestor_ID })
+                .HasDatabaseName("IX_ReportAccess_Report_Requestor")
+                .IsUnique();
+
+            builder.HasIndex(ra => ra.Status)
+                .HasDatabaseName("IX_ReportAccess_Status");
+
+            // Seed data or default values if needed
+            builder.Property(ra => ra.RequestDt)
+                .HasDefaultValueSql("GETUTCDATE()");
+        }
+    }
+}
