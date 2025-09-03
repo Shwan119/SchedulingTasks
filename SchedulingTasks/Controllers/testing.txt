@@ -1,16 +1,21 @@
-﻿-- Store IDs first
-DECLARE @IDsToDelete TABLE (ID INT);
+﻿msg.Body += "<table style='width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; border: 3px double #000000;'>";
 
-INSERT INTO @IDsToDelete (ID)
-SELECT t1.ID 
-FROM MainTable t1
-INNER JOIN Table2 t2 ON t1.SomeID = t2.ID
-INNER JOIN Table3 t3 ON t2.AnotherID = t3.ID
-WHERE t3.Status = 'Inactive';
+// Table Header
+msg.Body += "<thead>";
+msg.Body += "<tr>";
+msg.Body += "<th style='padding: 12px; text-align: left; font-weight: bold; border: 3px double #000000;'>Report ID</th>";
+msg.Body += "<th style='padding: 12px; text-align: left; font-weight: bold; border: 3px double #000000;'>Report Name</th>";
+msg.Body += "<th style='padding: 12px; text-align: left; font-weight: bold; border: 3px double #000000;'>Security Change</th>";
+msg.Body += "</tr>";
+msg.Body += "</thead>";
 
--- Verify count
-SELECT COUNT(*) FROM @IDsToDelete;
+// Table Body
+msg.Body += "<tbody>";
+msg.Body += "<tr>";
+msg.Body += "<td style='padding: 12px; border: 3px double #000000;'>1</td>";
+msg.Body += "<td style='padding: 12px; border: 3px double #000000;'>reportname</td>";
+msg.Body += "<td style='padding: 12px; border: 3px double #000000;'>NNI</td>";
+msg.Body += "</tr>";
+msg.Body += "</tbody>";
 
--- Delete
-DELETE FROM MainTable 
-WHERE ID IN (SELECT ID FROM @IDsToDelete);
+msg.Body += "</table>";
