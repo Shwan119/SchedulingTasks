@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SchedulingTasks.Interfaces;
 using System;
+using System.Collections.Generic;
 
 namespace SchedulingTasks.Controllers
 {
@@ -14,6 +15,56 @@ namespace SchedulingTasks.Controllers
             ViewBag.Endpoints = endpoints;
             return View(tasks);
         }
+    }
+}
+
+
+using Microsoft.AspNetCore.Mvc;
+
+namespace ReportInventory.Api.Mock.Controllers;
+
+// A simple DTO that must match the one in your main project
+public class ReportInventoryDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+}
+
+[ApiController]
+[Route("api/[controller]")]
+public class ReportsController : ControllerBase
+{
+    // Create a small, hardcoded list of fake reports
+    private static readonly List<ReportInventoryDto> _reports = new()
+    {
+        new ReportInventoryDto { Id = 1, Name = "Q3 Financial Summary", Description = "Detailed breakdown of third-quarter earnings." },
+        new ReportInventoryDto { Id = 2, Name = "Annual Compliance Report", Description = "Compliance audit results for the fiscal year." }
+    };
+
+    // This endpoint handles the GetReportByIdAsync call
+    [HttpGet("{id:int}")]
+    public ActionResult<ReportInventoryDto> GetReportById(int id)
+    {
+        var report = _reports.FirstOrDefault(r => r.Id == id);
+        if (report == null)
+        {
+            // If the report doesn't exist, return a 404 Not Found
+            return NotFound();
+        }
+        return Ok(report);
+    }
+
+    // This endpoint handles the ReportExistsAsync call
+    [HttpHead("{id:int}")]
+    public IActionResult ReportExists(int id)
+    {
+        var reportExists = _reports.Any(r => r.Id == id);
+        if (!reportExists)
+        {
+            return NotFound();
+        }
+        return Ok();
     }
 }
 
