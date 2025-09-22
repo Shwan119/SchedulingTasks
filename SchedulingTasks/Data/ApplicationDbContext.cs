@@ -2275,3 +2275,182 @@ public class ReportingDashboardService
 
 
 By following these steps, your colleagues can easily and safely integrate with your ReportSubscription microservice, benefiting from the resilience and abstraction that the client proxy provides.
+
+
+
+
+
+
+
+
+
+    using ReportSubscription.Application.Abstractions;
+using ReportSubscription.Application.DTOs;
+using ReportSubscription.SharedKernel;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Retry;
+using System.Collections.Generic;
+using System;
+
+namespace ReportSubscription.Infrastructure.Clients.FactoryPattern
+{
+    /// <summary>
+    /// A client-side proxy implementation that uses IHttpClientFactory to create clients.
+    /// This pattern is useful when a single class might need to call multiple different external APIs.
+    /// </summary>
+    public class SubscriptionServiceProxyWithFactory : ISubscriptionService
+    {
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<SubscriptionServiceProxyWithFactory> _logger;
+        private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
+
+        /// <summary>
+        /// The registered name for the HttpClient in the dependency injection container.
+        /// </summary>
+        public const string HttpClientName = "SubscriptionApiClient";
+
+        // Using the same error definitions as the service for consistent error handling.
+        private static readonly Error NotFoundError = new("Subscription.NotFound", "The requested subscription could not be found.");
+        private static readonly Error StateTransitionError = new("Subscription.StateTransitionInvalid", "The requested action cannot be performed in the current state.");
+        private static readonly Error GenericApiError = new("Subscription.ApiError", "An error occurred while communicating with the subscription service.");
+
+        public SubscriptionServiceProxyWithFactory(IHttpClientFactory httpClientFactory, ILogger<SubscriptionServiceProxyWithFactory> logger)
+        {
+            _httpClientFactory = httpClientFactory;
+            _logger = logger;
+            _retryPolicy = HttpClientPolicies.GetDefaultRetryPolicy(_logger, "SubscriptionService");
+        }
+
+        public async Task<Result<SubscriptionDto>> CreateSubscriptionAsync(CreateSubscriptionServiceRequest request)
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var apiRequest = new CreateSubscriptionApiRequest
+            {
+                ReportId = request.ReportId,
+                Justification = request.Justification
+            };
+
+            var response = await _retryPolicy.ExecuteAsync(() =>
+                httpClient.PostAsJsonAsync("/api/subscriptions", apiRequest));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return Result<SubscriptionDto>.Failure(await HandleApiError(response));
+            }
+
+            var createdDto = await response.Content.ReadFromJsonAsync<SubscriptionDto>();
+            return Result<SubscriptionDto>.Success(createdDto!);
+        }
+
+        public async Task<Result> ApproveSubscriptionAsync(ApproveSubscriptionServiceRequest request)
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var apiRequest = new ReviewSubscriptionApiRequest { Comment = request.Comment };
+            var response = await _retryPolicy.ExecuteAsync(() =>
+                httpClient.PostAsJsonAsync($"/api/subscriptions/{request.SubscriptionId}/approve", apiRequest));
+
+            return response.IsSuccessStatusCode ? Result.Success() : Result.Failure(await HandleApiError(response));
+        }
+
+        public async Task<Result> RejectSubscriptionAsync(RejectSubscriptionServiceRequest request)
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var apiRequest = new ReviewSubscriptionApiRequest { Comment = request.Comment };
+            var response = await _retryPolicy.ExecuteAsync(() =>
+                httpClient.PostAsJsonAsync($"/api/subscriptions/{request.SubscriptionId}/reject", apiRequest));
+
+            return response.IsSuccessStatusCode ? Result.Success() : Result.Failure(await HandleApiError(response));
+        }
+
+        public async Task<Result> RevokeSubscriptionAsync(RevokeSubscriptionServiceRequest request)
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var apiRequest = new RevokeSubscriptionApiRequest { Comment = request.Comment };
+            var response = await _retryPolicy.ExecuteAsync(() =>
+                httpClient.PostAsJsonAsync($"/api/subscriptions/{request.SubscriptionId}/revoke", apiRequest));
+
+            return response.IsSuccessStatusCode ? Result.Success() : Result.Failure(await HandleApiError(response));
+        }
+
+        public async Task<Result<SubscriptionDto>> GetSubscriptionByIdAsync(long id)
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var response = await _retryPolicy.ExecuteAsync(() => httpClient.GetAsync($"/api/subscriptions/{id}"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return Result<SubscriptionDto>.Failure(await HandleApiError(response));
+            }
+
+            var dto = await response.Content.ReadFromJsonAsync<SubscriptionDto>();
+            return Result<SubscriptionDto>.Success(dto!);
+        }
+
+        public async Task<Result<IEnumerable<SubscriptionDto>>> GetAllSubscriptionsAsync()
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var response = await _retryPolicy.ExecuteAsync(() => httpClient.GetAsync("/api/subscriptions"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return Result<IEnumerable<SubscriptionDto>>.Failure(await HandleApiError(response));
+            }
+
+            var dtos = await response.Content.ReadFromJsonAsync<IEnumerable<SubscriptionDto>>();
+            return Result<IEnumerable<SubscriptionDto>>.Success(dtos!);
+        }
+
+        public async Task<Result<IEnumerable<SubscriptionDto>>> GetAllPendingSubscriptionsAsync()
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var response = await _retryPolicy.ExecuteAsync(() => httpClient.GetAsync("/api/subscriptions/pending"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return Result<IEnumerable<SubscriptionDto>>.Failure(await HandleApiError(response));
+            }
+
+            var dtos = await response.Content.ReadFromJsonAsync<IEnumerable<SubscriptionDto>>();
+            return Result<IEnumerable<SubscriptionDto>>.Success(dtos!);
+        }
+
+        public async Task<Result<IEnumerable<SubscriptionDto>>> GetSubscriptionsForReportAsync(int reportId)
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var response = await _retryPolicy.ExecuteAsync(() =>
+                httpClient.GetAsync($"/api/reports/{reportId}/subscriptions"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return Result<IEnumerable<SubscriptionDto>>.Failure(await HandleApiError(response));
+            }
+
+            var dtos = await response.Content.ReadFromJsonAsync<IEnumerable<SubscriptionDto>>();
+            return Result<IEnumerable<SubscriptionDto>>.Success(dtos!);
+        }
+
+        private async Task<Error> HandleApiError(HttpResponseMessage response)
+        {
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.NotFound:
+                    return NotFoundError;
+                case HttpStatusCode.Conflict:
+                    return StateTransitionError;
+                case HttpStatusCode.BadRequest:
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Received Bad Request from SubscriptionService: {ErrorContent}", errorContent);
+                    var error = new Error("Subscription.Validation", "A validation error occurred.");
+                    return error;
+                default:
+                    _logger.LogError("An unexpected HTTP error occurred when calling SubscriptionService: {StatusCode}", response.StatusCode);
+                    return GenericApiError;
+            }
+        }
+    }
+}
