@@ -336,3 +336,85 @@ namespace ReportSubscription.Infrastructure.Clients.FactoryPattern
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+row_count = dataList.length;
+
+for (let row = 0; row < row_count; row++)
+{
+    const item = dataList[row];
+    const isChecked = Model.TheMetric.AdditionalDataEnvironments.SingleOrDefault(r => r.ID === item.ID) != null;
+
+    let divClass, spanClass, checkboxState;
+
+    if (isChecked)
+    {
+        divClass = "cssCheckboxSelection";
+        spanClass = "cssCheckboxSelection";
+        checkboxState = "";
+    }
+    else if (item.ActiveFlag)
+    {
+        divClass = "none";
+        spanClass = "none";
+        checkboxState = "";
+    }
+    else
+    {
+        divClass = "none";
+        spanClass = "none";
+        checkboxState = "disabled";
+    }
+
+    html += `
+    < tr >
+      < td class= "checkbox-cell cell" >
+        < div class= "${divClass}" >
+          < input type = "checkbox" class= "row-checkbox item-checkbox ADECheckBox"
+                 id = "cbx_ADE_${item.ID}" value = "${item.ID}" ${ checkboxState} />
+        </ div >
+      </ td >
+      < td class= "title-cell" >${ item.Title}</ td >
+      < td class= "alt-cell" >
+        < span class= "${item.Code != null ? 'alt-badge' : ''}" >${ item.Code}</ span >
+      </ td >
+    </ tr >
+  `;
+}
+
+
+
+
+
+row_count = dataList.length;
+
+for (let row = 0; row < row_count; row++)
+{
+    const item = dataList[row];
+    const chkd = Model.TheMetric.AdditionalDataEnvironments.SingleOrDefault(r => r.ID === item.ID) != null;
+    const checkboxState = item.ActiveFlag || chkd ? "" : "disabled";
+
+    html += `
+        < tr >
+            < td class= "checkbox-cell cell" >
+                < input type = "checkbox" class= "row-checkbox item-checkbox ADECheckBox"
+                       id = "cbx_ADE_${item.ID}" value = "${item.ID}" ${ checkboxState} 
+                       ${ chkd ? 'checked' : ''} />
+            </ td >
+            < td class= "title-cell" >${ item.Title}</ td >
+            < td class= "alt-cell" >
+                < span class= "${item.Code != null ? 'alt-badge' : ''}" >${ item.Code}</ span >
+            </ td >
+        </ tr >
+    `;
+}
