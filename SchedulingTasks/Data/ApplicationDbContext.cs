@@ -348,73 +348,27 @@ namespace ReportSubscription.Infrastructure.Clients.FactoryPattern
 
 
 
-row_count = dataList.length;
+var dataList = Model.TheProcess.AdditionalDataEnvironments
+    .OrderBy(r => r.Title)
+    .Concat(
+        Model.Lookups.LU_DataEnvironments
+            .OrderBy(r => r.Title)
+            .Where(item => !Model.TheProcess.AdditionalDataEnvironments.Any(r => r.ID == item.ID))
+    )
+    .ToList();
 
-for (let row = 0; row < row_count; row++)
-{
-    const item = dataList[row];
-    const isChecked = Model.TheMetric.AdditionalDataEnvironments.SingleOrDefault(r => r.ID === item.ID) != null;
-
-    let divClass, spanClass, checkboxState;
-
-    if (isChecked)
-    {
-        divClass = "cssCheckboxSelection";
-        spanClass = "cssCheckboxSelection";
-        checkboxState = "";
-    }
-    else if (item.ActiveFlag)
-    {
-        divClass = "none";
-        spanClass = "none";
-        checkboxState = "";
-    }
-    else
-    {
-        divClass = "none";
-        spanClass = "none";
-        checkboxState = "disabled";
-    }
-
-    html += `
-    < tr >
-      < td class= "checkbox-cell cell" >
-        < div class= "${divClass}" >
-          < input type = "checkbox" class= "row-checkbox item-checkbox ADECheckBox"
-                 id = "cbx_ADE_${item.ID}" value = "${item.ID}" ${ checkboxState} />
-        </ div >
-      </ td >
-      < td class= "title-cell" >${ item.Title}</ td >
-      < td class= "alt-cell" >
-        < span class= "${item.Code != null ? 'alt-badge' : ''}" >${ item.Code}</ span >
-      </ td >
-    </ tr >
-  `;
-}
+row_count = dataList.Count;
 
 
 
+var existingIds = new HashSet<int>(Model.TheProcess.AdditionalDataEnvironments.Select(r => r.ID));
 
+var dataList = Model.TheProcess.AdditionalDataEnvironments
+    .Concat(
+        Model.Lookups.LU_DataEnvironments
+            .Where(item => !existingIds.Contains(item.ID))
+    )
+    .OrderBy(r => r.Title)
+    .ToList();
 
-row_count = dataList.length;
-
-for (let row = 0; row < row_count; row++)
-{
-    const item = dataList[row];
-    const chkd = Model.TheMetric.AdditionalDataEnvironments.SingleOrDefault(r => r.ID === item.ID) != null;
-    const checkboxState = item.ActiveFlag || chkd ? "" : "disabled";
-
-    html += `
-        < tr >
-            < td class= "checkbox-cell cell" >
-                < input type = "checkbox" class= "row-checkbox item-checkbox ADECheckBox"
-                       id = "cbx_ADE_${item.ID}" value = "${item.ID}" ${ checkboxState} 
-                       ${ chkd ? 'checked' : ''} />
-            </ td >
-            < td class= "title-cell" >${ item.Title}</ td >
-            < td class= "alt-cell" >
-                < span class= "${item.Code != null ? 'alt-badge' : ''}" >${ item.Code}</ span >
-            </ td >
-        </ tr >
-    `;
-}
+row_count = dataList.Count;
