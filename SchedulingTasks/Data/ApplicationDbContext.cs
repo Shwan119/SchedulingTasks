@@ -346,29 +346,34 @@ namespace ReportSubscription.Infrastructure.Clients.FactoryPattern
 
 
 
+@{
+    if (Model.CreatedBy == null && Model.CreatedOn == null)
+    {
+        < p > Recorded on: N / A </ p >
+    }
+    else if (Model.CreatedBy != null && Model.CreatedOn != null)
+    {
+        < p > Recorded on @Model.CreatedOn.Value.ToString("MM/dd/yyyy") by @Model.CreatedBy </ p >
+    }
+    else if (Model.CreatedBy == null && Model.CreatedOn != null)
+    {
+        < p > Recorded on @Model.CreatedOn.Value.ToString("MM/dd/yyyy") </ p >
+    }
+    else if (Model.CreatedBy != null && Model.CreatedOn == null)
+    {
+        < p > Recorded by @Model.CreatedBy </ p >
+    }
+}
 
 
-var dataList = Model.TheProcess.AdditionalDataEnvironments
-    .OrderBy(r => r.Title)
-    .Concat(
-        Model.Lookups.LU_DataEnvironments
-            .OrderBy(r => r.Title)
-            .Where(item => !Model.TheProcess.AdditionalDataEnvironments.Any(r => r.ID == item.ID))
-    )
-    .ToList();
 
-row_count = dataList.Count;
-
-
-
-var existingIds = new HashSet<int>(Model.TheProcess.AdditionalDataEnvironments.Select(r => r.ID));
-
-var dataList = Model.TheProcess.AdditionalDataEnvironments
-    .Concat(
-        Model.Lookups.LU_DataEnvironments
-            .Where(item => !existingIds.Contains(item.ID))
-    )
-    .OrderBy(r => r.Title)
-    .ToList();
-
-row_count = dataList.Count;
+< p >
+    @if(Model.CreatedBy == null && Model.CreatedOn == null)
+    {
+        @:Recorded on: N / A
+    }
+    else
+{
+        @:Recorded @(Model.CreatedOn != null ? "on " + Model.CreatedOn.Value.ToString("MM/dd/yyyy") : "")@(Model.CreatedBy != null ? " by " + Model.CreatedBy : "")
+    }
+</ p >
