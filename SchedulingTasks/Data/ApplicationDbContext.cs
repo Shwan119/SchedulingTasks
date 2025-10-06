@@ -5,6 +5,7 @@ using ReportSubscription.Application.DTOs;
 using ReportSubscription.Infrastructure.Clients;
 using SchedulingTasks.Models;
 using System;
+using System.Threading.Tasks;
 using Endpoint = SchedulingTasks.Models.Endpoint;
 
 namespace SchedulingTasks.Data
@@ -27,316 +28,6 @@ namespace SchedulingTasks.Data
         }
     }
 }
-
-using ReportSubscription.Application.Abstractions;
-using ReportSubscription.Application.DTOs;
-using ReportSubscription.SharedKernel;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Polly;
-using Polly.Retry;
-using System.Collections.Generic;
-using System;
-using Microsoft.Extensions.Configuration;
-
-namespace ReportSubscription.Infrastructure.Clients.FactoryPattern
-{
-    /// <summary>
-    /// A client-side proxy implementation that uses IHttpClientFactory to create clients.
-    /// This pattern is useful when a single class might need to call multiple different external APIs.
-    /// </summary>
-    public class SubscriptionServiceProxyWithFactory : ISubscriptionService
-    {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ILogger<SubscriptionServiceProxyWithFactory> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
-
-        /// <summary>
-        /// The registered name for the HttpClient in the dependency injection container.
-        /// </summary>
-        public const string HttpClientName = "SubscriptionApiClient";
-
-        public SubscriptionServiceProxyWithFactory(IHttpClientFactory httpClientFactory, ILogger<SubscriptionServiceProxyWithFactory> logger, IConfiguration configuration)
-        {
-            _httpClientFactory = httpClientFactory;
-            _logger = logger;
-            _configuration = configuration;
-            _retryPolicy = HttpClientPolicies.GetDefaultRetryPolicy(_logger, "SubscriptionService");
-        }
-
-        public async Task<Result<SubscriptionDto>> CreateSubscriptionAsync(CreateSubscriptionServiceRequest request)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var apiRequest = new CreateSubscriptionApiRequest
-                {
-                    ReportId = request.ReportId,
-                    Justification = request.Justification
-                };
-
-                var response = await _retryPolicy.ExecuteAsync(() =>
-                    httpClient.PostAsJsonAsync("/api/subscriptions", apiRequest));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await DeserializeErrorFromResponse(response);
-                    return Result<SubscriptionDto>.Failure(error);
-                }
-
-                if (response.Content.Headers.ContentLength == 0)
-                {
-                    _logger.LogWarning("CreateSubscriptionAsync returned a success status but with an empty body.");
-                    return Result<SubscriptionDto>.Failure(new Error("Api.EmptyResponse", "The API response was successful but empty."));
-                }
-
-                var createdDto = await response.Content.ReadFromJsonAsync<SubscriptionDto>();
-                if (createdDto is null)
-                {
-                    _logger.LogError("Failed to deserialize the JSON response from CreateSubscriptionAsync.");
-                    return Result<SubscriptionDto>.Failure(new Error("Api.DeserializationFailed", "Failed to parse the API response."));
-                }
-
-                return Result<SubscriptionDto>.Success(createdDto);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in CreateSubscriptionAsync.");
-                return Result<SubscriptionDto>.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        public async Task<Result> ApproveSubscriptionAsync(ApproveSubscriptionServiceRequest request)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var apiRequest = new ReviewSubscriptionApiRequest { Comment = request.Comment };
-                var response = await _retryPolicy.ExecuteAsync(() =>
-                    httpClient.PostAsJsonAsync($"/api/subscriptions/{request.SubscriptionId}/approve", apiRequest));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Result.Failure(await DeserializeErrorFromResponse(response));
-                }
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in ApproveSubscriptionAsync for ID {SubscriptionId}.", request.SubscriptionId);
-                return Result.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        public async Task<Result<SubscriptionDto>> GetSubscriptionByIdAsync(long id)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var response = await _retryPolicy.ExecuteAsync(() => httpClient.GetAsync($"/api/subscriptions/{id}"));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Result<SubscriptionDto>.Failure(await DeserializeErrorFromResponse(response));
-                }
-
-                if (response.Content.Headers.ContentLength == 0)
-                {
-                    _logger.LogWarning("SubscriptionService returned a success status but with an empty body for ID {Id}.", id);
-                    return Result<SubscriptionDto>.Failure(new Error("Api.EmptyResponse", "The API response was successful but empty."));
-                }
-
-                var dto = await response.Content.ReadFromJsonAsync<SubscriptionDto>();
-
-                if (dto is null)
-                {
-                    _logger.LogError("Failed to deserialize the JSON response from SubscriptionService for ID {Id}.", id);
-                    return Result<SubscriptionDto>.Failure(new Error("Api.DeserializationFailed", "Failed to parse the API response."));
-                }
-
-                return Result<SubscriptionDto>.Success(dto);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in GetSubscriptionByIdAsync for ID {Id}.", id);
-                return Result<SubscriptionDto>.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        public async Task<Result<IEnumerable<SubscriptionDto>>> GetAllSubscriptionsAsync()
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var response = await _retryPolicy.ExecuteAsync(() => httpClient.GetAsync("/api/subscriptions"));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Result<IEnumerable<SubscriptionDto>>.Failure(await DeserializeErrorFromResponse(response));
-                }
-
-                if (response.Content.Headers.ContentLength == 0) return Result<IEnumerable<SubscriptionDto>>.Success(new List<SubscriptionDto>());
-
-                var dtos = await response.Content.ReadFromJsonAsync<IEnumerable<SubscriptionDto>>();
-
-                if (dtos is null)
-                {
-                    _logger.LogError("Failed to deserialize the JSON response from GetAllSubscriptionsAsync.");
-                    return Result<IEnumerable<SubscriptionDto>>.Failure(new Error("Api.DeserializationFailed", "Failed to parse the API response."));
-                }
-
-                return Result<IEnumerable<SubscriptionDto>>.Success(dtos);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in GetAllSubscriptionsAsync.");
-                return Result<IEnumerable<SubscriptionDto>>.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        public async Task<Result> RejectSubscriptionAsync(RejectSubscriptionServiceRequest request)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var apiRequest = new ReviewSubscriptionApiRequest { Comment = request.Comment };
-                var response = await _retryPolicy.ExecuteAsync(() =>
-                    httpClient.PostAsJsonAsync($"/api/subscriptions/{request.SubscriptionId}/reject", apiRequest));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Result.Failure(await DeserializeErrorFromResponse(response));
-                }
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in RejectSubscriptionAsync for ID {SubscriptionId}.", request.SubscriptionId);
-                return Result.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        public async Task<Result> RevokeSubscriptionAsync(RevokeSubscriptionServiceRequest request)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var apiRequest = new RevokeSubscriptionApiRequest { Comment = request.Comment };
-                var response = await _retryPolicy.ExecuteAsync(() =>
-                    httpClient.PostAsJsonAsync($"/api/subscriptions/{request.SubscriptionId}/revoke", apiRequest));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Result.Failure(await DeserializeErrorFromResponse(response));
-                }
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in RevokeSubscriptionAsync for ID {SubscriptionId}.", request.SubscriptionId);
-                return Result.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        public async Task<Result<IEnumerable<SubscriptionDto>>> GetAllPendingSubscriptionsAsync()
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var response = await _retryPolicy.ExecuteAsync(() => httpClient.GetAsync("/api/subscriptions/pending"));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Result<IEnumerable<SubscriptionDto>>.Failure(await DeserializeErrorFromResponse(response));
-                }
-
-                if (response.Content.Headers.ContentLength == 0) return Result<IEnumerable<SubscriptionDto>>.Success(new List<SubscriptionDto>());
-
-                var dtos = await response.Content.ReadFromJsonAsync<IEnumerable<SubscriptionDto>>();
-
-                if (dtos is null)
-                {
-                    _logger.LogError("Failed to deserialize the JSON response from GetAllPendingSubscriptionsAsync.");
-                    return Result<IEnumerable<SubscriptionDto>>.Failure(new Error("Api.DeserializationFailed", "Failed to parse the API response."));
-                }
-
-                return Result<IEnumerable<SubscriptionDto>>.Success(dtos);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in GetAllPendingSubscriptionsAsync.");
-                return Result<IEnumerable<SubscriptionDto>>.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        public async Task<Result<IEnumerable<SubscriptionDto>>> GetSubscriptionsForReportAsync(int reportId)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-                var response = await _retryPolicy.ExecuteAsync(() =>
-                    httpClient.GetAsync($"/api/reports/{reportId}/subscriptions"));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Result<IEnumerable<SubscriptionDto>>.Failure(await DeserializeErrorFromResponse(response));
-                }
-
-                if (response.Content.Headers.ContentLength == 0) return Result<IEnumerable<SubscriptionDto>>.Success(new List<SubscriptionDto>());
-
-                var dtos = await response.Content.ReadFromJsonAsync<IEnumerable<SubscriptionDto>>();
-
-                if (dtos is null)
-                {
-                    _logger.LogError("Failed to deserialize the JSON response from GetSubscriptionsForReportAsync for ReportId {ReportId}.", reportId);
-                    return Result<IEnumerable<SubscriptionDto>>.Failure(new Error("Api.DeserializationFailed", "Failed to parse the API response."));
-                }
-
-                return Result<IEnumerable<SubscriptionDto>>.Success(dtos);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected exception occurred in GetSubscriptionsForReportAsync for ReportId {ReportId}.", reportId);
-                return Result<IEnumerable<SubscriptionDto>>.Failure(new Error("Subscription.ApiError", "An unexpected error occurred while communicating with the subscription service."));
-            }
-        }
-
-        /// <summary>
-        /// Deserializes a structured Error object from a failed API response.
-        /// Falls back to a generic error if deserialization fails.
-        /// </summary>
-        private async Task<Error> DeserializeErrorFromResponse(HttpResponseMessage response)
-        {
-            try
-            {
-                if (response.Content.Headers.ContentLength > 0)
-                {
-                    var error = await response.Content.ReadFromJsonAsync<Error>();
-                    if (error is not null)
-                    {
-                        _logger.LogWarning("API call failed with structured error. Code: {ErrorCode}, Description: {ErrorDescription}", error.Code, error.Description);
-                        return error;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Could not deserialize the error response from SubscriptionService.");
-            }
-
-            // Fallback for empty or non-deserializable responses
-            var genericError = new Error($"ApiError.{(int)response.StatusCode}", $"The API returned an unexpected status code: {response.ReasonPhrase}");
-            _logger.LogWarning("API call failed with status code {StatusCode}.", response.StatusCode);
-            return genericError;
-        }
-    }
-}
-
-
 
 
 
@@ -377,3 +68,131 @@ namespace ReportSubscription.Infrastructure.Clients.FactoryPattern
         @:Recorded @(Model.CreatedOn != null ? "on " + Model.CreatedOn.Value.ToString("MM/dd/yyyy") : "")@(Model.CreatedBy != null ? " by " + Model.CreatedBy : "")
     }
 </ p >
+
+
+
+
+
+
+
+
+
+    public static class HttpResponseHandler
+{
+    private static readonly JsonSerializerOptions DefaultJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
+
+    /// <summary>
+    /// Processes an HTTP response and deserializes the content to the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type to deserialize the response content to</typeparam>
+    /// <param name="response">The HTTP response message</param>
+    /// <param name="callerMemberName">The name of the calling method (automatically populated)</param>
+    /// <param name="jsonOptions">Optional custom JSON serializer options</param>
+    /// <returns>The deserialized object of type T</returns>
+    /// <exception cref="ArgumentNullException">Thrown when response is null</exception>
+    /// <exception cref="HttpRequestException">Thrown when the HTTP request fails</exception>
+    /// <exception cref="InvalidOperationException">Thrown when content is null or deserialization fails</exception>
+    public static async Task<T> GetResponseAsync<T>(
+        HttpResponseMessage? response,
+        [CallerMemberName] string? methodName = null,
+        JsonSerializerOptions? jsonOptions = null)
+    {
+        if (response == null)
+        {
+            throw new ArgumentNullException(
+                nameof(response),
+                $"Request to {methodName ?? "unknown method"} failed. Response is null.");
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(
+                $"Request to {methodName ?? "unknown method"} failed with status code {response.StatusCode}. " +
+                $"Reason: {response.ReasonPhrase}. Content: {errorContent}",
+                null,
+                response.StatusCode);
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new InvalidOperationException(
+                $"Request to {methodName ?? "unknown method"} failed. Content is null or empty.");
+        }
+
+        var options = jsonOptions ?? DefaultJsonOptions;
+
+        try
+        {
+            var result = JsonSerializer.Deserialize<T>(content, options);
+
+            if (result == null)
+            {
+                throw new InvalidOperationException(
+                    $"Deserialization of {typeof(T).Name} returned null. Content: {content}");
+            }
+
+            return result;
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to deserialize response content to {typeof(T).Name}. Content: {content}",
+                ex);
+        }
+    }
+
+    /// <summary>
+    /// Processes an HTTP response with additional logging capabilities.
+    /// </summary>
+    public static async Task<T> GetResponseWithLoggingAsync<T>(
+        HttpResponseMessage? response,
+        ILogger logger,
+        [CallerMemberName] string? methodName = null,
+        JsonSerializerOptions? jsonOptions = null)
+    {
+        try
+        {
+            logger.LogDebug("Processing response for {MethodName}", methodName);
+            var result = await GetResponseAsync<T>(response, methodName, jsonOptions);
+            logger.LogInformation("Successfully processed response for {MethodName}", methodName);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error processing response for {MethodName}", methodName);
+            throw;
+        }
+    }
+}
+
+// Usage Example:
+public class ApiClient
+{
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<ApiClient> _logger;
+
+    public ApiClient(HttpClient httpClient, ILogger<ApiClient> logger)
+    {
+        _httpClient = httpClient;
+        _logger = logger;
+    }
+
+    public async Task<UserResponse> GetUserAsync(int userId)
+    {
+        var response = await _httpClient.GetAsync($"/api/users/{userId}");
+        return await HttpResponseHandler.GetResponseWithLoggingAsync<UserResponse>(
+            response,
+            _logger);
+    }
+}
+
+// Sample response model
+public record UserResponse(int Id, string Name, string Email);
