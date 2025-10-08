@@ -196,3 +196,35 @@ public class ApiClient
 
 // Sample response model
 public record UserResponse(int Id, string Name, string Email);
+
+
+
+
+
+
+
+
+
+
+
+
+< p >
+    @if(Model.CreatedBy == null && Model.CreatedOn == null)
+    {
+        < strong > Recorded on:</ strong > < span > N / A </ span >
+    }
+    else
+{
+        < text >
+            < strong > Recorded </ strong >
+            @if(Model.CreatedOn != null)
+            {
+                < strong > on </ strong > @Model.CreatedOn.Value.ToString("MM/dd/yyyy")
+            }
+    @if(Model.CreatedBy != null)
+            {
+                < strong > by </ strong > @Model.CreatedBy
+            }
+        </ text >
+    }
+</ p >
