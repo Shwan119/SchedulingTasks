@@ -228,3 +228,32 @@ public record UserResponse(int Id, string Name, string Email);
         </ text >
     }
 </ p >
+
+
+
+
+
+
+
+
+
+
+
+
+    @{
+    var lobValue = "N/A";
+
+    if (exceusive != null)
+    {
+        if (exceusive.user != null && !string.IsNullOrEmpty(exceusive.user.name))
+        {
+            lobValue = exceusive.user.name;
+        }
+        else if (!string.IsNullOrEmpty(exceusive.assignedName))
+        {
+            lobValue = exceusive.assignedName;
+        }
+    }
+}
+
+@Html.TextBox("lob", lobValue)
