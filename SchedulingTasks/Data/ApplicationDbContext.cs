@@ -330,3 +330,43 @@ function newSearch()
     border - color: #f0ad4e;
     color: #fff;
 }
+
+/* Primary outline button (optional) */
+.btn-outline-primary {
+    background-color: #fff;
+    border: 2px solid #337ab7;
+    color: #337ab7;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: #e6f2ff;
+    border-color: #337ab7;
+    color: #337ab7;
+}
+
+.btn-outline-primary:active {
+    background-color: #337ab7;
+    border-color: #337ab7;
+    color: #fff;
+}
+
+/* Default outline button (optional) */
+.btn-outline-default {
+    background-color: #fff;
+    border: 2px solid #ccc;
+    color: #333;
+}
+
+.btn-outline-default:hover,
+.btn-outline-default:focus {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+    color: #333;
+}
+
+.btn-outline-default:active {
+    background-color: #e6e6e6;
+    border-color: #adadad;
+    color: #333;
+}
