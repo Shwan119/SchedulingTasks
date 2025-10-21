@@ -257,3 +257,104 @@ public record UserResponse(int Id, string Name, string Email);
 }
 
 @Html.TextBox("lob", lobValue)
+
+
+
+    // Add this at the top of your script section
+var formChanged = false;
+
+$(document).ready(function() {
+    // Track any changes to form inputs
+    $('#theform :input').on('change input', function() {
+        formChanged = true;
+    });
+});
+
+// Your existing update function - just add one line
+function update()
+{
+    formChanged = false; // Reset the flag when saving
+
+    var theform = document.getElementById('theform');
+    theform.action = "Controller/save";
+    theform.submit();
+}
+
+// New Search button function
+function newSearch()
+{
+    if (formChanged)
+    {
+        // Show the modal if there are unsaved changes
+        $('#unsavedChangesModal').modal('show');
+    }
+    else
+    {
+        // No changes, proceed directly
+        proceedToNewSearch();
+    }
+}
+
+// Function to proceed to new search
+function proceedToNewSearch()
+{
+    formChanged = false;
+    var theform = document.getElementById('theform');
+    theform.action = "Controller/newSearch";
+    theform.submit();
+}
+
+// Modal button handlers
+function saveAndContinue()
+{
+    $('#unsavedChangesModal').modal('hide');
+    update(); // Save first, then you'll need to redirect after save
+}
+
+function discardChanges()
+{
+    $('#unsavedChangesModal').modal('hide');
+    proceedToNewSearch();
+}
+
+
+< !--Unsaved Changes Modal -->
+<div class= "modal fade" id = "unsavedChangesModal" tabindex = "-1" role = "dialog" >
+    < div class= "modal-dialog" role = "document" >
+        < div class= "modal-content" >
+            < div class= "modal-header" >
+                < button type = "button" class= "close" data - dismiss = "modal" > &times;</ button >
+                < h4 class= "modal-title" >
+                    < span class= "glyphicon glyphicon-warning-sign text-warning" ></ span >
+                    Unsaved Changes
+                </ h4 >
+            </ div >
+            < div class= "modal-body" >
+                < p > You have unsaved changes. What would you like to do?</p>
+            </div>
+            <div class= "modal-footer" >
+                < button type = "button" class= "btn btn-default" data - dismiss = "modal" >
+                    Cancel
+                </ button >
+                < button type = "button" class= "btn btn-danger" onclick = "discardChanges()" >
+                    Discard Changes
+                </ button >
+                < button type = "button" class= "btn btn-primary" onclick = "saveAndContinue()" >
+                    < span class= "glyphicon glyphicon-floppy-disk" ></ span > Save & Continue
+                </ button >
+            </ div >
+        </ div >
+    </ div >
+</ div >
+
+
+< !--New Search button -->
+<button type="button" onclick="newSearch()" class= "btn btn-warning"
+        style = "background-color: #fff; border: 2px solid #f0ad4e; color: #f0ad4e; margin-right: 15px;" >
+    New Search
+</ button >
+
+< !--Save Changes button -->
+<button type="button" onclick="update()" class= "btn btn-primary" style = "font-weight: 500;" >
+    Save Changes
+</ button >
