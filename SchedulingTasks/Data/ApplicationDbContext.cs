@@ -303,3 +303,30 @@ function newSearch()
         theform.submit();
     }
 }
+
+
+
+
+
+
+/* Custom outline button styles for Bootstrap 3 */
+
+/* Warning outline button (for New Search) */
+.btn - outline - warning {
+    background - color: #fff;
+    border: 2px solid #f0ad4e;
+    color: #f0ad4e;
+}
+
+.btn - outline - warning:hover,
+.btn-outline-warning:focus {
+    background-color: #fcf8e3;
+    border - color: #f0ad4e;
+    color: #f0ad4e;
+}
+
+.btn - outline - warning:active {
+    background-color: #f0ad4e;
+    border - color: #f0ad4e;
+    color: #fff;
+}
