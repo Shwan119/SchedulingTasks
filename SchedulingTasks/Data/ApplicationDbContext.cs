@@ -370,3 +370,45 @@ function newSearch()
     border-color: #adadad;
     color: #333;
 }
+
+
+@section Scripts
+{
+    <script>
+        const form = document.getElementById('myForm');
+    let originalFormData = new FormData(form);
+let originalValues = { };
+
+// Store original values
+for (let[key, value] of originalFormData.entries())
+{
+    originalValues[key] = value;
+}
+
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const currentFormData = new FormData(form);
+    let hasChanges = false;
+
+    // Compare current vs original
+    for (let[key, value] of currentFormData.entries())
+    {
+        if (originalValues[key] !== value)
+        {
+            hasChanges = true;
+            break;
+        }
+    }
+
+    if (hasChanges)
+    {
+        form.submit();
+    }
+    else
+    {
+        alert('No changes detected.');
+    }
+});
+    </ script >
+}
