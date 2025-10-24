@@ -6,6 +6,8 @@ using ReportSubscription.Infrastructure.Clients;
 using SchedulingTasks.Models;
 using System;
 using System.Threading.Tasks;
+using YourProject.Domain.Common;
+using static ReportInventory.Api.Mock.Controllers.ReportSubscription.Application.Services.ReportAccessService;
 using Endpoint = SchedulingTasks.Models.Endpoint;
 
 namespace SchedulingTasks.Data
@@ -412,3 +414,60 @@ form.addEventListener('submit', function(e) {
 });
     </ script >
 }
+
+
+
+
+
+
+     $.ajax({
+url: '/ReportInventory/UpdateAdditionalDataEnvironments',
+        type: 'POST',
+        data: $(theForm).serialize(),
+        success: function(response) {
+        // Handle success
+        alert('Updated successfully!');
+        // Close modal if you're using one
+        // $('#yourModalId').modal('hide');
+
+        // Optional: Update UI without page refresh
+        // You can update specific elements here
+    },
+        error: function(xhr, status, error) {
+        alert('Update failed: ' + error);
+    }
+});
+
+
+
+
+// AJAX submission using Fetch
+try
+{
+    const formData = new FormData(theForm);
+
+    const response = await fetch('/ReportInventory/UpdateAdditionalDataEnvironments', {
+    method: 'POST',
+            body: formData
+        });
+
+    if (response.ok)
+    {
+        const result = await response.json();
+        alert('Updated successfully!');
+        // Close modal if needed
+        // document.getElementById('yourModalId').close();
+    }
+    else
+    {
+        alert('Update failed!');
+    }
+}
+catch (error)
+{
+    console.error('Error:', error);
+    alert('An error occurred: ' + error.message);
+}
+
+
+
