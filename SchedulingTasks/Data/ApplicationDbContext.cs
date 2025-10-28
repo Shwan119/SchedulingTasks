@@ -471,3 +471,47 @@ catch (error)
 
 
 
+
+
+
+
+
+
+
+
+
+This is a List of Tuples(string, string), and tuples don't serialize well to JSON by default! That's why you're getting an empty Problems: {} in Postman.
+
+
+// Add this class
+public class ValidationProblem
+{
+    public string Property { get; set; }
+    public string Message { get; set; }
+}
+
+// Change your ResultType to use it
+public abstract record ResultType<T>(
+    string Message,
+    T? Value,
+    [property: JsonIgnore] Exception? Exception = default,
+    List<ValidationProblem> Problems = null)  // Changed from tuple to class
+{
+    public List<ValidationProblem> Problems { get; init; } = Problems ?? [];
+}
+
+
+
+if (result.IsFailure)
+{
+    return BadRequest(new
+    {
+        Message = result.Error,
+        Value = result.Value,
+        Problems = result.Problems?.Select(p => new
+        {
+            Property = p.Property,
+            Message = p.Message
+        }).ToList()
+    });
+}
