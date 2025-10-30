@@ -475,43 +475,72 @@ catch (error)
 
 
 
+@Html.DropDownListFor(m => m.SelectedDivision,
+                      new SelectList(Model.Divisions, "DivisionId", "DivisionName"),
+                      "-- Select Division --",
+                      new { @class = "form-control", id = "modalDivisionDropdown" })
+
+@Html.DropDownListFor(m => m.SelectedOrgId,
+                      new SelectList(Model.Organizations, "OrgId", "OrgName"),
+                      "-- Select Organization --",
+                      new { @class = "form-control", id = "modalOrgDropdown" })
 
 
+var currentdivisionprimary = '@Model.PrimaryDivision';
 
+$('#yourModalId').on('show.bs.modal', function(e) {
+    // Set primary division
+    $('#modalDivisionDropdown').val(currentdivisionprimary);
 
+    // Load organizations for primary division
+    loadOrganizations(currentdivisionprimary);
+});
 
-This is a List of Tuples(string, string), and tuples don't serialize well to JSON by default! That's why you're getting an empty Problems: {} in Postman.
+$('#modalDivisionDropdown').on('change', function() {
+    var divisionId = $(this).val();
+    loadOrganizations(divisionId);
+});
 
-
-// Add this class
-public class ValidationProblem
+function loadOrganizations(divisionId)
 {
-    public string Property { get; set; }
-    public string Message { get; set; }
-}
-
-// Change your ResultType to use it
-public abstract record ResultType<T>(
-    string Message,
-    T? Value,
-    [property: JsonIgnore] Exception? Exception = default,
-    List<ValidationProblem> Problems = null)  // Changed from tuple to class
-{
-    public List<ValidationProblem> Problems { get; init; } = Problems ?? [];
-}
-
-
-
-if (result.IsFailure)
-{
-    return BadRequest(new
+    if (!divisionId)
     {
-        Message = result.Error,
-        Value = result.Value,
-        Problems = result.Problems?.Select(p => new
-        {
-            Property = p.Property,
-            Message = p.Message
-        }).ToList()
+        $('#modalOrgDropdown').empty();
+        $('#modalOrgDropdown').append('<option value="">-- Select Organization --</option>');
+        return;
+    }
+    
+    $.ajax({
+    url: '@Url.Action("GetOrganizationsByDivision", "YourController")',
+        type: 'GET',
+        data: { divisionId: divisionId },
+        success: function(data) {
+            $('#modalOrgDropdown').empty();
+
+            if (data.length === 1)
+            {
+                // If only 1 org, prepopulate it
+                $('#modalOrgDropdown').append('<option value="' + data[0].OrgId + '">' + data[0].OrgName + '</option>');
+                $('#modalOrgDropdown').val(data[0].OrgId);
+            }
+            else if (data.length > 1)
+            {
+                // Multiple orgs, show dropdown with placeholder
+                $('#modalOrgDropdown').append('<option value="">-- Select Organization --</option>');
+                $.each(data, function(index, item) {
+                    $('#modalOrgDropdown').append('<option value="' + item.OrgId + '">' + item.OrgName + '</option>');
+                });
+                $('#modalOrgDropdown').val(''); // Set to null/empty
+            }
+            else
+            {
+                // No orgs found
+                $('#modalOrgDropdown').append('<option value="">-- No Organizations Available --</option>');
+            }
+        },
+        error: function() {
+            alert('Error loading organizations');
+        }
     });
 }
+
