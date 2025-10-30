@@ -544,3 +544,20 @@ function loadOrganizations(divisionId)
     });
 }
 
+
+
+@{
+    var primaryDivId = Model.PrimaryDivision;
+    var orgs = Model.Divisions.FirstOrDefault(d => d.DivisionId == primaryDivId)?.Organizations?.ToList() ?? new List<Organization>();
+    var selectedOrgId = orgs.Count == 1 ? orgs.First().OrgId : (string)null;
+}
+
+@Html.DropDownListFor(m => m.SelectedDivision,
+                      new SelectList(Model.Divisions, "DivisionId", "DivisionName"),
+                      "-- Select Division --",
+                      new { @class = "form-control", id = "modalDivisionDropdown" })
+
+@Html.DropDownListFor(m => m.SelectedOrgId,
+                      new SelectList(orgs, "OrgId", "OrgName", selectedOrgId),
+                      "-- Select Organization --",
+                      new { @class = "form-control", id = "modalOrgDropdown" })
