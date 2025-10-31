@@ -420,80 +420,9 @@ form.addEventListener('submit', function(e) {
 
 
 
-     $.ajax({
-url: '/ReportInventory/UpdateAdditionalDataEnvironments',
-        type: 'POST',
-        data: $(theForm).serialize(),
-        success: function(response) {
-        // Handle success
-        alert('Updated successfully!');
-        // Close modal if you're using one
-        // $('#yourModalId').modal('hide');
-
-        // Optional: Update UI without page refresh
-        // You can update specific elements here
-    },
-        error: function(xhr, status, error) {
-        alert('Update failed: ' + error);
-    }
-});
-
-
-
-
-// AJAX submission using Fetch
-try
-{
-    const formData = new FormData(theForm);
-
-    const response = await fetch('/ReportInventory/UpdateAdditionalDataEnvironments', {
-    method: 'POST',
-            body: formData
-        });
-
-    if (response.ok)
-    {
-        const result = await response.json();
-        alert('Updated successfully!');
-        // Close modal if needed
-        // document.getElementById('yourModalId').close();
-    }
-    else
-    {
-        alert('Update failed!');
-    }
-}
-catch (error)
-{
-    console.error('Error:', error);
-    alert('An error occurred: ' + error.message);
-}
-
-
-
-
-
-
-
-@Html.DropDownListFor(m => m.SelectedDivision,
-                      new SelectList(Model.Divisions, "DivisionId", "DivisionName"),
-                      "-- Select Division --",
-                      new { @class = "form-control", id = "modalDivisionDropdown" })
-
-@Html.DropDownListFor(m => m.SelectedOrgId,
-                      new SelectList(Model.Organizations, "OrgId", "OrgName"),
-                      "-- Select Organization --",
-                      new { @class = "form-control", id = "modalOrgDropdown" })
-
-
-var currentdivisionprimary = '@Model.PrimaryDivision';
-
 $('#yourModalId').on('show.bs.modal', function(e) {
-    // Set primary division
-    $('#modalDivisionDropdown').val(currentdivisionprimary);
-
-    // Load organizations for primary division
-    loadOrganizations(currentdivisionprimary);
+    $('#modalDivisionDropdown').val('@Model.PrimaryDivision');
+    loadOrganizations('@Model.PrimaryDivision');
 });
 
 $('#modalDivisionDropdown').on('change', function() {
@@ -507,8 +436,72 @@ function loadOrganizations(divisionId)
     {
         $('#modalOrgDropdown').empty();
         $('#modalOrgDropdown').append('<option value="">-- Select Organization --</option>');
+        $('#modalOrgDropdown').prop('disabled', false);
         return;
     }
+    
+    // Show loading state
+    $('#modalOrgDropdown').empty();
+    $('#modalOrgDropdown').append('<option value="">Loading...</option>');
+    $('#modalOrgDropdown').prop('disabled', true);
+    
+    $.ajax({
+    url: '@Url.Action("GetOrganizationsByDivision", "YourController")',
+        type: 'GET',
+        data: { divisionId: divisionId },
+        success: function(data) {
+            $('#modalOrgDropdown').empty();
+            $('#modalOrgDropdown').prop('disabled', false);
+
+            if (data.length === 1)
+            {
+                $('#modalOrgDropdown').append('<option value="' + data[0].OrgId + '">' + data[0].OrgName + '</option>');
+                $('#modalOrgDropdown').val(data[0].OrgId);
+            }
+            else if (data.length > 1)
+            {
+                $('#modalOrgDropdown').append('<option value="">-- Select Organization --</option>');
+                $.each(data, function(index, item) {
+                    $('#modalOrgDropdown').append('<option value="' + item.OrgId + '">' + item.OrgName + '</option>');
+                });
+                $('#modalOrgDropdown').val('');
+            }
+            else
+            {
+                $('#modalOrgDropdown').append('<option value="">-- No Organizations Available --</option>');
+            }
+        },
+        error: function() {
+            $('#modalOrgDropdown').empty();
+            $('#modalOrgDropdown').append('<option value="">Error loading organizations</option>');
+            $('#modalOrgDropdown').prop('disabled', false);
+        }
+    });
+}
+
+
+
+
+@Html.DropDownListFor(m => m.SelectedOrgId, 
+                      null,
+                      "-- Select Organization --",
+                      new { @class = "form-control", id = "modalOrgDropdown" })
+<span id="orgLoadingSpinner" style="display:none; margin-left: 10px;">
+    <i class="fa fa-spinner fa-spin"></i> Loading...
+</span>
+
+
+function loadOrganizations(divisionId) {
+    if (!divisionId)
+    {
+        $('#modalOrgDropdown').empty();
+        $('#modalOrgDropdown').append('<option value="">-- Select Organization --</option>');
+        $('#orgLoadingSpinner').hide();
+        return;
+    }
+    
+    // Show spinner
+    $('#orgLoadingSpinner').show();
     
     $.ajax({
     url: '@Url.Action("GetOrganizationsByDivision", "YourController")',
@@ -519,45 +512,29 @@ function loadOrganizations(divisionId)
 
             if (data.length === 1)
             {
-                // If only 1 org, prepopulate it
                 $('#modalOrgDropdown').append('<option value="' + data[0].OrgId + '">' + data[0].OrgName + '</option>');
                 $('#modalOrgDropdown').val(data[0].OrgId);
             }
             else if (data.length > 1)
             {
-                // Multiple orgs, show dropdown with placeholder
                 $('#modalOrgDropdown').append('<option value="">-- Select Organization --</option>');
                 $.each(data, function(index, item) {
                     $('#modalOrgDropdown').append('<option value="' + item.OrgId + '">' + item.OrgName + '</option>');
                 });
-                $('#modalOrgDropdown').val(''); // Set to null/empty
+                $('#modalOrgDropdown').val('');
             }
             else
             {
-                // No orgs found
                 $('#modalOrgDropdown').append('<option value="">-- No Organizations Available --</option>');
             }
+            
+            // Hide spinner
+            $('#orgLoadingSpinner').hide();
         },
         error: function() {
-            alert('Error loading organizations');
+            $('#modalOrgDropdown').empty();
+            $('#modalOrgDropdown').append('<option value="">Error loading organizations</option>');
+            $('#orgLoadingSpinner').hide();
         }
     });
 }
-
-
-
-@{
-    var primaryDivId = Model.PrimaryDivision;
-    var orgs = Model.Divisions.FirstOrDefault(d => d.DivisionId == primaryDivId)?.Organizations?.ToList() ?? new List<Organization>();
-    var selectedOrgId = orgs.Count == 1 ? orgs.First().OrgId : (string)null;
-}
-
-@Html.DropDownListFor(m => m.SelectedDivision,
-                      new SelectList(Model.Divisions, "DivisionId", "DivisionName"),
-                      "-- Select Division --",
-                      new { @class = "form-control", id = "modalDivisionDropdown" })
-
-@Html.DropDownListFor(m => m.SelectedOrgId,
-                      new SelectList(orgs, "OrgId", "OrgName", selectedOrgId),
-                      "-- Select Organization --",
-                      new { @class = "form-control", id = "modalOrgDropdown" })
