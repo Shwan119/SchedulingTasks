@@ -538,3 +538,34 @@ function loadOrganizations(divisionId) {
         }
     });
 }
+
+
+
+
+
+protected IActionResult HandleResult<T>(Result<T> result, string actionName = null, object routeValues = null)
+{
+    if (result.IsWarning)
+    {
+        return BadRequest(result.Warning);
+    }
+
+    if (result.IsFailure)
+    {
+        return BadRequest(result.Error);
+    }
+
+    if (actionName != null)
+    {
+        return CreatedAtAction(actionName, routeValues, result.Value);
+    }
+
+    return Ok(result.Value);
+}
+
+
+// For 200 OK
+return HandleResult(result);
+
+// For 201 Created
+return HandleResult(result, nameof(GetById), new { id = result.Value.Id });
