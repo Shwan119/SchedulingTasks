@@ -32,17 +32,25 @@ namespace SchedulingTasks.Data
 }
 
 
-
-
-
-Business Name & Type:
-TripleStay LLC — a small private side project focused on personal learning and experimenting with new technologies, AI tools, and design workflows. Privately held.
-
-Your Duties:
-Co - founder.I collaborate with my wife (who is a designer) to work on small learning-based tasks, prototypes and experiment with new technologies, design tools, and AI workflows. My involvement is strictly limited to personal skill and hobby-level development. No client work, no external partnerships, and no commercial operations.
-
-Hours Spent:
-Approximately 8–10 hours per week, only outside normal working hours (mostly weekends and evenings). Does not conflict with work schedule.
-
-Compensation:
-No compensation. The project generates no revenue. We opened the LLC primarily to organize learning expenses for tax purposes.
+SELECT DISTINCT
+    U.ID,
+    U.NBK
+FROM ReportAccesses RAC
+INNER JOIN Reports R
+    ON R.ID = RAC.Report_ID
+INNER JOIN Users U
+    ON U.ID = RAC.Requestor_ID
+INNER JOIN UserPermissions PRM
+    ON PRM.User_ID = U.ID
+WHERE
+      RAC.Report_ID = @rid
+  AND RAC.Status = 'Approved'
+  AND R.StatusTitle = 'Active'
+  AND PRM.Division_ID = @divisionId
+  AND PRM.LockedOut = 0
+  AND (
+            (@newSecurityScope = 'NPI'    AND PRM.IsNPI = 1)
+        OR  (@newSecurityScope = 'NonNPI' AND PRM.IsNonNPI = 1)
+        OR  (@newSecurityScope = 'SSN'    AND PRM.IsSSN = 1)
+      )
+ORDER BY U.Email;
