@@ -7,6 +7,7 @@ using SchedulingTasks.Models;
 using System;
 using System.Threading.Tasks;
 using YourProject.Domain.Common;
+using YourProject.Domain.Entities;
 using static ReportInventory.Api.Mock.Controllers.ReportSubscription.Application.Services.ReportAccessService;
 using Endpoint = SchedulingTasks.Models.Endpoint;
 
@@ -32,25 +33,92 @@ namespace SchedulingTasks.Data
 }
 
 
-SELECT DISTINCT
-    U.ID,
-    U.NBK
-FROM ReportAccesses RAC
-INNER JOIN Reports R
-    ON R.ID = RAC.Report_ID
-INNER JOIN Users U
-    ON U.ID = RAC.Requestor_ID
-INNER JOIN UserPermissions PRM
-    ON PRM.User_ID = U.ID
-WHERE
-      RAC.Report_ID = @rid
-  AND RAC.Status = 'Approved'
-  AND R.StatusTitle = 'Active'
-  AND PRM.Division_ID = @divisionId
-  AND PRM.LockedOut = 0
-  AND (
-            (@newSecurityScope = 'NPI'    AND PRM.IsNPI = 1)
-        OR  (@newSecurityScope = 'NonNPI' AND PRM.IsNonNPI = 1)
-        OR  (@newSecurityScope = 'SSN'    AND PRM.IsSSN = 1)
-      )
-ORDER BY U.Email;
+using var scope = app.Services.CreateScope();
+
+var services = scope.ServiceProvider;
+var context = services.GetRequiredService<DataContext>();
+var logger = services.GetRequiredService<ILogger<Program>>();
+
+try
+{
+    await context.Database.MigrateAsync();
+
+    // Only seed in Development
+    if (app.Environment.IsDevelopment())
+    {
+        await DataContextSeed.SeedReportAccessAsync(context, logger);
+    }
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "An error occurred during migration or ReportAccess seeding");
+}
+
+
+public class DataContextSeed
+{
+    public static async Task SeedReportAccessAsync(DataContext context, ILogger logger)
+    {
+        try
+        {
+            if (!context.ReportAccess.Any())
+            {
+                var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var filePath = Path.Combine(basePath!, "Data", "SeedData", "reportAccess.json");
+
+                var jsonData = await File.ReadAllTextAsync(filePath);
+
+                var reportAccessList =
+                    JsonSerializer.Deserialize<List<ReportAccess>>(jsonData);
+
+                if (reportAccessList == null)
+                {
+                    logger.LogError("Failed to deserialize reportAccess.json");
+                    return;
+                }
+
+                await context.ReportAccess.AddRangeAsync(reportAccessList);
+                await context.SaveChangesAsync();
+
+                logger.LogInformation("Successfully seeded ReportAccess data.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error occurred while seeding ReportAccess data.");
+        }
+    }
+}
+
+[
+  {
+    "Id": 1,
+    "ReportId": 501,
+    "RequesterId": 1001,
+    "ReviewerId": null,
+    "RevokerId": null,
+    "CreatedBy": 1001,
+    "RequestedDt": "2025-01-05T14:32:00Z",
+    "Justification": "Access needed for quarterly financial analysis.",
+    "RequestStatus": "Pending",
+    "ReviewDt": null,
+    "ReviewComment": null,
+    "RevocationDt": null,
+    "RevocationComment": null
+  },
+  {
+    "Id": 2,
+    "ReportId": 502,
+    "RequesterId": 1002,
+    "ReviewerId": 2001,
+    "RevokerId": null,
+    "CreatedBy": 1002,
+    "RequestedDt": "2025-01-08T09:15:00Z",
+    "Justification": "Required for compliance audit preparation.",
+    "RequestStatus": "Approved",
+    "ReviewDt": "2025-01-09T10:45:00Z",
+    "ReviewComment": "Reviewed and approved by compliance team.",
+    "RevocationDt": null,
+    "RevocationComment": null
+  }
+]
