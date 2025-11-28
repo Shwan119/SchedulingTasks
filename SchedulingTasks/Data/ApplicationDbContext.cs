@@ -4,6 +4,7 @@ using ReportSubscription.Application.Abstractions;
 using ReportSubscription.Application.DTOs;
 using ReportSubscription.Infrastructure.Clients;
 using SchedulingTasks.Models;
+using Shared.Seeding;
 using System;
 using System.Threading.Tasks;
 using YourProject.Domain.Common;
@@ -122,3 +123,119 @@ public class DataContextSeed
     "RevocationComment": null
   }
 ]
+
+
+
+
+
+
+
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
+
+namespace Shared.Seeding
+{
+    public static class SeedRunner
+    {
+        public static async Task SeedAsync<T>(
+            IServiceProvider services,
+            string folderName = "ProjectInfrastructure/DataSeed")
+            where T : class
+        {
+            var context = services.GetRequiredService<DbContext>();
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            var dbSet = context.Set<T>();
+
+            // If table already has data, skip seeding
+            if (await dbSet.AnyAsync())
+            {
+                logger.LogInformation($"[{typeof(T).Name}] already seeded. Skipping.");
+                return;
+            }
+
+            try
+            {
+                // Find the solution root (*.sln folder)
+                var solutionRoot = SolutionPath.GetSolutionRoot();
+
+                // JSON file = EntityName.json
+                var fileName = $"{typeof(T).Name}.json";
+
+                var filePath = Path.Combine(
+                    solutionRoot,
+                    folderName.Replace("/", Path.DirectorySeparatorChar.ToString()),
+                    fileName
+                );
+
+                var json = await File.ReadAllTextAsync(filePath);
+                var items = JsonSerializer.Deserialize<List<T>>(json);
+
+                // Reset the ID for identity columns
+                foreach (var item in items)
+                {
+                    var idProp = item.GetType().GetProperty("Id");
+                    if (idProp != null && idProp.PropertyType == typeof(long))
+                        idProp.SetValue(item, 0);
+                }
+
+                await dbSet.AddRangeAsync(items);
+                await context.SaveChangesAsync();
+
+                logger.LogInformation($"[{typeof(T).Name}] seeded successfully.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Error while seeding [{typeof(T).Name}].");
+            }
+        }
+    }
+}
+
+
+namespace Shared.Seeding
+{
+    public static class SolutionPath
+    {
+        public static string GetSolutionRoot()
+        {
+            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+
+            while (dir != null)
+            {
+                if (dir.GetFiles("*.sln").Any())
+                    return dir.FullName;
+
+                dir = dir.Parent;
+            }
+
+            throw new Exception("Solution root could not be located.");
+        }
+    }
+}
+
+
+using Shared.Seeding;
+
+public static class ReportAccessSeedExtensions
+{
+    public static async Task UseReportAccessSeedsAsync(
+        this IApplicationBuilder app,
+        IWebHostEnvironment env)
+    {
+        if (!env.IsDevelopment())
+            return;
+
+        using var scope = app.ApplicationServices.CreateScope();
+        var services = scope.ServiceProvider;
+
+        // Explicit list of entities to seed (simple & clean)
+        await SeedRunner.SeedAsync<ReportAccess>(services);
+        await SeedRunner.SeedAsync<ReportAudit>(services);
+        await SeedRunner.SeedAsync<ReportStatus>(services);
+
+        // Add more entities when needed
+        // await SeedRunner.SeedAsync<SomethingElse>(services);
+    }
+}
