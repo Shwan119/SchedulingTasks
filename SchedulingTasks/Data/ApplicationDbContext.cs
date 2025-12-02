@@ -239,3 +239,19 @@ public static class ReportAccessSeedExtensions
         // await SeedRunner.SeedAsync<SomethingElse>(services);
     }
 }
+
+
+
+builder.Services.AddControllers()
+    .ConfigureApplicationPartManager(pm =>
+    {
+        // Remove all controller parts that belong to test assemblies
+        var toRemove = pm.ApplicationParts
+            .Where(p => p.Name.Contains("Test", StringComparison.OrdinalIgnoreCase)
+                     || p.Name.Contains("CoreLibrary.Test", StringComparison.OrdinalIgnoreCase)
+                     || p.Name.Contains("Test.Api", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var part in toRemove)
+            pm.ApplicationParts.Remove(part);
+    });
