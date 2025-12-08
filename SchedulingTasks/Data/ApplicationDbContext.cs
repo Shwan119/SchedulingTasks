@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Validators;
 using YourProject.Domain.Common;
 using YourProject.Domain.Entities;
 using static ReportInventory.Api.Mock.Controllers.ReportSubscription.Application.Services.ReportAccessService;
@@ -764,3 +765,7 @@ namespace Proxies
         Task<Result<bool>> CheckUserEntitlementAsync(int userId, int reportId);
     }
 }
+
+
+//9
+builder.Services.AddValidatorsFromAssemblyContaining<CreateSubscriptionRequestValidator>();
