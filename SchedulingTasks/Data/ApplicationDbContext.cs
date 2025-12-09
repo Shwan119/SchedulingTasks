@@ -69,7 +69,11 @@ namespace Subscription.Services
         {
             _logger.LogInformation("Fetching subscription by Id: {SubscriptionId}", request.SubscriptionId);
             var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<GetSubscriptionResponse>.Failure("Not found");
+
+            if (entity == null)
+                return Result<GetSubscriptionResponse>.Failure(
+                    new Error<GetSubscriptionResponse>($"Subscription with Id {request.SubscriptionId} was not found."));
+
             return Result<GetSubscriptionResponse>.Success(entity.ToDto());
         }
 
@@ -111,7 +115,8 @@ namespace Subscription.Services
             if (existingActive.Any())
             {
                 _logger.LogWarning("User {UserId} already has access to Report {ReportId}", request.RequestorId, request.ReportId);
-                return Result<GetSubscriptionResponse>.Failure($"User {request.RequestorId} already has access to the report {request.ReportId}");
+                return Result<GetSubscriptionResponse>.Failure(
+                    new Error<GetSubscriptionResponse>($"User {request.RequestorId} already has access to the report {request.ReportId}"));
             }
 
             // Check for PENDING Request
@@ -122,7 +127,8 @@ namespace Subscription.Services
 
             if (existingPending.Any())
             {
-                return Result<GetSubscriptionResponse>.Failure($"Similar request is still pending for review (Report: {request.ReportId})");
+                return Result<GetSubscriptionResponse>.Failure(
+                    new Error<GetSubscriptionResponse>($"Similar request is still pending for review (Report: {request.ReportId})"));
             }
 
             // 3. Create
@@ -138,7 +144,11 @@ namespace Subscription.Services
         {
             _logger.LogInformation("Approving subscription: {SubscriptionId}", request.SubscriptionId);
             var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure("Not found");
+
+            if (entity == null)
+                return Result<bool>.Failure(
+                    new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
+
             var res = entity.Approve(999, request.ReviewComment);
             if (!res.IsSuccess) return res;
             await _repository.UpdateSubscriptionAsync(entity);
@@ -149,7 +159,11 @@ namespace Subscription.Services
         {
             _logger.LogInformation("Rejecting subscription: {SubscriptionId}", request.SubscriptionId);
             var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure("Not found");
+
+            if (entity == null)
+                return Result<bool>.Failure(
+                    new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
+
             var res = entity.Reject(999, request.ReviewComment);
             if (!res.IsSuccess) return res;
             await _repository.UpdateSubscriptionAsync(entity);
@@ -160,7 +174,11 @@ namespace Subscription.Services
         {
             _logger.LogInformation("Revoking subscription: {SubscriptionId}", request.SubscriptionId);
             var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure("Not found");
+
+            if (entity == null)
+                return Result<bool>.Failure(
+                    new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
+
             var res = entity.Revoke(request.RevokerId, request.RevocationComment);
             if (!res.IsSuccess) return res;
             await _repository.UpdateSubscriptionAsync(entity);
@@ -230,13 +248,8 @@ namespace Subscription.Services
 
 
 
-using FluentValidation;
-using BofA.ERGH.ReportHub.Subscription.Shared.Request;
-using BofA.ERGH.ReportHub.Subscription.Domain.Interface; // Repository removed, but namespaces might stay if needed for entities
-using BofA.ERGH.ReportHub.Subscription.Domain.Entities;
-using BofA.ERGH.ReportHub.Subscription.Proxies;
 
-namespace BofA.ERGH.ReportHub.Subscription.Validators
+namespace Subscription.Validators
 {
     public class CreateSubscriptionRequestValidator : AbstractValidator<CreateSubscriptionRequest>
     {
