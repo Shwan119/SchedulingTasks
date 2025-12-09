@@ -44,209 +44,303 @@ namespace SchedulingTasks.Data
 
 
 
-namespace Subscription.API
+namespace Subscription.Services
 {
-    public class SubscriptionController : BaseApiController
+    public class SubscriptionService : ISubscription
     {
-        private readonly ISubscription _subscriptionService;
-        private readonly ILogger<SubscriptionController> _logger;
+        private readonly ISubscriptionRepository _repository;
+        private readonly ILogger<SubscriptionService> _logger;
+        private readonly IValidator<CreateSubscriptionRequest> _createValidator;
 
-        public SubscriptionController(ISubscription subscriptionService, ILogger<SubscriptionController> logger)
+        // Note: Proxies are now largely handled in Validator, but Inventory might stay if needed for logging/extra checks
+        // However, based on your request, duplicate checks are moving HERE.
+
+        public SubscriptionService(
+            ISubscriptionRepository repository,
+            ILogger<SubscriptionService> logger,
+            IValidator<CreateSubscriptionRequest> createValidator)
         {
-            _subscriptionService = subscriptionService;
+            _repository = repository;
             _logger = logger;
+            _createValidator = createValidator;
         }
 
-        [HttpGet("GetSubscriptionById")]
-        public async Task<IActionResult> GetSubscriptionById([FromQuery] GetSubscriptionByIdRequest request)
+        public async Task<Result<GetSubscriptionResponse>> GetSubscriptionByIdAsync(GetSubscriptionByIdRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Fetching subscription by Id: {SubscriptionId}", request.SubscriptionId);
-
-                var result = await _subscriptionService.GetSubscriptionByIdAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = $"An error occurred while fetching subscription by Id: {request.SubscriptionId}.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-
-                // Assuming Error<T> constructor matches your screenshot style
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Fetching subscription by Id: {SubscriptionId}", request.SubscriptionId);
+            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
+            if (entity == null) return Result<GetSubscriptionResponse>.Failure("Not found");
+            return Result<GetSubscriptionResponse>.Success(entity.ToDto());
         }
 
-        [HttpGet("GetSubscriptionByUserId")]
-        public async Task<IActionResult> GetSubscriptionByUserId([FromQuery] GetSubscriptionByUserIdRequest request)
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionByUserIdAsync(GetSubscriptionByUserIdRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Fetching subscriptions for User: {UserId}", request.UserId);
-
-                var result = await _subscriptionService.GetSubscriptionByUserIdAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = $"An error occurred while fetching subscriptions for user: {request.UserId}.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Fetching subscriptions for User: {UserId}", request.UserId);
+            var entities = await _repository.FindSubscriptionsAsync(x => x.RequestorId == request.UserId);
+            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
         }
 
-        [HttpGet("GetAllSubscriptions")]
-        public async Task<IActionResult> GetAllSubscriptions([FromQuery] GetSubscriptionRequest request)
+        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Fetching all subscriptions");
+            _logger.LogInformation("Validating request - CreateSubscriptionAsync");
 
-                var result = await _subscriptionService.GetAllSubscriptionsAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
+            // 1. Validator Runs (Basic Format + Report Status + Entitlements)
+            var validationResult = await _createValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
             {
-                string error = "An error occurred while fetching all subscriptions.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
+                var problems = validationResult.Problems().ToArray();
+                _logger.LogWarning("CreateSubscriptionRequest is Invalid with problems: {Problems}", problems);
+
+                return Result<GetSubscriptionResponse>.Failure(
+                    new Error<GetSubscriptionResponse>(
+                        "Validation failed for one or more request parameters",
+                        default,
+                        problems));
             }
+
+            _logger.LogInformation("Checking for duplicate subscriptions for Report {ReportId} and User {RequestorId}", request.ReportId, request.RequestorId);
+
+            // 2. Business Logic: Duplicate Checks (Moved back to Service as requested)
+
+            // Check for Existing ACTIVE (Approved) Access
+            var existingActive = await _repository.FindSubscriptionsAsync(x =>
+                x.ReportId == request.ReportId &&
+                x.RequestorId == request.RequestorId &&
+                x.RequestStatus == RequestStatus.Approved);
+
+            if (existingActive.Any())
+            {
+                _logger.LogWarning("User {UserId} already has access to Report {ReportId}", request.RequestorId, request.ReportId);
+                return Result<GetSubscriptionResponse>.Failure($"User {request.RequestorId} already has access to the report {request.ReportId}");
+            }
+
+            // Check for PENDING Request
+            var existingPending = await _repository.FindSubscriptionsAsync(x =>
+                x.ReportId == request.ReportId &&
+                x.RequestorId == request.RequestorId &&
+                x.RequestStatus == RequestStatus.Pending);
+
+            if (existingPending.Any())
+            {
+                return Result<GetSubscriptionResponse>.Failure($"Similar request is still pending for review (Report: {request.ReportId})");
+            }
+
+            // 3. Create
+            var entity = new ReportAccess(request.ReportId, request.RequestorId, request.Justification);
+            var createdEntity = await _repository.CreateSubscriptionAsync(entity);
+
+            _logger.LogInformation("Successfully created subscription {SubscriptionId}", createdEntity.Id);
+            return Result<GetSubscriptionResponse>.Success(createdEntity.ToDto());
         }
 
-        [HttpGet("GetAllPendingSubscriptions")]
-        public async Task<IActionResult> GetAllPendingSubscriptions([FromQuery] GetSubscriptionRequest request)
+        // ... Remaining Approve, Reject, Revoke, Get methods remain unchanged ...
+        public async Task<Result<bool>> ApproveSubscriptionAsync(ApproveSubscriptionRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Fetching all pending subscriptions");
-
-                var result = await _subscriptionService.GetAllPendingSubscriptionsAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = "An error occurred while fetching all pending subscriptions.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Approving subscription: {SubscriptionId}", request.SubscriptionId);
+            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
+            if (entity == null) return Result<bool>.Failure("Not found");
+            var res = entity.Approve(999, request.ReviewComment);
+            if (!res.IsSuccess) return res;
+            await _repository.UpdateSubscriptionAsync(entity);
+            return Result<bool>.Success(true);
         }
 
-        [HttpGet("GetSubscriptionsForReport")]
-        public async Task<IActionResult> GetSubscriptionsForReport([FromQuery] GetSubscriptionByReportIdRequest request)
+        public async Task<Result<bool>> RejectSubscriptionAsync(RejectSubscriptionRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Fetching subscriptions for Report: {ReportId}", request.ReportId);
-
-                var result = await _subscriptionService.GetSubscriptionsForReportAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = $"An error occurred while fetching subscriptions for report: {request.ReportId}.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Rejecting subscription: {SubscriptionId}", request.SubscriptionId);
+            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
+            if (entity == null) return Result<bool>.Failure("Not found");
+            var res = entity.Reject(999, request.ReviewComment);
+            if (!res.IsSuccess) return res;
+            await _repository.UpdateSubscriptionAsync(entity);
+            return Result<bool>.Success(true);
         }
 
-        [HttpPost("CreateSubscription")]
-        public async Task<IActionResult> CreateSubscription([FromBody] CreateSubscriptionRequest request)
+        public async Task<Result<bool>> RevokeSubscriptionAsync(RevokeSubscriptionRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Creating subscription for Report {ReportId} by User {RequestorId}", request.ReportId, request.RequestorId);
-
-                var result = await _subscriptionService.CreateSubscriptionAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = "An error occurred while creating subscription.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Revoking subscription: {SubscriptionId}", request.SubscriptionId);
+            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
+            if (entity == null) return Result<bool>.Failure("Not found");
+            var res = entity.Revoke(request.RevokerId, request.RevocationComment);
+            if (!res.IsSuccess) return res;
+            await _repository.UpdateSubscriptionAsync(entity);
+            return Result<bool>.Success(true);
         }
 
-        [HttpPost("ApproveSubscription")]
-        public async Task<IActionResult> ApproveSubscription([FromBody] ApproveSubscriptionRequest request)
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllSubscriptionsAsync(GetSubscriptionRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Approving subscription: {SubscriptionId}", request.SubscriptionId);
-
-                var result = await _subscriptionService.ApproveSubscriptionAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = $"An error occurred while approving subscription: {request.SubscriptionId}.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Fetching all subscriptions");
+            var entities = await _repository.GetAllSubscriptionsAsync();
+            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
         }
 
-        [HttpPost("RejectSubscription")]
-        public async Task<IActionResult> RejectSubscription([FromBody] RejectSubscriptionRequest request)
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllPendingSubscriptionsAsync(GetSubscriptionRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Rejecting subscription: {SubscriptionId}", request.SubscriptionId);
-
-                var result = await _subscriptionService.RejectSubscriptionAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = $"An error occurred while rejecting subscription: {request.SubscriptionId}.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Fetching all pending subscriptions");
+            var entities = await _repository.GetAllPendingSubscriptionsAsync();
+            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
         }
 
-        [HttpPost("RevokeSubscription")]
-        public async Task<IActionResult> RevokeSubscription([FromBody] RevokeSubscriptionRequest request)
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionsForReportAsync(GetSubscriptionByReportIdRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Revoking subscription: {SubscriptionId}", request.SubscriptionId);
-
-                var result = await _subscriptionService.RevokeSubscriptionAsync(request);
-
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = $"An error occurred while revoking subscription: {request.SubscriptionId}.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+            _logger.LogInformation("Fetching subscriptions for Report: {ReportId}", request.ReportId);
+            var entities = await _repository.FindSubscriptionsAsync(x => x.ReportId == request.ReportId);
+            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
         }
 
-        [HttpPost("CancelSubscription")]
-        public async Task<IActionResult> CancelSubscription([FromBody] CancelSubscriptionRequest request)
+        public async Task<Result<bool>> CancelSubscriptionAsync(CancelSubscriptionRequest request)
         {
-            try
-            {
-                _logger.LogInformation("Canceling subscription: {SubscriptionId}", request.SubscriptionId);
+            _logger.LogInformation("Canceling subscription: {SubscriptionId}", request.SubscriptionId);
+            return Result<bool>.Success(true);
+        }
+    }
 
-                var result = await _subscriptionService.CancelSubscriptionAsync(request);
+    public static class MappingExtensions
+    {
+        public static GetSubscriptionResponse ToDto(this ReportAccess entity)
+        {
+            return new GetSubscriptionResponse(
+                entity.Id,
+                $"Report-{entity.ReportId}",
+                entity.Justification,
+                entity.RequestStatus.ToString(),
+                entity.ReviewComment,
+                entity.RevocationComment,
+                entity.RequestDt,
+                entity.ReviewDt,
+                entity.RevocationDt,
+                entity.ReportId,
+                entity.RequestorId,
+                entity.ReviewerId,
+                entity.RevokerId
+            );
+        }
+    }
+}
 
-                return HandleResult(result);
-            }
-            catch (Exception ex)
+
+
+
+
+
+
+
+
+
+
+
+
+using FluentValidation;
+using BofA.ERGH.ReportHub.Subscription.Shared.Request;
+using BofA.ERGH.ReportHub.Subscription.Domain.Interface; // Repository removed, but namespaces might stay if needed for entities
+using BofA.ERGH.ReportHub.Subscription.Domain.Entities;
+using BofA.ERGH.ReportHub.Subscription.Proxies;
+
+namespace BofA.ERGH.ReportHub.Subscription.Validators
+{
+    public class CreateSubscriptionRequestValidator : AbstractValidator<CreateSubscriptionRequest>
+    {
+        public CreateSubscriptionRequestValidator(
+            IReportInventoryProxy inventoryProxy,
+            IAppUserProxy appUserProxy) // Swapped Repository for AppUserProxy
+        {
+            // 1. Basic Format Checks
+            RuleFor(x => x.ReportId).GreaterThan(0).WithMessage("Report ID is required.");
+            RuleFor(x => x.RequestorId).GreaterThan(0).WithMessage("Requestor ID is required.");
+            RuleFor(x => x.Justification)
+                .NotEmpty().WithMessage("Justification is required.")
+                .MaximumLength(100).WithMessage("Justification cannot exceed 100 characters.");
+
+            // 2. Business Logic: Report Status & Entitlements (Merged to reuse Report Details)
+            RuleFor(x => x).CustomAsync(async (req, context, ct) =>
             {
-                string error = $"An error occurred while canceling subscription: {request.SubscriptionId}.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
+                // A. Get Report Status & Details (DivisionID, SecurityScope included in return)
+                var reportResult = await inventoryProxy.GetReportStatusAsync(req.ReportId);
+
+                if (!reportResult.IsSuccess || !reportResult.Value.Exists)
+                {
+                    context.AddFailure("ReportId", $"Report {req.ReportId} does not exist.");
+                    return;
+                }
+
+                if (!reportResult.Value.IsActive)
+                {
+                    context.AddFailure("ReportId", $"Requested report {req.ReportId} is not active. Status: {reportResult.Value.StatusTitle}");
+                }
+
+                var report = reportResult.Value;
+
+                // B. Check User Entitlements
+                var authResult = await appUserProxy.AuthorizeUser(req.RequestorId);
+                if (!authResult.IsSuccess)
+                {
+                    context.AddFailure($"Could not authorize user: {authResult.Error}");
+                    return;
+                }
+                var permissions = authResult.Value;
+
+                // Find permission matching the report's Division
+                var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
+
+                if (appUserPermission == null)
+                {
+                    context.AddFailure($"Access Denied: User has no permissions for Division {report.Division_ID}");
+                    return;
+                }
+
+                if (appUserPermission.HasAnyAccess)
+                {
+                    // Refactored Logic: Map SecurityScope directly to required permission
+                    bool hasAccess = report.SecurityScope switch
+                    {
+                        "NonNPI" => appUserPermission.IsNonNPI,
+                        "NPI" => appUserPermission.IsNPI,
+                        "SSN" => appUserPermission.IsSSN,
+                        _ => false // Deny any unknown scopes
+                    };
+
+                    if (!hasAccess)
+                    {
+                        context.AddFailure($"Access Denied: User does not have required permissions for Security Scope '{report.SecurityScope}'.");
+                        return;
+                    }
+
+                    // If we get here, Access is Allowed
+                    return;
+                }
+
+                context.AddFailure("Access Denied: User does not have 'HasAnyAccess' flag.");
+            });
+
+            // 4. Duplicate Checks removed from Validator (moved to Service)
+        }
+    }
+
+    // ... Other validators remain unchanged ...
+    public class ApproveSubscriptionRequestValidator : AbstractValidator<ApproveSubscriptionRequest>
+    {
+        public ApproveSubscriptionRequestValidator()
+        {
+            RuleFor(x => x.SubscriptionId).GreaterThan(0).WithMessage("Subscription ID is required.");
+        }
+    }
+
+    public class RejectSubscriptionRequestValidator : AbstractValidator<RejectSubscriptionRequest>
+    {
+        public RejectSubscriptionRequestValidator()
+        {
+            RuleFor(x => x.SubscriptionId).GreaterThan(0).WithMessage("Subscription ID is required.");
+            RuleFor(x => x.ReviewComment).NotEmpty().WithMessage("Review comment is required for rejection.");
+        }
+    }
+
+    public class RevokeSubscriptionRequestValidator : AbstractValidator<RevokeSubscriptionRequest>
+    {
+        public RevokeSubscriptionRequestValidator()
+        {
+            RuleFor(x => x.SubscriptionId).GreaterThan(0).WithMessage("Subscription ID is required.");
+            RuleFor(x => x.RevokerId).GreaterThan(0).WithMessage("Revoker ID is required.");
+            RuleFor(x => x.RevocationComment).NotEmpty().WithMessage("Revocation comment is required.");
         }
     }
 }
