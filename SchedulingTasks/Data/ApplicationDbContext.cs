@@ -10,6 +10,7 @@ using Response;
 using SchedulingTasks.Models;
 using Shared.Request;
 using Shared.Seeding;
+using Subscription.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -43,7 +44,7 @@ namespace SchedulingTasks.Data
 
 
 
-namespace BSubscription.Services
+namespace Subscription.Services
 {
     public class SubscriptionService : ISubscription
     {
@@ -66,11 +67,12 @@ namespace BSubscription.Services
 
         public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
         {
-            _logger.LogInformation("Validating request - CreateSubscriptionAsync");
+            _logger.LogInformation("Validating request - CreateSubscriptionAsync - Type: {SubscriptionType}", request.SubscriptionType);
 
             // 1. Manual Validator Instantiation (Team Approach)
             // Checks Format + DB Duplicates
-            var validator = new CreateSubscriptionRequestValidator(_repository);
+            // Updated to pass request.RequestorId as required by the new Validator constructor
+            var validator = new CreateSubscriptionRequestValidator(_repository, request.RequestorId);
             var validationResult = await validator.ValidateAsync(request);
 
             if (!validationResult.IsValid)
@@ -103,6 +105,8 @@ namespace BSubscription.Services
             }
 
             // 4. Create
+            // Note: If SubscriptionType needs to be stored, the Entity constructor should be updated to accept it.
+            // Currently using existing Entity constructor.
             var entity = new ReportAccess(request.ReportId, request.RequestorId, request.Justification);
             var createdEntity = await _repository.CreateSubscriptionAsync(entity);
 
@@ -275,32 +279,17 @@ namespace BSubscription.Services
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 namespace Subscription.Validators
 {
     public class CreateSubscriptionRequestValidator : AbstractValidator<CreateSubscriptionRequest>
     {
-        // Now takes Repository instead of Proxies
-        public CreateSubscriptionRequestValidator(ISubscriptionRepository repository)
+        // Now takes Repository and RequestorId (passed from Service context)
+        public CreateSubscriptionRequestValidator(ISubscriptionRepository repository, int requestorId)
         {
             // 1. Basic Format Checks
             RuleFor(x => x.ReportId).GreaterThan(0).WithMessage("Report ID is required.");
-            RuleFor(x => x.RequestorId).GreaterThan(0).WithMessage("Requestor ID is required.");
+            // RequestorId check removed as it is provided via constructor
+
             RuleFor(x => x.Justification)
                 .NotEmpty().WithMessage("Justification is required.")
                 .MaximumLength(100).WithMessage("Justification cannot exceed 100 characters.");
@@ -314,12 +303,12 @@ namespace Subscription.Validators
                 // Then filter in memory to avoid hitting the DB twice.
                 var existingSubscriptions = await repository.FindSubscriptionsAsync(x =>
                     x.ReportId == req.ReportId &&
-                    x.RequestorId == req.RequestorId);
+                    x.RequestorId == requestorId); // Use passed ID
 
                 // Check for Active (Approved)
                 if (existingSubscriptions.Any(x => x.RequestStatus == RequestStatus.Approved))
                 {
-                    context.AddFailure($"User {req.RequestorId} already has access to report {req.ReportId}");
+                    context.AddFailure($"User {requestorId} already has access to report {req.ReportId}");
                     return; // Fail fast
                 }
 
