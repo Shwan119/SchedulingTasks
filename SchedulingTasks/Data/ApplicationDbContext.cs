@@ -43,27 +43,125 @@ namespace SchedulingTasks.Data
 
 
 
-
-namespace Subscription.Services
+namespace BSubscription.Services
 {
     public class SubscriptionService : ISubscription
     {
         private readonly ISubscriptionRepository _repository;
         private readonly ILogger<SubscriptionService> _logger;
-        private readonly IValidator<CreateSubscriptionRequest> _createValidator;
-
-        // Note: Proxies are now largely handled in Validator, but Inventory might stay if needed for logging/extra checks
-        // However, based on your request, duplicate checks are moving HERE.
+        private readonly IReportInventoryProxy _inventoryProxy;
+        private readonly IAppUserProxy _appUserProxy;
 
         public SubscriptionService(
             ISubscriptionRepository repository,
             ILogger<SubscriptionService> logger,
-            IValidator<CreateSubscriptionRequest> createValidator)
+            IReportInventoryProxy inventoryProxy,
+            IAppUserProxy appUserProxy)
         {
             _repository = repository;
             _logger = logger;
-            _createValidator = createValidator;
+            _inventoryProxy = inventoryProxy;
+            _appUserProxy = appUserProxy;
         }
+
+        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
+        {
+            _logger.LogInformation("Validating request - CreateSubscriptionAsync");
+
+            // 1. Manual Validator Instantiation (Team Approach)
+            // Checks Format + DB Duplicates
+            var validator = new CreateSubscriptionRequestValidator(_repository);
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                var problems = validationResult.Problems().ToArray();
+                _logger.LogWarning("CreateSubscriptionRequest is Invalid with problems: {Problems}", problems);
+
+                return Result<GetSubscriptionResponse>.Failure(
+                    new Error<GetSubscriptionResponse>(
+                        "Validation failed for one or more request parameters",
+                        default,
+                        problems));
+            }
+
+            // 2. Business Logic: Report Status Check
+            var reportResult = await VerifyReportIsActiveAsync(request.ReportId);
+            if (!reportResult.IsSuccess)
+            {
+                _logger.LogWarning("Report status check failed: {Error}", reportResult.Error);
+                return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(reportResult.Error));
+            }
+
+            // 3. Business Logic: Access/Entitlements Check
+            // We pass the report object from Step 2 to avoid fetching it again
+            var accessCheck = await VerifyUserAccessAsync(request.RequestorId, reportResult.Value);
+            if (!accessCheck.IsSuccess)
+            {
+                _logger.LogWarning("User access check failed: {Error}", accessCheck.Error);
+                return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(accessCheck.Error));
+            }
+
+            // 4. Create
+            var entity = new ReportAccess(request.ReportId, request.RequestorId, request.Justification);
+            var createdEntity = await _repository.CreateSubscriptionAsync(entity);
+
+            _logger.LogInformation("Successfully created subscription {SubscriptionId}", createdEntity.Id);
+            return Result<GetSubscriptionResponse>.Success(createdEntity.ToDto());
+        }
+
+        /// <summary>
+        /// Helper: Checks if the report exists and is active. Returns the Report details if successful.
+        /// </summary>
+        private async Task<Result<ReportStatusDto>> VerifyReportIsActiveAsync(int reportId)
+        {
+            var reportResult = await _inventoryProxy.GetReportStatusAsync(reportId);
+
+            if (!reportResult.IsSuccess || !reportResult.Value.Exists)
+                return Result<ReportStatusDto>.Failure($"Report {reportId} does not exist.");
+
+            if (!reportResult.Value.IsActive)
+                return Result<ReportStatusDto>.Failure($"Requested report {reportId} is not active. Status: {reportResult.Value.StatusTitle}");
+
+            return Result<ReportStatusDto>.Success(reportResult.Value);
+        }
+
+        /// <summary>
+        /// Reusable Helper: Verifies if a user has permission (Entitlements) to access a specific report
+        /// </summary>
+        private async Task<Result<bool>> VerifyUserAccessAsync(int requestorId, ReportStatusDto report)
+        {
+            var authResult = await _appUserProxy.AuthorizeUser(requestorId);
+            if (!authResult.IsSuccess)
+                return Result<bool>.Failure($"Could not authorize user: {authResult.Error}");
+
+            var permissions = authResult.Value;
+
+            // Find permission matching the report's Division
+            var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
+
+            if (appUserPermission == null)
+                return Result<bool>.Failure($"Access Denied: User has no permissions for Division {report.Division_ID}");
+
+            if (!appUserPermission.HasAnyAccess)
+                return Result<bool>.Failure("Access Denied: User does not have 'HasAnyAccess' flag.");
+
+            // Map SecurityScope directly to required permission (Refactored Switch)
+            bool hasAccess = report.SecurityScope switch
+            {
+                "NonNPI" => appUserPermission.IsNonNPI,
+                "NPI" => appUserPermission.IsNPI,
+                "SSN" => appUserPermission.IsSSN,
+                _ => false // Deny any unknown scopes
+            };
+
+            if (!hasAccess)
+                return Result<bool>.Failure($"Access Denied: User does not have required permissions for Security Scope '{report.SecurityScope}'.");
+
+            return Result<bool>.Success(true);
+        }
+
+        // --- Other Methods (Unchanged logic, just keeping signatures consistent) ---
 
         public async Task<Result<GetSubscriptionResponse>> GetSubscriptionByIdAsync(GetSubscriptionByIdRequest request)
         {
@@ -84,70 +182,13 @@ namespace Subscription.Services
             return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
         }
 
-        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
-        {
-            _logger.LogInformation("Validating request - CreateSubscriptionAsync");
-
-            // 1. Validator Runs (Basic Format + Report Status + Entitlements)
-            var validationResult = await _createValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var problems = validationResult.Problems().ToArray();
-                _logger.LogWarning("CreateSubscriptionRequest is Invalid with problems: {Problems}", problems);
-
-                return Result<GetSubscriptionResponse>.Failure(
-                    new Error<GetSubscriptionResponse>(
-                        "Validation failed for one or more request parameters",
-                        default,
-                        problems));
-            }
-
-            _logger.LogInformation("Checking for duplicate subscriptions for Report {ReportId} and User {RequestorId}", request.ReportId, request.RequestorId);
-
-            // 2. Business Logic: Duplicate Checks (Moved back to Service as requested)
-
-            // Check for Existing ACTIVE (Approved) Access
-            var existingActive = await _repository.FindSubscriptionsAsync(x =>
-                x.ReportId == request.ReportId &&
-                x.RequestorId == request.RequestorId &&
-                x.RequestStatus == RequestStatus.Approved);
-
-            if (existingActive.Any())
-            {
-                _logger.LogWarning("User {UserId} already has access to Report {ReportId}", request.RequestorId, request.ReportId);
-                return Result<GetSubscriptionResponse>.Failure(
-                    new Error<GetSubscriptionResponse>($"User {request.RequestorId} already has access to the report {request.ReportId}"));
-            }
-
-            // Check for PENDING Request
-            var existingPending = await _repository.FindSubscriptionsAsync(x =>
-                x.ReportId == request.ReportId &&
-                x.RequestorId == request.RequestorId &&
-                x.RequestStatus == RequestStatus.Pending);
-
-            if (existingPending.Any())
-            {
-                return Result<GetSubscriptionResponse>.Failure(
-                    new Error<GetSubscriptionResponse>($"Similar request is still pending for review (Report: {request.ReportId})"));
-            }
-
-            // 3. Create
-            var entity = new ReportAccess(request.ReportId, request.RequestorId, request.Justification);
-            var createdEntity = await _repository.CreateSubscriptionAsync(entity);
-
-            _logger.LogInformation("Successfully created subscription {SubscriptionId}", createdEntity.Id);
-            return Result<GetSubscriptionResponse>.Success(createdEntity.ToDto());
-        }
-
-        // ... Remaining Approve, Reject, Revoke, Get methods remain unchanged ...
         public async Task<Result<bool>> ApproveSubscriptionAsync(ApproveSubscriptionRequest request)
         {
             _logger.LogInformation("Approving subscription: {SubscriptionId}", request.SubscriptionId);
             var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
 
             if (entity == null)
-                return Result<bool>.Failure(
-                    new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
+                return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
 
             var res = entity.Approve(999, request.ReviewComment);
             if (!res.IsSuccess) return res;
@@ -161,8 +202,7 @@ namespace Subscription.Services
             var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
 
             if (entity == null)
-                return Result<bool>.Failure(
-                    new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
+                return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
 
             var res = entity.Reject(999, request.ReviewComment);
             if (!res.IsSuccess) return res;
@@ -176,8 +216,7 @@ namespace Subscription.Services
             var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
 
             if (entity == null)
-                return Result<bool>.Failure(
-                    new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
+                return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
 
             var res = entity.Revoke(request.RevokerId, request.RevocationComment);
             if (!res.IsSuccess) return res;
@@ -249,13 +288,15 @@ namespace Subscription.Services
 
 
 
+
+
+
 namespace Subscription.Validators
 {
     public class CreateSubscriptionRequestValidator : AbstractValidator<CreateSubscriptionRequest>
     {
-        public CreateSubscriptionRequestValidator(
-            IReportInventoryProxy inventoryProxy,
-            IAppUserProxy appUserProxy) // Swapped Repository for AppUserProxy
+        // Now takes Repository instead of Proxies
+        public CreateSubscriptionRequestValidator(ISubscriptionRepository repository)
         {
             // 1. Basic Format Checks
             RuleFor(x => x.ReportId).GreaterThan(0).WithMessage("Report ID is required.");
@@ -263,69 +304,31 @@ namespace Subscription.Validators
             RuleFor(x => x.Justification)
                 .NotEmpty().WithMessage("Justification is required.")
                 .MaximumLength(100).WithMessage("Justification cannot exceed 100 characters.");
+            RuleFor(x => x.SubscriptionType)
+                .NotEmpty().WithMessage("Subscription Type is required.");
 
-            // 2. Business Logic: Report Status & Entitlements (Merged to reuse Report Details)
+            // 2. Database Checks: Duplicate & Pending
             RuleFor(x => x).CustomAsync(async (req, context, ct) =>
             {
-                // A. Get Report Status & Details (DivisionID, SecurityScope included in return)
-                var reportResult = await inventoryProxy.GetReportStatusAsync(req.ReportId);
+                // Optimization: Fetch ALL subscriptions for this user+report in ONE call
+                // Then filter in memory to avoid hitting the DB twice.
+                var existingSubscriptions = await repository.FindSubscriptionsAsync(x =>
+                    x.ReportId == req.ReportId &&
+                    x.RequestorId == req.RequestorId);
 
-                if (!reportResult.IsSuccess || !reportResult.Value.Exists)
+                // Check for Active (Approved)
+                if (existingSubscriptions.Any(x => x.RequestStatus == RequestStatus.Approved))
                 {
-                    context.AddFailure("ReportId", $"Report {req.ReportId} does not exist.");
-                    return;
+                    context.AddFailure($"User {req.RequestorId} already has access to report {req.ReportId}");
+                    return; // Fail fast
                 }
 
-                if (!reportResult.Value.IsActive)
+                // Check for Pending
+                if (existingSubscriptions.Any(x => x.RequestStatus == RequestStatus.Pending))
                 {
-                    context.AddFailure("ReportId", $"Requested report {req.ReportId} is not active. Status: {reportResult.Value.StatusTitle}");
+                    context.AddFailure($"Similar request is still pending for review (Report: {req.ReportId})");
                 }
-
-                var report = reportResult.Value;
-
-                // B. Check User Entitlements
-                var authResult = await appUserProxy.AuthorizeUser(req.RequestorId);
-                if (!authResult.IsSuccess)
-                {
-                    context.AddFailure($"Could not authorize user: {authResult.Error}");
-                    return;
-                }
-                var permissions = authResult.Value;
-
-                // Find permission matching the report's Division
-                var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
-
-                if (appUserPermission == null)
-                {
-                    context.AddFailure($"Access Denied: User has no permissions for Division {report.Division_ID}");
-                    return;
-                }
-
-                if (appUserPermission.HasAnyAccess)
-                {
-                    // Refactored Logic: Map SecurityScope directly to required permission
-                    bool hasAccess = report.SecurityScope switch
-                    {
-                        "NonNPI" => appUserPermission.IsNonNPI,
-                        "NPI" => appUserPermission.IsNPI,
-                        "SSN" => appUserPermission.IsSSN,
-                        _ => false // Deny any unknown scopes
-                    };
-
-                    if (!hasAccess)
-                    {
-                        context.AddFailure($"Access Denied: User does not have required permissions for Security Scope '{report.SecurityScope}'.");
-                        return;
-                    }
-
-                    // If we get here, Access is Allowed
-                    return;
-                }
-
-                context.AddFailure("Access Denied: User does not have 'HasAnyAccess' flag.");
             });
-
-            // 4. Duplicate Checks removed from Validator (moved to Service)
         }
     }
 
