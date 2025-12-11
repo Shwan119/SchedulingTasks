@@ -43,309 +43,193 @@ namespace SchedulingTasks.Data
 }
 
 
+Subject: SearchInventoryAsync / migration thoughts
 
-namespace Subscription.Services
+Hey everyone,
+
+I was looking through the SearchInventoryAsync function today after chatting with Ankit. It looks like we brought over a lot of the logic from the old app pretty much as-is to get it working.
+
+Since we're already in there moving the code, I was thinking this might be a good chance for us to tidy it up a bit, rather than just copying it directly.
+
+Specifically, I noticed a couple of things we could improve while we're at it:
+
+Splitting it up: The function is getting pretty huge (around 180 lines). It might be easier for us to read and debug later if we broke it down into smaller helper methods.
+
+Performance: There are a few spots where we're pulling lists into memory a bit early (some .ToList() calls). I'm worried that might slow things down when we hit real Production data, so we could probably tweak that now.
+
+Just wanted to flag this while the code is fresh. I think cleaning it up now will save us some headache later on!
+
+Let me know what you think.
+
+Thanks!
+
+
+Technical Change Summary (For PRs or Q&A)
+
+*Fixed "Select " Anti-Pattern: Switched to IQueryable to ensure filtering happens in the database, preventing full-table fetches into memory.
+
+Optimized Memory: Removed redundant .ToList() calls to stop re-allocating the list for every single filter step.
+
+String Optimization: Replaced.ToUpper() with StringComparison.OrdinalIgnoreCase for faster, allocation-free matching.
+
+Refactoring: Decomposed the 180-line function into small, single-responsibility helper methods (Orchestrator pattern).
+
+Logging: Switched to Structured Logging for better tool integration and readability.
+
+Safety: Added rigorous null checks and safe navigation (?.) to prevent runtime crashes from missing external data.
+
+
+// Do NOT call ToListAsync() here.
+public IQueryable<ReportInventory> GetReportInventoriesQuery()
 {
-    public class SubscriptionService : ISubscription
-    {
-        private readonly ISubscriptionRepository _repository;
-        private readonly ILogger<SubscriptionService> _logger;
-        private readonly IReportInventoryProxy _inventoryProxy;
-        private readonly IAppUserProxy _appUserProxy;
-
-        public SubscriptionService(
-            ISubscriptionRepository repository,
-            ILogger<SubscriptionService> logger,
-            IReportInventoryProxy inventoryProxy,
-            IAppUserProxy appUserProxy)
-        {
-            _repository = repository;
-            _logger = logger;
-            _inventoryProxy = inventoryProxy;
-            _appUserProxy = appUserProxy;
-        }
-
-        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
-        {
-            _logger.LogInformation("Validating request - CreateSubscriptionAsync - Type: {SubscriptionType}", request.SubscriptionType);
-
-            // 1. Manual Validator Instantiation (Team Approach)
-            // Checks Format + DB Duplicates
-            // Updated to pass request.RequestorId as required by the new Validator constructor
-            var validator = new CreateSubscriptionRequestValidator(_repository, request.RequestorId);
-            var validationResult = await validator.ValidateAsync(request);
-
-            if (!validationResult.IsValid)
-            {
-                var problems = validationResult.Problems().ToArray();
-                _logger.LogWarning("CreateSubscriptionRequest is Invalid with problems: {Problems}", problems);
-
-                return Result<GetSubscriptionResponse>.Failure(
-                    new Error<GetSubscriptionResponse>(
-                        "Validation failed for one or more request parameters",
-                        default,
-                        problems));
-            }
-
-            // 2. Business Logic: Report Status Check
-            var reportResult = await VerifyReportIsActiveAsync(request.ReportId);
-            if (!reportResult.IsSuccess)
-            {
-                _logger.LogWarning("Report status check failed: {Error}", reportResult.Error);
-                return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(reportResult.Error));
-            }
-
-            // 3. Business Logic: Access/Entitlements Check
-            // We pass the report object from Step 2 to avoid fetching it again
-            var accessCheck = await VerifyUserAccessAsync(request.RequestorId, reportResult.Value);
-            if (!accessCheck.IsSuccess)
-            {
-                _logger.LogWarning("User access check failed: {Error}", accessCheck.Error);
-                return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(accessCheck.Error));
-            }
-
-            // 4. Create
-            // Note: If SubscriptionType needs to be stored, the Entity constructor should be updated to accept it.
-            // Currently using existing Entity constructor.
-            var entity = new ReportAccess(request.ReportId, request.RequestorId, request.Justification);
-            var createdEntity = await _repository.CreateSubscriptionAsync(entity);
-
-            _logger.LogInformation("Successfully created subscription {SubscriptionId}", createdEntity.Id);
-            return Result<GetSubscriptionResponse>.Success(createdEntity.ToDto());
-        }
-
-        /// <summary>
-        /// Helper: Checks if the report exists and is active. Returns the Report details if successful.
-        /// </summary>
-        private async Task<Result<ReportStatusDto>> VerifyReportIsActiveAsync(int reportId)
-        {
-            var reportResult = await _inventoryProxy.GetReportStatusAsync(reportId);
-
-            if (!reportResult.IsSuccess || !reportResult.Value.Exists)
-                return Result<ReportStatusDto>.Failure($"Report {reportId} does not exist.");
-
-            if (!reportResult.Value.IsActive)
-                return Result<ReportStatusDto>.Failure($"Requested report {reportId} is not active. Status: {reportResult.Value.StatusTitle}");
-
-            return Result<ReportStatusDto>.Success(reportResult.Value);
-        }
-
-        /// <summary>
-        /// Reusable Helper: Verifies if a user has permission (Entitlements) to access a specific report
-        /// </summary>
-        private async Task<Result<bool>> VerifyUserAccessAsync(int requestorId, ReportStatusDto report)
-        {
-            var authResult = await _appUserProxy.AuthorizeUser(requestorId);
-            if (!authResult.IsSuccess)
-                return Result<bool>.Failure($"Could not authorize user: {authResult.Error}");
-
-            var permissions = authResult.Value;
-
-            // Find permission matching the report's Division
-            var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
-
-            if (appUserPermission == null)
-                return Result<bool>.Failure($"Access Denied: User has no permissions for Division {report.Division_ID}");
-
-            if (!appUserPermission.HasAnyAccess)
-                return Result<bool>.Failure("Access Denied: User does not have 'HasAnyAccess' flag.");
-
-            // Map SecurityScope directly to required permission (Refactored Switch)
-            bool hasAccess = report.SecurityScope switch
-            {
-                "NonNPI" => appUserPermission.IsNonNPI,
-                "NPI" => appUserPermission.IsNPI,
-                "SSN" => appUserPermission.IsSSN,
-                _ => false // Deny any unknown scopes
-            };
-
-            if (!hasAccess)
-                return Result<bool>.Failure($"Access Denied: User does not have required permissions for Security Scope '{report.SecurityScope}'.");
-
-            return Result<bool>.Success(true);
-        }
-
-        // --- Other Methods (Unchanged logic, just keeping signatures consistent) ---
-
-        public async Task<Result<GetSubscriptionResponse>> GetSubscriptionByIdAsync(GetSubscriptionByIdRequest request)
-        {
-            _logger.LogInformation("Fetching subscription by Id: {SubscriptionId}", request.SubscriptionId);
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-
-            if (entity == null)
-                return Result<GetSubscriptionResponse>.Failure(
-                    new Error<GetSubscriptionResponse>($"Subscription with Id {request.SubscriptionId} was not found."));
-
-            return Result<GetSubscriptionResponse>.Success(entity.ToDto());
-        }
-
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionByUserIdAsync(GetSubscriptionByUserIdRequest request)
-        {
-            _logger.LogInformation("Fetching subscriptions for User: {UserId}", request.UserId);
-            var entities = await _repository.FindSubscriptionsAsync(x => x.RequestorId == request.UserId);
-            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
-        }
-
-        public async Task<Result<bool>> ApproveSubscriptionAsync(ApproveSubscriptionRequest request)
-        {
-            _logger.LogInformation("Approving subscription: {SubscriptionId}", request.SubscriptionId);
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-
-            if (entity == null)
-                return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
-
-            var res = entity.Approve(999, request.ReviewComment);
-            if (!res.IsSuccess) return res;
-            await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
-        }
-
-        public async Task<Result<bool>> RejectSubscriptionAsync(RejectSubscriptionRequest request)
-        {
-            _logger.LogInformation("Rejecting subscription: {SubscriptionId}", request.SubscriptionId);
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-
-            if (entity == null)
-                return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
-
-            var res = entity.Reject(999, request.ReviewComment);
-            if (!res.IsSuccess) return res;
-            await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
-        }
-
-        public async Task<Result<bool>> RevokeSubscriptionAsync(RevokeSubscriptionRequest request)
-        {
-            _logger.LogInformation("Revoking subscription: {SubscriptionId}", request.SubscriptionId);
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-
-            if (entity == null)
-                return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
-
-            var res = entity.Revoke(request.RevokerId, request.RevocationComment);
-            if (!res.IsSuccess) return res;
-            await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
-        }
-
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllSubscriptionsAsync(GetSubscriptionRequest request)
-        {
-            _logger.LogInformation("Fetching all subscriptions");
-            var entities = await _repository.GetAllSubscriptionsAsync();
-            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
-        }
-
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllPendingSubscriptionsAsync(GetSubscriptionRequest request)
-        {
-            _logger.LogInformation("Fetching all pending subscriptions");
-            var entities = await _repository.GetAllPendingSubscriptionsAsync();
-            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
-        }
-
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionsForReportAsync(GetSubscriptionByReportIdRequest request)
-        {
-            _logger.LogInformation("Fetching subscriptions for Report: {ReportId}", request.ReportId);
-            var entities = await _repository.FindSubscriptionsAsync(x => x.ReportId == request.ReportId);
-            return Result<IEnumerable<GetSubscriptionResponse>>.Success(entities.Select(e => e.ToDto()));
-        }
-
-        public async Task<Result<bool>> CancelSubscriptionAsync(CancelSubscriptionRequest request)
-        {
-            _logger.LogInformation("Canceling subscription: {SubscriptionId}", request.SubscriptionId);
-            return Result<bool>.Success(true);
-        }
-    }
-
-    public static class MappingExtensions
-    {
-        public static GetSubscriptionResponse ToDto(this ReportAccess entity)
-        {
-            return new GetSubscriptionResponse(
-                entity.Id,
-                $"Report-{entity.ReportId}",
-                entity.Justification,
-                entity.RequestStatus.ToString(),
-                entity.ReviewComment,
-                entity.RevocationComment,
-                entity.RequestDt,
-                entity.ReviewDt,
-                entity.RevocationDt,
-                entity.ReportId,
-                entity.RequestorId,
-                entity.ReviewerId,
-                entity.RevokerId
-            );
-        }
-    }
+    return _db.ReportInventories.Include(r => r.Status).AsQueryable();
 }
 
-namespace Subscription.Validators
+public async Task<Result<SearchInventoryResponse>> SearchInventoryAsync(SearchInventoryRequest request)
 {
-    public class CreateSubscriptionRequestValidator : AbstractValidator<CreateSubscriptionRequest>
+    // 1. Validation: Fail Fast
+    if (!HasMinimumSearchCriteria(request))
     {
-        // Now takes Repository and RequestorId (passed from Service context)
-        public CreateSubscriptionRequestValidator(ISubscriptionRepository repository, int requestorId)
-        {
-            // 1. Basic Format Checks
-            RuleFor(x => x.ReportId).GreaterThan(0).WithMessage("Report ID is required.");
-            // RequestorId check removed as it is provided via constructor
-
-            RuleFor(x => x.Justification)
-                .NotEmpty().WithMessage("Justification is required.")
-                .MaximumLength(100).WithMessage("Justification cannot exceed 100 characters.");
-            RuleFor(x => x.SubscriptionType)
-                .NotEmpty().WithMessage("Subscription Type is required.");
-
-            // 2. Database Checks: Duplicate & Pending
-            RuleFor(x => x).CustomAsync(async (req, context, ct) =>
-            {
-                // Optimization: Fetch ALL subscriptions for this user+report in ONE call
-                // Then filter in memory to avoid hitting the DB twice.
-                var existingSubscriptions = await repository.FindSubscriptionsAsync(x =>
-                    x.ReportId == req.ReportId &&
-                    x.RequestorId == requestorId); // Use passed ID
-
-                // Check for Active (Approved)
-                if (existingSubscriptions.Any(x => x.RequestStatus == RequestStatus.Approved))
-                {
-                    context.AddFailure($"User {requestorId} already has access to report {req.ReportId}");
-                    return; // Fail fast
-                }
-
-                // Check for Pending
-                if (existingSubscriptions.Any(x => x.RequestStatus == RequestStatus.Pending))
-                {
-                    context.AddFailure($"Similar request is still pending for review (Report: {req.ReportId})");
-                }
-            });
-        }
+        return Result<SearchInventoryResponse>.Failure(
+            new Error<SearchInventoryResponse>("At least one search parameter is required"));
     }
 
-    // ... Other validators remain unchanged ...
-    public class ApproveSubscriptionRequestValidator : AbstractValidator<ApproveSubscriptionRequest>
+    _logger.LogInformation("Fetching Inventory detail with Type: {InventoryType} and Params: {@Request}",
+        request.InventoryType, request);
+
+    // 2. Route by Strategy (This keeps the main method open for extension but closed for modification)
+    switch (request.InventoryType)
     {
-        public ApproveSubscriptionRequestValidator()
-        {
-            RuleFor(x => x.SubscriptionId).GreaterThan(0).WithMessage("Subscription ID is required.");
-        }
+        case InventoryType.Report:
+            return await HandleReportInventorySearchAsync(request);
+
+        case InventoryType.Process:
+            // return await HandleProcessInventorySearchAsync(request);
+            break;
     }
 
-    public class RejectSubscriptionRequestValidator : AbstractValidator<RejectSubscriptionRequest>
+    return Result<SearchInventoryResponse>.Success(new SearchInventoryResponse(null, null, null, null, null, null, null, null));
+}
+
+// --- Specific Handlers ---
+
+private async Task<Result<SearchInventoryResponse>> HandleReportInventorySearchAsync(SearchInventoryRequest request)
+{
+    // A. Prepare Dependencies (e.g. Division/Org logic)
+    List<int> divisionOrgIds = null;
+    if (request.divId.HasValue)
     {
-        public RejectSubscriptionRequestValidator()
-        {
-            RuleFor(x => x.SubscriptionId).GreaterThan(0).WithMessage("Subscription ID is required.");
-            RuleFor(x => x.ReviewComment).NotEmpty().WithMessage("Review comment is required for rejection.");
-        }
+        var orgResult = await GetOrgIdsForDivisionAsync(request.divId.Value);
+        if (orgResult.IsFailure) return Result<SearchInventoryResponse>.Failure(orgResult.Error);
+        divisionOrgIds = orgResult.Value;
     }
 
-    public class RevokeSubscriptionRequestValidator : AbstractValidator<RevokeSubscriptionRequest>
+    // B. Get Queryable (Pushing toward Repository)
+    var query = (await _invRepository.GetReportInventoriesAsync()).AsQueryable();
+
+    // C. Apply Filters (Encapsulated Logic)
+    query = ApplyReportFilters(query, request, divisionOrgIds);
+
+    // D. Materialize (Execute Query)
+    var matchedInventory = query.OrderBy(r => r.Name).FirstOrDefault();
+
+    // E. Map Response
+    if (matchedInventory != null)
     {
-        public RevokeSubscriptionRequestValidator()
-        {
-            RuleFor(x => x.SubscriptionId).GreaterThan(0).WithMessage("Subscription ID is required.");
-            RuleFor(x => x.RevokerId).GreaterThan(0).WithMessage("Revoker ID is required.");
-            RuleFor(x => x.RevocationComment).NotEmpty().WithMessage("Revocation comment is required.");
-        }
+        return await BuildSuccessResponse(matchedInventory);
     }
+
+    // Default empty success (or failure if required)
+    return Result<SearchInventoryResponse>.Success(new SearchInventoryResponse(null, null, null, null, null, null, null, null));
+}
+
+// --- Helper Methods ---
+
+private bool HasMinimumSearchCriteria(SearchInventoryRequest request)
+{
+    return request.Id.HasValue
+        || request.divId.HasValue
+        || request.lobGrpId.HasValue
+        || request.lobId.HasValue
+        || !string.IsNullOrWhiteSpace(request.Name);
+}
+
+private async Task<Result<List<int>>> GetOrgIdsForDivisionAsync(int divId)
+{
+    var orgsResult = await _reportingOrg.GetReportingOrgsAsync(new GetReportingOrgsRequest(divId));
+
+    if (orgsResult.IsFailure)
+    {
+        return Result<List<int>>.Failure(
+            new Error<List<int>>($"Getting Reporting orgs failed - {orgsResult.Error.Message}"));
+    }
+
+    if (orgsResult.Value == null || !orgsResult.Value.Any())
+    {
+        return Result<List<int>>.Failure(
+            new Error<List<int>>($"No Reporting orgs found for Division Id - {divId}"));
+    }
+
+    return Result<List<int>>.Success(orgsResult.Value.Select(r => r.Id).ToList());
+}
+
+private IQueryable<ReportInventory> ApplyReportFilters(
+    IQueryable<ReportInventory> query,
+    SearchInventoryRequest request,
+    List<int> validOrgIds)
+{
+    if (request.Id.HasValue)
+    {
+        query = query.Where(r => r.Id == request.Id.Value);
+    }
+
+    if (validOrgIds != null)
+    {
+        query = query.Where(r => validOrgIds.Contains(r.ReportingOrgId));
+    }
+
+    if (request.lobGrpId.HasValue)
+    {
+        query = query.Where(r => r.LOBGroupId == request.lobGrpId.Value);
+    }
+
+    if (request.lobId.HasValue)
+    {
+        query = query.Where(r => r.LOBId == request.lobId.Value);
+    }
+
+    if (!string.IsNullOrWhiteSpace(request.Name))
+    {
+        var searchName = request.Name.Trim();
+        query = query.Where(r =>
+            r.Name.Contains(searchName, StringComparison.OrdinalIgnoreCase) ||
+            r.Description.Contains(searchName, StringComparison.OrdinalIgnoreCase) ||
+            r.Purpose.Contains(searchName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    return query;
+}
+
+private async Task<Result<SearchInventoryResponse>> BuildSuccessResponse(ReportInventory inv)
+{
+    var orgResult = await _reportingOrg.GetReportingOrgAsync(new GetReportingOrgRequest(inv.ReportingOrgId));
+
+    if (orgResult.IsFailure)
+    {
+        return Result<SearchInventoryResponse>.Failure(
+            new Error<SearchInventoryResponse>($"Getting Reporting orgs failed - {orgResult.Error.Message}"));
+    }
+
+    var response = new SearchInventoryResponse(
+        inv.Id,
+        inv.Name,
+        orgResult.Value?.DivisionId,
+        inv.SecurityScope,
+        inv.PrimaryAnalystId,
+        inv.Status?.Title.Equals(ReportStatus.Active.Title, StringComparison.OrdinalIgnoreCase) == true ? inv.StatusId : null,
+        inv.Status?.Title,
+        inv.StatusId
+    );
+
+    return Result<SearchInventoryResponse>.Success(response);
 }
