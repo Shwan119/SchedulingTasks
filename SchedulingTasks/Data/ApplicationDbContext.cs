@@ -43,193 +43,128 @@ namespace SchedulingTasks.Data
 }
 
 
-Subject: SearchInventoryAsync / migration thoughts
+Technical Summary: ReportingOrg Optimization
 
-Hey everyone,
+Change: Moved the DTO projection and sorting from the Service layer into the Repository layer.
 
-I was looking through the SearchInventoryAsync function today after chatting with Ankit. It looks like we brought over a lot of the logic from the old app pretty much as-is to get it working.
+Why we did this:
 
-Since we're already in there moving the code, I was thinking this might be a good chance for us to tidy it up a bit, rather than just copying it directly.
+Fixing Index Usage (The "OR" Logic):
+We replaced the complex single-line query logic (divisionId == null || org.DivisionId == divisionId) with conditional if blocks.
 
-Specifically, I noticed a couple of things we could improve while we're at it:
+Why: Databases often struggle to use Indexes with complex OR conditions, leading to slow full-table scans. Breaking it into specific checks ensures the Index is hit every time.
 
-Splitting it up: The function is getting pretty huge (around 180 lines). It might be easier for us to read and debug later if we broke it down into smaller helper methods.
+Database Sorting:
+We moved .OrderBy to the database query, which is significantly more performant than sorting a large list in the web server's memory.
 
-Performance: There are a few spots where we're pulling lists into memory a bit early (some .ToList() calls). I'm worried that might slow things down when we hit real Production data, so we could probably tweak that now.
+Performance Projection (DTOs in Repo):
+I know we previously discussed sticking to Entities in the Repository. However, for high-volume read operations like this, projecting directly to the DTO inside the Repository (.Select(x => new Dto...)) is highly recommended.
 
-Just wanted to flag this while the code is fresh. I think cleaning it up now will save us some headache later on!
+Why: It prevents "Over-Fetching."
 
-Let me know what you think.
+Context: I realize ReportingOrg is a relatively small table(~10 columns), so the impact here is minor. However, establishing this projection pattern is critical for our larger tables (20-30+ columns), where fetching unused data causes significant IO latency.
 
-Thanks!
-
-
-Technical Change Summary (For PRs or Q&A)
-
-*Fixed "Select " Anti-Pattern: Switched to IQueryable to ensure filtering happens in the database, preventing full-table fetches into memory.
-
-Optimized Memory: Removed redundant .ToList() calls to stop re-allocating the list for every single filter step.
-
-String Optimization: Replaced.ToUpper() with StringComparison.OrdinalIgnoreCase for faster, allocation-free matching.
-
-Refactoring: Decomposed the 180-line function into small, single-responsibility helper methods (Orchestrator pattern).
-
-Logging: Switched to Structured Logging for better tool integration and readability.
-
-Safety: Added rigorous null checks and safe navigation (?.) to prevent runtime crashes from missing external data.
+Note on Reusability:
+I kept the implementation simple (direct projection) to avoid over-engineering. If we find a need to return full Entities for other features later, we can easily refactor the shared filtering logic into a private build base query at that time.
 
 
-// Do NOT call ToListAsync() here.
-public IQueryable<ReportInventory> GetReportInventoriesQuery()
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Abstractions.Core;
+
+// ---------------------------------------------------------
+// 1. The Repository Interface
+// ---------------------------------------------------------
+public interface IReportingOrgRepository
 {
-    return _db.ReportInventories.Include(r => r.Status).AsQueryable();
+    // RETURNING DTO: 
+    // We return the DTO directly to ensure we only fetch the columns we need.
+    Task<List<ReportingOrgDto>> GetReportingOrgsAsync(int? divisionId, bool includeInactive = false);
 }
 
-public async Task<Result<SearchInventoryResponse>> SearchInventoryAsync(SearchInventoryRequest request)
+// ---------------------------------------------------------
+// 2. The Optimized Repository Implementation
+// ---------------------------------------------------------
+public class ReportingOrgRepository : IReportingOrgRepository
 {
-    // 1. Validation: Fail Fast
-    if (!HasMinimumSearchCriteria(request))
+    private readonly OrganizationDbContext _db;
+    private readonly ILogger<ReportingOrgRepository> _logger;
+
+    public ReportingOrgRepository(OrganizationDbContext db, ILogger<ReportingOrgRepository> logger)
     {
-        return Result<SearchInventoryResponse>.Failure(
-            new Error<SearchInventoryResponse>("At least one search parameter is required"));
+        _db = db;
+        _logger = logger;
     }
 
-    _logger.LogInformation("Fetching Inventory detail with Type: {InventoryType} and Params: {@Request}",
-        request.InventoryType, request);
-
-    // 2. Route by Strategy (This keeps the main method open for extension but closed for modification)
-    switch (request.InventoryType)
+    public async Task<List<ReportingOrgDto>> GetReportingOrgsAsync(int? divisionId, bool includeInactive = false)
     {
-        case InventoryType.Report:
-            return await HandleReportInventorySearchAsync(request);
+        _logger.LogInformation(
+            "Querying ReportingOrgs (Projected) with DivisionId: {DivisionId} & IncludeInactive: {IncludeInactive}",
+            divisionId, includeInactive);
 
-        case InventoryType.Process:
-            // return await HandleProcessInventorySearchAsync(request);
-            break;
+        var query = _db.ReportingOrgs.AsNoTracking();
+
+        // 1. Conditional Logic (Fixes the "Parameter Sniffing" issue of the old code)
+        if (divisionId.HasValue)
+        {
+            query = query.Where(org => org.DivisionId == divisionId.Value);
+        }
+
+        if (!includeInactive)
+        {
+            query = query.Where(org => org.ActiveFlag);
+        }
+
+        // 2. Sorting & Projection
+        // We project to DTO *inside* the query so EF Core writes optimized SQL.
+        return await query
+            .OrderByDescending(org => org.ActiveFlag)
+            .ThenBy(org => org.Name)
+            .Select(d => new ReportingOrgDto
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Code = d.Code,
+                DivisionId = d.DivisionId,
+                ActiveFlag = d.ActiveFlag
+            })
+            .ToListAsync();
     }
-
-    return Result<SearchInventoryResponse>.Success(new SearchInventoryResponse(null, null, null, null, null, null, null, null));
 }
 
-// --- Specific Handlers ---
-
-private async Task<Result<SearchInventoryResponse>> HandleReportInventorySearchAsync(SearchInventoryRequest request)
+// ---------------------------------------------------------
+// 3. The Optimized Service Implementation
+// ---------------------------------------------------------
+public class ReportingOrgService : IReportingOrgService
 {
-    // A. Prepare Dependencies (e.g. Division/Org logic)
-    List<int> divisionOrgIds = null;
-    if (request.divId.HasValue)
+    private readonly IReportingOrgRepository _repository;
+    private readonly ILogger<ReportingOrgService> _logger;
+
+    public ReportingOrgService(IReportingOrgRepository repository, ILogger<ReportingOrgService> logger)
     {
-        var orgResult = await GetOrgIdsForDivisionAsync(request.divId.Value);
-        if (orgResult.IsFailure) return Result<SearchInventoryResponse>.Failure(orgResult.Error);
-        divisionOrgIds = orgResult.Value;
+        _repository = repository;
+        _logger = logger;
     }
 
-    // B. Get Queryable (Pushing toward Repository)
-    var query = (await _invRepository.GetReportInventoriesAsync()).AsQueryable();
-
-    // C. Apply Filters (Encapsulated Logic)
-    query = ApplyReportFilters(query, request, divisionOrgIds);
-
-    // D. Materialize (Execute Query)
-    var matchedInventory = query.OrderBy(r => r.Name).FirstOrDefault();
-
-    // E. Map Response
-    if (matchedInventory != null)
+    public async Task<Result<IEnumerable<ReportingOrgDto>>> GetReportingOrgsAsync(GetReportingOrgsRequest request)
     {
-        return await BuildSuccessResponse(matchedInventory);
+        _logger.LogInformation("Validating request - GetReportingOrgsAsync");
+
+        var validations = await new GetReportingOrgsValidator().ValidateAsync(request);
+        if (!validations.IsValid)
+        {
+            var problems = validations.Problems().ToArray();
+            _logger.LogWarning("Request is Invalid with problems : {Problems}", problems);
+            return Result<IEnumerable<ReportingOrgDto>>.Failure(
+                new Error<IEnumerable<ReportingOrgDto>>("Validation failed for Reporting Orgs Request"));
+        }
+
+        // The Service is now very clean - it just asks for the view it needs.
+        var result = await _repository.GetReportingOrgsAsync(request.DivisionId, request.IncludeInactive);
+
+        return Result<IEnumerable<ReportingOrgDto>>.Success(result);
     }
-
-    // Default empty success (or failure if required)
-    return Result<SearchInventoryResponse>.Success(new SearchInventoryResponse(null, null, null, null, null, null, null, null));
-}
-
-// --- Helper Methods ---
-
-private bool HasMinimumSearchCriteria(SearchInventoryRequest request)
-{
-    return request.Id.HasValue
-        || request.divId.HasValue
-        || request.lobGrpId.HasValue
-        || request.lobId.HasValue
-        || !string.IsNullOrWhiteSpace(request.Name);
-}
-
-private async Task<Result<List<int>>> GetOrgIdsForDivisionAsync(int divId)
-{
-    var orgsResult = await _reportingOrg.GetReportingOrgsAsync(new GetReportingOrgsRequest(divId));
-
-    if (orgsResult.IsFailure)
-    {
-        return Result<List<int>>.Failure(
-            new Error<List<int>>($"Getting Reporting orgs failed - {orgsResult.Error.Message}"));
-    }
-
-    if (orgsResult.Value == null || !orgsResult.Value.Any())
-    {
-        return Result<List<int>>.Failure(
-            new Error<List<int>>($"No Reporting orgs found for Division Id - {divId}"));
-    }
-
-    return Result<List<int>>.Success(orgsResult.Value.Select(r => r.Id).ToList());
-}
-
-private IQueryable<ReportInventory> ApplyReportFilters(
-    IQueryable<ReportInventory> query,
-    SearchInventoryRequest request,
-    List<int> validOrgIds)
-{
-    if (request.Id.HasValue)
-    {
-        query = query.Where(r => r.Id == request.Id.Value);
-    }
-
-    if (validOrgIds != null)
-    {
-        query = query.Where(r => validOrgIds.Contains(r.ReportingOrgId));
-    }
-
-    if (request.lobGrpId.HasValue)
-    {
-        query = query.Where(r => r.LOBGroupId == request.lobGrpId.Value);
-    }
-
-    if (request.lobId.HasValue)
-    {
-        query = query.Where(r => r.LOBId == request.lobId.Value);
-    }
-
-    if (!string.IsNullOrWhiteSpace(request.Name))
-    {
-        var searchName = request.Name.Trim();
-        query = query.Where(r =>
-            r.Name.Contains(searchName, StringComparison.OrdinalIgnoreCase) ||
-            r.Description.Contains(searchName, StringComparison.OrdinalIgnoreCase) ||
-            r.Purpose.Contains(searchName, StringComparison.OrdinalIgnoreCase));
-    }
-
-    return query;
-}
-
-private async Task<Result<SearchInventoryResponse>> BuildSuccessResponse(ReportInventory inv)
-{
-    var orgResult = await _reportingOrg.GetReportingOrgAsync(new GetReportingOrgRequest(inv.ReportingOrgId));
-
-    if (orgResult.IsFailure)
-    {
-        return Result<SearchInventoryResponse>.Failure(
-            new Error<SearchInventoryResponse>($"Getting Reporting orgs failed - {orgResult.Error.Message}"));
-    }
-
-    var response = new SearchInventoryResponse(
-        inv.Id,
-        inv.Name,
-        orgResult.Value?.DivisionId,
-        inv.SecurityScope,
-        inv.PrimaryAnalystId,
-        inv.Status?.Title.Equals(ReportStatus.Active.Title, StringComparison.OrdinalIgnoreCase) == true ? inv.StatusId : null,
-        inv.Status?.Title,
-        inv.StatusId
-    );
-
-    return Result<SearchInventoryResponse>.Success(response);
 }
