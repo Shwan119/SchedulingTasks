@@ -44,3 +44,8 @@ namespace SchedulingTasks.Data
 
 
 
+UI / UX mockups and wireframes created using design tools (e.g., Figma) to practice layout, usability, and design systems.
+
+Non-production software prototypes such as simple front-end demos or proof-of-concept applications used solely for learning new technologies.
+
+AI experimentation workflows, including testing publicly available AI tools and APIs for tasks like content generation, summarization, or basic automation, without using any proprietary data.
