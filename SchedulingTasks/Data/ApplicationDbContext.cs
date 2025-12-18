@@ -44,128 +44,48 @@ namespace SchedulingTasks.Data
 
 
 
-public class ApproveSubscriptionRequestValidator : AbstractValidator<ApproveSubscriptionRequest>
-{
-    public ApproveSubscriptionRequestValidator(ISubscriptionRepository repository)
-    {
-        RuleFor(x => x.SubscriptionId).GreaterThan(0).WithMessage("Subscription ID is required.");
-        RuleFor(x => x.ReviewerId).GreaterThan(0).WithMessage("Reviewer ID is required.");
+Over the past year, I delivered major enhancements to Report Hub, implementing five to six major functionalities. Key features I developed includes Report Attestation, MetaTrack, Access Review, and enhancements to Auto Publisher such as unsubscribe support, manager-driven access revocation, auto-unsubscription, subscription management, and user notifications.
 
-        RuleFor(x => x).CustomAsync(async (req, context, ct) =>
-        {
-            var entity = await repository.GetSubscriptionByIdAsync(req.SubscriptionId);
+I placed strong emphasis on code quality ensuring delivering clean, maintainable, extensible, scalable, and high-performance code. This has directly benefited our bank clients, simplifying their daily tasks and reducing manual effort, and making reporting tasks more efficient and informative.
 
-            if (entity == null)
-            {
-                context.AddFailure($"Subscription with Id {req.SubscriptionId} was not found.");
-                return;
-            }
+In addition, I migrated and implemented few key capabilities that previously existed in Microsoft SharePoint into Report Hub, enabling users to perform SharePoint-like reporting and access workflows directly within Report Hub. This expansion of functionality increased Report Hub’s usage and helped drive interest across additional Lines of Business (LOBs).
 
-            // Validate State (Must be Pending)
-            if (entity.RequestStatus != RequestStatus.Pending)
-            {
-                context.AddFailure("Request must be in Pending state for review");
-            }
+I also initiated a proof-of-concept project to replace Auto Publisher by creating a modern solution from scratch that will eventually replace the legacy Auto Publisher. This included a polished UI with Tailwind and Blazor, API integration with Report Hub services, and support for auto-scheduling and performance-focused workflows.
 
-            // Validate Reviewer != Requestor (Self-Approval Check)
-            if (req.ReviewerId == entity.RequestorId)
-            {
-                context.AddFailure("You cannot Approve your own request");
-            }
-        });
-    }
-}
+In the past four months, we have been working on a full upgrade of Report Hub—backend, frontend, and database—utilizing the latest .NET version with Entity Framework. I actively communicated with the team to migrate the old Report Hub into a modern, microservice-based architecture. This new design is scalable, high performance, and aligns with the bank’s approach to UI, leveraging reusable components. The upgraded system will integrate with the new Auto Publisher replacement I built.
+
+Throughout, I collaborated effectively holding demos with clients, receiving positive feedback from my previous manager, Kalpesh, and contributing to quarterly deployments. I exchanged ideas with my team lead, suggested new techniques, and presented my features through thoughtfully designed tables. Finally, I diligently performed test cases for each release, ensuring our continuous improvement.
+
+In summary, these contributions empowered Report Hub to drive growth, operational excellence, and enhanced user satisfaction. I look forward to further advancing our goals in the coming year!
 
 
-public async Task<Result<bool>> ApproveSubscriptionAsync(ApproveSubscriptionRequest request)
-{
-    _logger.LogInformation("Approving subscription: {SubscriptionId} by Reviewer: {ReviewerId}", request.SubscriptionId, request.ReviewerId);
 
-    // 1. Validate Input
-    var validator = new ApproveSubscriptionRequestValidator();
-    var validationResult = await validator.ValidateAsync(request);
-    if (!validationResult.IsValid) return Result<bool>.Failure(new Error<bool>(validationResult.ToString()));
+Managed Risk – Examples
 
-    // 2. Fetch Subscription
-    var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-    if (entity == null) return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
+I demonstrated strong risk management by modernizing Report Hub’s architecture and improving access controls and governance. I implemented features such as report attestation, access review, subscription management, and manager-driven access revocation, ensuring proper authorization, auditability, and accountability.
 
-    // 3. Validate State (Must be Pending)
-    if (entity.RequestStatus != RequestStatus.Pending)
-        return Result<bool>.Failure(new Error<bool>("Request must be in Pending state for review"));
-
-    // 4. Validate Reviewer != Requestor
-    if (request.ReviewerId == entity.RequestorId)
-        return Result<bool>.Failure(new Error<bool>("You cannot Approve your own request"));
-
-    // 5. Security Check: Verify Reviewer Authorization (CanReviewReportAccess)
-    // Need Report details for role checks
-    var reportResult = await _inventoryProxy.GetReportStatusAsync(entity.ReportId);
-    if (!reportResult.IsSuccess) return Result<bool>.Failure(new Error<bool>("Report details not found"));
-    var report = reportResult.Value;
-
-    var authCheck = await VerifyReviewerAuthorizationAsync(request.ReviewerId, report);
-    if (!authCheck.IsSuccess)
-    {
-        _logger.LogWarning("Reviewer {ReviewerId} is not authorized to approve Report {ReportId}. Reason: {Error}", request.ReviewerId, entity.ReportId, authCheck.Error);
-        return Result<bool>.Failure(new Error<bool>("You do not have permission to Approve/Reject the request"));
-    }
-
-    // 6. Verify Requestor STILL has access (CanRequestAccess)
-    // "Requestor has no longer access to the report of this request"
-    var requestorAccessCheck = await VerifyUserAccessAsync(entity.RequestorId, report);
-    if (!requestorAccessCheck.IsSuccess)
-        return Result<bool>.Failure(new Error<bool>("Requestor no longer has access to the report. The request is not valid anymore."));
-
-    // 7. Domain Logic: Approve
-    var res = entity.Approve(request.ReviewerId, request.ReviewComment);
-    if (!res.IsSuccess) return res;
-
-    await _repository.UpdateSubscriptionAsync(entity);
-    _logger.LogInformation("Subscription {SubscriptionId} approved successfully", request.SubscriptionId);
-    return Result<bool>.Success(true);
-}
+During the migration from the legacy system to a modern microservices-based architecture using the latest .NET and Entity Framework, I worked closely with the team to ensure a controlled and low-risk transition across backend, frontend, and database layers.
 
 
-private async Task<Result<bool>> VerifyReviewerAuthorizationAsync(int reviewerId, ReportStatusDto report)
-{
-    // 1. Get Reviewer Permissions
-    var authResult = await _appUserProxy.AuthorizeUser(reviewerId);
-    if (!authResult.IsSuccess)
-        return Result<bool>.Failure($"Could not authorize reviewer: {authResult.Error}");
 
-    var permissions = authResult.Value;
+Drive Operational Excellence – Examples
 
-    // 2. Find Permission for this Division
-    var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
+I drove operational excellence by delivering clean, maintainable, scalable, and high-performance code across multiple core features in Report Hub. I helped migrate the platform to a modern microservices architecture, improving system reliability, performance, and long-term maintainability.
 
-    if (appUserPermission == null)
-        return Result<bool>.Failure($"Reviewer {reviewerId} has no permissions for Division {report.Division_ID}");
+I also built well-structured APIs that integrate seamlessly with other internal services.These efforts improved development efficiency, and enabled smoother deployments and ongoing enhancements.
 
-    // 3. Check Admin Access
-    // Logic: if (HasAnyAccess && (IsAdmin || IsMohawkAdmin)) -> true
-    if (appUserPermission.HasAnyAccess && (appUserPermission.IsAdmin || appUserPermission.IsMohawkAdmin))
-    {
-        return Result<bool>.Success(true);
-    }
 
-    // 4. Check Specific Approver Roles based on Report Config (ReportingOrg flags)
-    // bool num = report.ReportingOrg.PACanApproveRequest && report.PrimaryAnalyst_ID == ID;
-    bool isPA = report.PACanApproveRequest && report.PrimaryAnalyst_ID == reviewerId;
-    bool isBA = report.BACanApproveRequest && report.BackupAnalyst_ID == reviewerId;
-    bool isRTM = report.RTMCanApproveRequest && report.ReportingTeamManager_ID == reviewerId;
-    bool isPLC = report.PLCCanApproveRequest && report.PrimaryLOBOwner_ID == reviewerId;
-    bool isBLC = report.BLCCanApproveRequest && report.SecondaryLOBOwner_ID == reviewerId;
 
-    // 5. Global Approver Check (NBK)
-    // Assuming we have the User's NBK from the proxy/auth result
-    // bool flag5 = report.ReportingOrg.GlobalApproversList.Contains(NBK);
-    bool isGlobal = report.GlobalApproversList != null && report.GlobalApproversList.Contains(authResult.Value.First().NBK); // Example access
+Drive Growth – Examples
 
-    if (isPA || isBA || isRTM || isPLC || isBLC || isGlobal)
-    {
-        return Result<bool>.Success(true);
-    }
+I contributed to growth by expanding Report Hub’s capabilities through the migration of key SharePoint-based features directly into the platform, eliminating external dependencies and improving user adoption. These enhancements increased interest from additional Lines of Business and positioned Report Hub as a more comprehensive and valuable solution for enterprise reporting needs.
 
-    return Result<bool>.Failure($"User {reviewerId} is not authorized to approve requests for Report {report.ReportId}");
-}
+Additionally, I built a modern replacement for the legacy Auto Publisher, introducing a more intuitive UI, report statistics, and automated scheduling. This initiative improves scalability and positions Report Hub for future growth as the new solution replaces the older system.
+
+
+Great Place to Work – How
+
+I actively contributed to a positive and collaborative team environment by communicating clearly and consistently with my team lead, peers, and cross-functional partners. I welcomed feedback, incorporated suggestions, and exchanged ideas to improve both technical solutions and team processes.
+
+I participated in client demos, shared progress through well-designed tables and presentations, and supported team success during deployments. I also proposed new approaches and modern techniques when appropriate, helping the team continuously improve while maintaining strong collaboration and mutual respect.
+
