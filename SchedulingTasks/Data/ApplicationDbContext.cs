@@ -1,10 +1,4 @@
-﻿using BofA.ERGH.ReportHub.Rating.Domain.Entities;
-using BofA.ERGH.ReportHub.Rating.Domain.Interface;
-using BofA.ERGH.ReportHub.Rating.Shared.Contracts;
-using BofA.ERGH.ReportHub.Rating.Shared.Request;
-using BofA.ERGH.ReportHub.Rating.Shared.Response;
-using BofA.ERGH.ReportHub.Rating.Validators;
-using Entities;
+﻿using Entities;
 using Microsoft.EntityFrameworkCore;
 using Proxies;
 using ReportInventory.Api.Mock.Controllers.ReportSubscription.SharedKernel;
@@ -50,145 +44,63 @@ namespace SchedulingTasks.Data
 
 
 
-// entity & config
 using System;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using BofA.ERGH.Abstractions.Core; // Assuming Entity<T> is here
-
-namespace BofA.ERGH.ReportHub.Rating.Domain.Entities
-{
-    public record ReportRating : Entity<int>
-    {
-        public int ReportId { get; set; }
-        public int UserId { get; set; }
-        public int RatingValue { get; set; }
-
-        // EF Core Constructor
-        private ReportRating() { }
-
-        public ReportRating(int reportId, int userId, int ratingValue)
-        {
-            ReportId = reportId;
-            UserId = userId;
-            RatingValue = ratingValue;
-        }
-
-        public void UpdateRating(int newRating)
-        {
-            RatingValue = newRating;
-        }
-    }
-
-    public class ReportRatingConfiguration : IEntityTypeConfiguration<ReportRating>
-    {
-        public void Configure(EntityTypeBuilder<ReportRating> builder)
-        {
-            builder.ToTable("ReportRating", "dbo"); // Adjust schema if needed
-
-            builder.HasKey(x => x.Id);
-            builder.Property(x => x.Id).UseIdentityColumn();
-
-            builder.Property(x => x.RatingValue).IsRequired();
-            builder.Property(x => x.ReportId).IsRequired();
-            builder.Property(x => x.UserId).IsRequired();
-
-            // Unique constraint: One rating per user per report
-            builder.HasIndex(x => new { x.ReportId, x.UserId }).IsUnique();
-        }
-    }
-}
-
-
-// dtos
-using System;
-
-namespace BofA.ERGH.ReportHub.Rating.Shared.Request
-{
-    public record SaveRatingRequest(int ReportId, int UserId, int Rating);
-    public record RemoveRatingRequest(int ReportId, int UserId);
-    public record GetRatingRequest(int ReportId, int UserId);
-}
-
-namespace BofA.ERGH.ReportHub.Rating.Shared.Response
-{
-    public record RatingResponse(int Id, int ReportId, int UserId, int Rating);
-}
-
-
-
-
-// interface
-using System.Threading.Tasks;
-using BofA.ERGH.Abstractions.Core;
-using BofA.ERGH.ReportHub.Rating.Domain.Entities;
-using BofA.ERGH.ReportHub.Rating.Shared.Request;
-using BofA.ERGH.ReportHub.Rating.Shared.Response;
-
-namespace BofA.ERGH.ReportHub.Rating.Domain.Interface
-{
-    public interface IRatingRepository
-    {
-        Task<ReportRating?> GetRatingAsync(int reportId, int userId);
-        Task AddRatingAsync(ReportRating rating);
-        Task UpdateRatingAsync(ReportRating rating);
-        Task RemoveRatingAsync(ReportRating rating);
-        Task<int> SaveChangesAsync();
-    }
-}
-
-namespace BofA.ERGH.ReportHub.Rating.Shared.Contracts
-{
-    public interface IRatingService
-    {
-        Task<Result<RatingResponse>> SaveRatingAsync(SaveRatingRequest request);
-        Task<Result<bool>> RemoveRatingAsync(RemoveRatingRequest request);
-        Task<Result<RatingResponse>> GetRatingAsync(GetRatingRequest request);
-    }
-}
-
-
-// repo
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using BofA.ERGH.ReportHub.Rating.Domain.Interface;
 using BofA.ERGH.ReportHub.Rating.Domain.Entities;
 
 namespace BofA.ERGH.ReportHub.Rating.Infrastructure
 {
-    // Assuming you have a DbContext class named RatingDbContext or similar
     public class RatingRepository : IRatingRepository
     {
         private readonly DbContext _context;
+        private readonly ILogger<RatingRepository> _logger;
 
-        public RatingRepository(DbContext context)
+        public RatingRepository(DbContext context, ILogger<RatingRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<ReportRating?> GetRatingAsync(int reportId, int userId)
         {
+            _logger.LogInformation("Fetching rating for Report {ReportId} and User {UserId}", reportId, userId);
             return await _context.Set<ReportRating>()
                 .FirstOrDefaultAsync(r => r.ReportId == reportId && r.UserId == userId);
         }
 
-        public async Task AddRatingAsync(ReportRating rating)
+        public async Task<IEnumerable<ReportRating>> GetAllRatingsAsync()
         {
+            _logger.LogInformation("Fetching all ratings");
+            return await _context.Set<ReportRating>().ToListAsync();
+        }
+
+        public async Task<ReportRating> CreateRatingAsync(ReportRating rating)
+        {
+            _logger.LogInformation("Creating new rating for Report {ReportId}", rating.ReportId);
             await _context.Set<ReportRating>().AddAsync(rating);
+            await _context.SaveChangesAsync(); // Auto-save per your repo pattern
+            return rating;
         }
 
         public async Task UpdateRatingAsync(ReportRating rating)
         {
+            _logger.LogInformation("Updating rating {Id}", rating.Id);
             _context.Set<ReportRating>().Update(rating);
-            await Task.CompletedTask;
+            await _context.SaveChangesAsync(); // Auto-save
         }
 
         public async Task RemoveRatingAsync(ReportRating rating)
         {
+            _logger.LogInformation("Removing rating {Id}", rating.Id);
             _context.Set<ReportRating>().Remove(rating);
-            await Task.CompletedTask;
+            await _context.SaveChangesAsync(); // Auto-save
         }
 
+        // Keep explicit Save for flexibility if needed, though methods above now handle it
         public async Task<int> SaveChangesAsync()
         {
             return await _context.SaveChangesAsync();
@@ -196,54 +108,19 @@ namespace BofA.ERGH.ReportHub.Rating.Infrastructure
     }
 }
 
-
-
-
-// validator
-using FluentValidation;
-using BofA.ERGH.ReportHub.Rating.Shared.Request;
-using BofA.ERGH.ReportHub.Rating.Proxies; // Assuming InventoryProxy lives here or Shared
-
-namespace BofA.ERGH.ReportHub.Rating.Validators
+public interface IRatingRepository
 {
-    public class SaveRatingRequestValidator : AbstractValidator<SaveRatingRequest>
-    {
-        public SaveRatingRequestValidator(IReportInventoryProxy inventoryProxy)
-        {
-            RuleFor(x => x.ReportId).GreaterThan(0).WithMessage("Report ID is required.");
-            RuleFor(x => x.UserId).GreaterThan(0).WithMessage("User ID is required.");
-            RuleFor(x => x.Rating)
-                .InclusiveBetween(1, 5)
-                .WithMessage("Rating must be between 1 and 5.");
-
-            // Check if Report Exists via Proxy
-            RuleFor(x => x.ReportId).CustomAsync(async (reportId, context, ct) =>
-            {
-                var result = await inventoryProxy.GetReportStatusAsync(reportId);
-                if (!result.IsSuccess || !result.Value.Exists)
-                {
-                    context.AddFailure("ReportId", $"Report {reportId} not found.");
-                }
-            });
-        }
-    }
-
-    public class RemoveRatingRequestValidator : AbstractValidator<RemoveRatingRequest>
-    {
-        public RemoveRatingRequestValidator(IReportInventoryProxy inventoryProxy)
-        {
-            RuleFor(x => x.ReportId).GreaterThan(0);
-            RuleFor(x => x.UserId).GreaterThan(0);
-
-            // Optional: You could check if report exists here too, but for removal 
-            // of a rating, if the report is gone, the rating might still exist technically.
-            // Keeping it simple for now or you can add similar logic.
-        }
-    }
+    Task<ReportRating?> GetRatingAsync(int reportId, int userId);
+    Task<IEnumerable<ReportRating>> GetAllRatingsAsync(); // Added per request
+    Task AddRatingAsync(ReportRating rating); // Renamed to mimic Create pattern if desired, but Add is standard for void return. Or CreateRatingAsync returning Entity.
+                                              // Let's align strictly with SubscriptionRepo pattern:
+    Task<ReportRating> CreateRatingAsync(ReportRating rating);
+    Task UpdateRatingAsync(ReportRating rating);
+    Task RemoveRatingAsync(ReportRating rating);
+    Task<int> SaveChangesAsync();
 }
 
 
-// services
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -305,12 +182,12 @@ namespace BofA.ERGH.ReportHub.Rating.Services
             {
                 // Create
                 entity = new ReportRating(request.ReportId, request.UserId, request.Rating);
-                await _repository.AddRatingAsync(entity);
+                await _repository.CreateRatingAsync(entity);
             }
 
-            await _repository.SaveChangesAsync();
+            // Note: SaveChangesAsync removed as Repository handles it internally
 
-            return Result<RatingResponse>.Success(new RatingResponse(entity.Id, entity.ReportId, entity.UserId, entity.RatingValue));
+            return Result<RatingResponse>.Success(entity.ToDto());
         }
 
         public async Task<Result<bool>> RemoveRatingAsync(RemoveRatingRequest request)
@@ -335,7 +212,7 @@ namespace BofA.ERGH.ReportHub.Rating.Services
             if (existingRating != null)
             {
                 await _repository.RemoveRatingAsync(existingRating);
-                await _repository.SaveChangesAsync();
+                // Note: SaveChangesAsync removed as Repository handles it internally
                 return Result<bool>.Success(true);
             }
 
@@ -350,343 +227,20 @@ namespace BofA.ERGH.ReportHub.Rating.Services
             if (entity == null)
                 return Result<RatingResponse>.Failure(new Error<RatingResponse>("Rating not found"));
 
-            return Result<RatingResponse>.Success(new RatingResponse(entity.Id, entity.ReportId, entity.UserId, entity.RatingValue));
+            return Result<RatingResponse>.Success(entity.ToDto());
         }
     }
-}
 
-
-
-//api controller
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using System;
-using BofA.ERGH.ReportHub.Rating.Shared.Contracts;
-using BofA.ERGH.ReportHub.Rating.Shared.Request;
-using BofA.ERGH.Abstractions.Core; // Assuming HandleResult logic lives in BaseController
-
-namespace BofA.ERGH.ReportHub.Rating.API
-{
-    public class RatingController : BaseApiController
+    public static class MappingExtensions
     {
-        private readonly IRatingService _ratingService;
-        private readonly ILogger<RatingController> _logger;
-
-        public RatingController(IRatingService ratingService, ILogger<RatingController> logger)
+        public static RatingResponse ToDto(this ReportRating entity)
         {
-            _ratingService = ratingService;
-            _logger = logger;
-        }
-
-        [HttpPost("SaveRating")]
-        public async Task<IActionResult> SaveRating([FromBody] SaveRatingRequest request)
-        {
-            try
-            {
-                _logger.LogInformation("Saving rating request received");
-                // Note: If you need to enforce that UserId comes from Context instead of DTO,
-                // you would extract it here: var userId = int.Parse(User.FindFirst("id").Value);
-                // and create a new request object or update the DTO property if mutable.
-
-                var result = await _ratingService.SaveRatingAsync(request);
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = "An error occurred while saving rating.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
-        }
-
-        [HttpPost("RemoveRating")]
-        public async Task<IActionResult> RemoveRating([FromBody] RemoveRatingRequest request)
-        {
-            try
-            {
-                _logger.LogInformation("Remove rating request received");
-                var result = await _ratingService.RemoveRatingAsync(request);
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = "An error occurred while removing rating.";
-                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
-                return HandleResult(Result<object>.Failure(error));
-            }
-        }
-
-        [HttpGet("GetRating")]
-        public async Task<IActionResult> GetRating([FromQuery] int reportId, [FromQuery] int userId)
-        {
-            try
-            {
-                var request = new GetRatingRequest(reportId, userId);
-                var result = await _ratingService.GetRatingAsync(request);
-                return HandleResult(result);
-            }
-            catch (Exception ex)
-            {
-                string error = "An error occurred while fetching rating.";
-                _logger.LogError(ex, "Error: {Error}", error);
-                return HandleResult(Result<object>.Failure(error));
-            }
-        }
-    }
-}
-
-
-
-// proxy report access
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
-using BofA.ERGH.Abstractions.Core;
-using BofA.ERGH.ReportHub.Subscription.Shared.Contracts;
-using BofA.ERGH.ReportHub.Subscription.Shared.Request;
-using BofA.ERGH.ReportHub.Subscription.Shared.Response;
-// Assuming ProxyBase, ICustomAuthenticator, etc. namespaces
-
-namespace BofA.ERGH.ReportHub.Subscription.Proxies
-{
-    public class SubscriptionProxy(
-        ILogger<SubscriptionProxy> logger,
-        ICustomAuthenticator authenticator,
-        IHttpClientFactory httpClientFactory) : ProxyBase(logger, authenticator), ISubscription
-    {
-        // 1. GetSubscriptionById
-        // Controller: [HttpGet("GetSubscriptionById")] -> Query: ?subscriptionId={id}
-        public async Task<Result<GetSubscriptionResponse>> GetSubscriptionByIdAsync(GetSubscriptionByIdRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                // Fix: Path matches controller route + query string
-                var response = await client.GetAsync($"/api/subscription/GetSubscriptionById?subscriptionId={request.SubscriptionId}");
-                return await GetResponseAsync<GetSubscriptionResponse>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<GetSubscriptionResponse>(logger, ex);
-            }
-        }
-
-        // 2. GetSubscriptionByUserId
-        // Controller: [HttpGet("GetSubscriptionByUserId")] -> Query: ?userId={id}
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionByUserIdAsync(GetSubscriptionByUserIdRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                // Fix: Path matches controller route + query string
-                var response = await client.GetAsync($"/api/subscription/GetSubscriptionByUserId?userId={request.UserId}");
-                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
-            }
-        }
-
-        // 3. GetSubscriptionsForReport
-        // Controller: [HttpGet("GetSubscriptionsForReport")] -> Query: ?reportId={id}
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionsForReportAsync(GetSubscriptionByReportIdRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                // Fix: Path matches controller route + query string
-                var response = await client.GetAsync($"/api/subscription/GetSubscriptionsForReport?reportId={request.ReportId}");
-                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
-            }
-        }
-
-        // 4. CreateSubscription
-        // Controller: [HttpPost("CreateSubscription")] -> Body: request
-        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                // Fix: Using PostAsJsonAsync for body
-                var response = await client.PostAsJsonAsync("/api/subscription/CreateSubscription", request);
-                return await GetResponseAsync<GetSubscriptionResponse>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<GetSubscriptionResponse>(logger, ex);
-            }
-        }
-
-        // 5. ApproveSubscription
-        // Controller: [HttpPost("ApproveSubscription")] -> Body: request
-        public async Task<Result<bool>> ApproveSubscriptionAsync(ApproveSubscriptionRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                var response = await client.PostAsJsonAsync("/api/subscription/ApproveSubscription", request);
-                return await GetResponseAsync<bool>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<bool>(logger, ex);
-            }
-        }
-
-        // 6. RejectSubscription
-        public async Task<Result<bool>> RejectSubscriptionAsync(RejectSubscriptionRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                var response = await client.PostAsJsonAsync("/api/subscription/RejectSubscription", request);
-                return await GetResponseAsync<bool>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<bool>(logger, ex);
-            }
-        }
-
-        // 7. RevokeSubscription
-        public async Task<Result<bool>> RevokeSubscriptionAsync(RevokeSubscriptionRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                var response = await client.PostAsJsonAsync("/api/subscription/RevokeSubscription", request);
-                return await GetResponseAsync<bool>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<bool>(logger, ex);
-            }
-        }
-
-        // 8. CancelSubscription
-        public async Task<Result<bool>> CancelSubscriptionAsync(CancelSubscriptionRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                var response = await client.PostAsJsonAsync("/api/subscription/CancelSubscription", request);
-                return await GetResponseAsync<bool>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<bool>(logger, ex);
-            }
-        }
-
-        // 9. GetAllSubscriptions
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllSubscriptionsAsync(GetSubscriptionRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                // Note: GetSubscriptionRequest is empty, but if it had filters they would go here
-                var response = await client.GetAsync("/api/subscription/GetAllSubscriptions");
-                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
-            }
-        }
-
-        // 10. GetAllPendingSubscriptions
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllPendingSubscriptionsAsync(GetSubscriptionRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
-                var response = await client.GetAsync("/api/subscription/GetAllPendingSubscriptions");
-                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
-            }
-        }
-    }
-}
-
-
-
-// proxy reportrating
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using BofA.ERGH.Abstractions.Core;
-using BofA.ERGH.ReportHub.Rating.Shared.Contracts;
-using BofA.ERGH.ReportHub.Rating.Shared.Request;
-using BofA.ERGH.ReportHub.Rating.Shared.Response;
-// Assuming ProxyBase, ICustomAuthenticator, etc. namespaces
-
-namespace BofA.ERGH.ReportHub.Rating.Proxies
-{
-    public class ReportRatingProxy(
-        ILogger<ReportRatingProxy> logger,
-        ICustomAuthenticator authenticator,
-        IHttpClientFactory httpClientFactory) : ProxyBase(logger, authenticator), IRatingService
-    {
-        // 1. SaveRating
-        // Controller: [HttpPost("SaveRating")] -> Body: request
-        public async Task<Result<RatingResponse>> SaveRatingAsync(SaveRatingRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterRatingProxy.HttpClientName); // Ensure registration name matches
-                var response = await client.PostAsJsonAsync("/api/rating/SaveRating", request);
-                return await GetResponseAsync<RatingResponse>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<RatingResponse>(logger, ex);
-            }
-        }
-
-        // 2. RemoveRating
-        // Controller: [HttpPost("RemoveRating")] -> Body: request
-        public async Task<Result<bool>> RemoveRatingAsync(RemoveRatingRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterRatingProxy.HttpClientName);
-                var response = await client.PostAsJsonAsync("/api/rating/RemoveRating", request);
-                return await GetResponseAsync<bool>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<bool>(logger, ex);
-            }
-        }
-
-        // 3. GetRating
-        // Controller: [HttpGet("GetRating")] -> Query: ?reportId={id}&userId={id}
-        // Note: IRatingService interface method signature might take GetRatingRequest object
-        public async Task<Result<RatingResponse>> GetRatingAsync(GetRatingRequest request)
-        {
-            try
-            {
-                var client = httpClientFactory.CreateClient(RegisterRatingProxy.HttpClientName);
-                // Fix: Path matches controller route + query strings
-                var response = await client.GetAsync($"/api/rating/GetRating?reportId={request.ReportId}&userId={request.UserId}");
-                return await GetResponseAsync<RatingResponse>(response);
-            }
-            catch (Exception ex)
-            {
-                return ExceptionHelper.HandleException<RatingResponse>(logger, ex);
-            }
+            return new RatingResponse(
+                entity.Id,
+                entity.ReportId,
+                entity.UserId,
+                entity.RatingValue
+            );
         }
     }
 }
