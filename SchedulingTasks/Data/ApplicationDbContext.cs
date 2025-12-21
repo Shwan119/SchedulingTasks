@@ -1,4 +1,10 @@
-﻿using Entities;
+﻿using BofA.ERGH.ReportHub.Rating.Domain.Entities;
+using BofA.ERGH.ReportHub.Rating.Domain.Interface;
+using BofA.ERGH.ReportHub.Rating.Shared.Contracts;
+using BofA.ERGH.ReportHub.Rating.Shared.Request;
+using BofA.ERGH.ReportHub.Rating.Shared.Response;
+using BofA.ERGH.ReportHub.Rating.Validators;
+using Entities;
 using Microsoft.EntityFrameworkCore;
 using Proxies;
 using ReportInventory.Api.Mock.Controllers.ReportSubscription.SharedKernel;
@@ -42,563 +48,645 @@ namespace SchedulingTasks.Data
     }
 }
 
-using Microsoft.Extensions.Logging;
-using FluentValidation;
-using BofA.ERGH.ReportHub.Subscription.Shared.Contracts;
-using BofA.ERGH.ReportHub.Subscription.Shared.Request;
-using BofA.ERGH.ReportHub.Subscription.Shared.Response;
-using BofA.ERGH.ReportHub.Subscription.Domain.Interface;
-using BofA.ERGH.ReportHub.Subscription.Domain.Entities;
-using BofA.ERGH.ReportHub.Subscription.Proxies; 
-using BofA.ERGH.ReportHub.Subscription.Validators; 
-using BofA.ERGH.Abstractions.Core; 
 
-namespace BofA.ERGH.ReportHub.Subscription.Services
+
+// entity & config
+using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using BofA.ERGH.Abstractions.Core; // Assuming Entity<T> is here
+
+namespace BofA.ERGH.ReportHub.Rating.Domain.Entities
 {
-    public class SubscriptionService : ISubscription
+    public record ReportRating : Entity<int>
     {
-        private readonly ISubscriptionRepository _repository;
-        private readonly ILogger<SubscriptionService> _logger;
-        private readonly IReportInventoryProxy _inventoryProxy;
-        private readonly IAppUserProxy _appUserProxy;
+        public int ReportId { get; set; }
+        public int UserId { get; set; }
+        public int RatingValue { get; set; }
 
-        public SubscriptionService(
-            ISubscriptionRepository repository,
-            ILogger<SubscriptionService> logger,
-            IReportInventoryProxy inventoryProxy,
-            IAppUserProxy appUserProxy)
+        // EF Core Constructor
+        private ReportRating() { }
+
+        public ReportRating(int reportId, int userId, int ratingValue)
         {
-            _repository = repository;
-            _logger = logger;
-            _inventoryProxy = inventoryProxy;
-            _appUserProxy = appUserProxy;
+            ReportId = reportId;
+            UserId = userId;
+            RatingValue = ratingValue;
         }
 
-        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
+        public void UpdateRating(int newRating)
         {
-            _logger.LogInformation("Validating request - CreateSubscriptionAsync - Type: {SubscriptionType}", request.SubscriptionType);
+            RatingValue = newRating;
+        }
+    }
 
-            // 1. Manual Validator Instantiation (Team Approach)
-            var validator = new CreateSubscriptionRequestValidator(_repository, request.RequestorId);
-            var validationResult = await validator.ValidateAsync(request);
+    public class ReportRatingConfiguration : IEntityTypeConfiguration<ReportRating>
+    {
+        public void Configure(EntityTypeBuilder<ReportRating> builder)
+        {
+            builder.ToTable("ReportRating", "dbo"); // Adjust schema if needed
 
-            if (!validationResult.IsValid)
-            {
-                var problems = validationResult.Problems().ToArray();
-                return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>("Validation failed", default, problems));
-            }
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).UseIdentityColumn();
 
-            // 2. Business Logic: Report Status Check
-            var reportResult = await VerifyReportIsActiveAsync(request.ReportId);
-            if (!reportResult.IsSuccess) return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(reportResult.Error));
+            builder.Property(x => x.RatingValue).IsRequired();
+            builder.Property(x => x.ReportId).IsRequired();
+            builder.Property(x => x.UserId).IsRequired();
 
-            // 3. Business Logic: Access/Entitlements Check
-            var accessCheck = await VerifyUserAccessAsync(request.RequestorId, reportResult.Value);
-            if (!accessCheck.IsSuccess) return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(accessCheck.Error));
+            // Unique constraint: One rating per user per report
+            builder.HasIndex(x => new { x.ReportId, x.UserId }).IsUnique();
+        }
+    }
+}
 
-            // 4. Create
-            var entity = new ReportAccess(request.ReportId, request.RequestorId, request.Justification);
-            var createdEntity = await _repository.CreateSubscriptionAsync(entity);
 
-            _logger.LogInformation("Successfully created subscription {SubscriptionId}", createdEntity.Id);
-            return Result<GetSubscriptionResponse>.Success(createdEntity.ToDto());
+// dtos
+using System;
+
+namespace BofA.ERGH.ReportHub.Rating.Shared.Request
+{
+    public record SaveRatingRequest(int ReportId, int UserId, int Rating);
+    public record RemoveRatingRequest(int ReportId, int UserId);
+    public record GetRatingRequest(int ReportId, int UserId);
+}
+
+namespace BofA.ERGH.ReportHub.Rating.Shared.Response
+{
+    public record RatingResponse(int Id, int ReportId, int UserId, int Rating);
+}
+
+
+
+
+// interface
+using System.Threading.Tasks;
+using BofA.ERGH.Abstractions.Core;
+using BofA.ERGH.ReportHub.Rating.Domain.Entities;
+using BofA.ERGH.ReportHub.Rating.Shared.Request;
+using BofA.ERGH.ReportHub.Rating.Shared.Response;
+
+namespace BofA.ERGH.ReportHub.Rating.Domain.Interface
+{
+    public interface IRatingRepository
+    {
+        Task<ReportRating?> GetRatingAsync(int reportId, int userId);
+        Task AddRatingAsync(ReportRating rating);
+        Task UpdateRatingAsync(ReportRating rating);
+        Task RemoveRatingAsync(ReportRating rating);
+        Task<int> SaveChangesAsync();
+    }
+}
+
+namespace BofA.ERGH.ReportHub.Rating.Shared.Contracts
+{
+    public interface IRatingService
+    {
+        Task<Result<RatingResponse>> SaveRatingAsync(SaveRatingRequest request);
+        Task<Result<bool>> RemoveRatingAsync(RemoveRatingRequest request);
+        Task<Result<RatingResponse>> GetRatingAsync(GetRatingRequest request);
+    }
+}
+
+
+// repo
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using BofA.ERGH.ReportHub.Rating.Domain.Interface;
+using BofA.ERGH.ReportHub.Rating.Domain.Entities;
+
+namespace BofA.ERGH.ReportHub.Rating.Infrastructure
+{
+    // Assuming you have a DbContext class named RatingDbContext or similar
+    public class RatingRepository : IRatingRepository
+    {
+        private readonly DbContext _context;
+
+        public RatingRepository(DbContext context)
+        {
+            _context = context;
         }
 
-        public async Task<Result<bool>> ApproveSubscriptionAsync(ApproveSubscriptionRequest request)
+        public async Task<ReportRating?> GetRatingAsync(int reportId, int userId)
         {
-            _logger.LogInformation("Approving subscription: {SubscriptionId} by Reviewer: {ReviewerId}", request.SubscriptionId, request.ReviewerId);
-
-            // 1. Validate Input
-            var validator = new ApproveSubscriptionRequestValidator();
-            var validationResult = await validator.ValidateAsync(request);
-            if (!validationResult.IsValid) return Result<bool>.Failure(new Error<bool>(validationResult.ToString()));
-
-            // 2. Fetch Subscription
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure(new Error<bool>($"Subscription with Id {request.SubscriptionId} was not found."));
-
-            // 3. Validate State (Must be Pending)
-            if (entity.RequestStatus != RequestStatus.Pending)
-                return Result<bool>.Failure(new Error<bool>("Request must be in Pending state for review"));
-
-            // 4. Validate Reviewer != Requestor
-            if (request.ReviewerId == entity.RequestorId)
-                return Result<bool>.Failure(new Error<bool>("You cannot Approve your own request"));
-
-            // 5. Security Check: Verify Reviewer Authorization (CanReviewReportAccess)
-            // Need Report details for role checks
-            var reportResult = await _inventoryProxy.GetReportStatusAsync(entity.ReportId);
-            if (!reportResult.IsSuccess) return Result<bool>.Failure(new Error<bool>("Report details not found"));
-            var report = reportResult.Value;
-
-            var authCheck = await VerifyReviewerAuthorizationAsync(request.ReviewerId, report);
-            if (!authCheck.IsSuccess)
-            {
-                _logger.LogWarning("Reviewer {ReviewerId} is not authorized to approve Report {ReportId}. Reason: {Error}", request.ReviewerId, entity.ReportId, authCheck.Error);
-                return Result<bool>.Failure(new Error<bool>("You do not have permission to Approve/Reject the request"));
-            }
-
-            // 6. Verify Requestor STILL has access (CanRequestAccess)
-            // "Requestor has no longer access to the report of this request"
-            var requestorAccessCheck = await VerifyUserAccessAsync(entity.RequestorId, report);
-            if (!requestorAccessCheck.IsSuccess)
-                return Result<bool>.Failure(new Error<bool>("Requestor no longer has access to the report. The request is not valid anymore."));
-
-            // 7. Domain Logic: Approve
-            var res = entity.Approve(request.ReviewerId, request.ReviewComment);
-            if (!res.IsSuccess) return res;
-
-            await _repository.UpdateSubscriptionAsync(entity);
-            _logger.LogInformation("Subscription {SubscriptionId} approved successfully", request.SubscriptionId);
-            return Result<bool>.Success(true);
+            return await _context.Set<ReportRating>()
+                .FirstOrDefaultAsync(r => r.ReportId == reportId && r.UserId == userId);
         }
 
-        public async Task<Result<bool>> RejectSubscriptionAsync(RejectSubscriptionRequest request)
+        public async Task AddRatingAsync(ReportRating rating)
         {
-            _logger.LogInformation("Rejecting subscription: {SubscriptionId} by Reviewer: {ReviewerId}", request.SubscriptionId, request.ReviewerId); // Ensure ReviewerId is in DTO
-
-            // Note: Assuming RejectSubscriptionRequest DTO has ReviewerId (OperatorId) added similar to Approve
-            // 1. Fetch Subscription
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure(new Error<bool>("Subscription not found"));
-
-            // 2. Validate State
-            if (entity.RequestStatus != RequestStatus.Pending)
-                return Result<bool>.Failure(new Error<bool>("Request must be in Pending state for review"));
-
-            // 3. Validate Reviewer != Requestor
-            if (request.ReviewerId == entity.RequestorId) // Assuming DTO updated
-                return Result<bool>.Failure(new Error<bool>("You cannot Reject your own request"));
-
-            // 4. Validate Comment Presence
-            if (string.IsNullOrWhiteSpace(request.ReviewComment))
-                return Result<bool>.Failure(new Error<bool>("Comment is required when Rejecting access request"));
-
-            // 5. Security Check: Verify Reviewer Authorization
-            var reportResult = await _inventoryProxy.GetReportStatusAsync(entity.ReportId);
-            if (!reportResult.IsSuccess) return Result<bool>.Failure(new Error<bool>("Report details not found"));
-
-            var authCheck = await VerifyReviewerAuthorizationAsync(request.ReviewerId, reportResult.Value);
-            if (!authCheck.IsSuccess)
-                return Result<bool>.Failure(new Error<bool>("You do not have permission to Approve/Reject the request"));
-
-            // 6. Domain Logic: Reject
-            var res = entity.Reject(request.ReviewerId, request.ReviewComment);
-            if (!res.IsSuccess) return res;
-
-            await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
+            await _context.Set<ReportRating>().AddAsync(rating);
         }
 
-        public async Task<Result<bool>> RevokeSubscriptionAsync(RevokeSubscriptionRequest request)
+        public async Task UpdateRatingAsync(ReportRating rating)
         {
-            _logger.LogInformation("Revoking subscription: {SubscriptionId}", request.SubscriptionId);
-
-            // 1. Fetch
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure(new Error<bool>("Subscription not found"));
-
-            // 2. Validate Comment
-            if (string.IsNullOrWhiteSpace(request.RevocationComment))
-                return Result<bool>.Failure(new Error<bool>("Comment is required when Revoking access request"));
-
-            // 3. Security Check: Operator == Requestor OR Admin
-            // "if (operatorUser.ID != request.Requestor.ID && !HasAdminAccess && !IsMohawkAdmin)"
-            bool isSelfRevoke = request.RevokerId == entity.RequestorId;
-
-            if (!isSelfRevoke)
-            {
-                // Must be Admin to revoke someone else
-                var reportResult = await _inventoryProxy.GetReportStatusAsync(entity.ReportId);
-                if (!reportResult.IsSuccess) return Result<bool>.Failure(new Error<bool>("Report details not found"));
-
-                // We reuse VerifyReviewerAuthorizationAsync because CanReview usually implies Admin/Owner rights
-                // OR you can implement specific HasAdminAccess logic here if different.
-                // Assuming CanReviewReportAccess logic covers the Admin check.
-                var authCheck = await VerifyReviewerAuthorizationAsync(request.RevokerId, reportResult.Value);
-                if (!authCheck.IsSuccess)
-                    return Result<bool>.Failure(new Error<bool>("You do not have permission to Revoke access"));
-            }
-
-            // 4. Domain Logic
-            var res = entity.Revoke(request.RevokerId, request.RevocationComment);
-            if (!res.IsSuccess) return res;
-
-            await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
+            _context.Set<ReportRating>().Update(rating);
+            await Task.CompletedTask;
         }
 
-        public async Task<Result<bool>> CancelSubscriptionAsync(CancelSubscriptionRequest request)
+        public async Task RemoveRatingAsync(ReportRating rating)
         {
-            // 1. Fetch
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure(new Error<bool>("Subscription not found"));
-
-            // 2. Security: Only Requestor can Cancel
-            // Assuming CancelSubscriptionRequest has OperatorId/RequestorId
-            // if (action == AccessReviewActions.Cancel && request.Requestor.ID != operatorId)
-            //     throw new InvalidOperationException("You cannot Cancel someone elses subscription");
-
-            // Using ID from request assuming it represents current user
-            if (entity.RequestorId != request.OperatorId) // Ensure DTO has OperatorId
-                return Result<bool>.Failure(new Error<bool>("You cannot Cancel someone else's subscription"));
-
-            // 3. Update State (assuming Cancel logic similar to Revoke/Reject in entity)
-            // entity.Cancel(); 
-            // await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
+            _context.Set<ReportRating>().Remove(rating);
+            await Task.CompletedTask;
         }
 
-        // --- Helpers ---
-
-        /// <summary>
-        /// Logic implementing CanReviewReportAccess: Checks Admin overrides and specific Analyst/Manager roles.
-        /// </summary>
-        private async Task<Result<bool>> VerifyReviewerAuthorizationAsync(int reviewerId, ReportStatusDto report)
+        public async Task<int> SaveChangesAsync()
         {
-            // 1. Get Reviewer Permissions
-            var authResult = await _appUserProxy.AuthorizeUser(reviewerId);
-            if (!authResult.IsSuccess)
-                return Result<bool>.Failure($"Could not authorize reviewer: {authResult.Error}");
-
-            var permissions = authResult.Value;
-
-            // 2. Find Permission for this Division
-            var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
-
-            if (appUserPermission == null)
-                return Result<bool>.Failure($"Reviewer {reviewerId} has no permissions for Division {report.Division_ID}");
-
-            // 3. Check Admin Access
-            // Logic: if (HasAnyAccess && (IsAdmin || IsMohawkAdmin)) -> true
-            if (appUserPermission.HasAnyAccess && (appUserPermission.IsAdmin || appUserPermission.IsMohawkAdmin))
-            {
-                return Result<bool>.Success(true);
-            }
-
-            // 4. Check Specific Approver Roles based on Report Config (ReportingOrg flags)
-            // bool num = report.ReportingOrg.PACanApproveRequest && report.PrimaryAnalyst_ID == ID;
-            bool isPA = report.PACanApproveRequest && report.PrimaryAnalyst_ID == reviewerId;
-            bool isBA = report.BACanApproveRequest && report.BackupAnalyst_ID == reviewerId;
-            bool isRTM = report.RTMCanApproveRequest && report.ReportingTeamManager_ID == reviewerId;
-            bool isPLC = report.PLCCanApproveRequest && report.PrimaryLOBOwner_ID == reviewerId;
-            bool isBLC = report.BLCCanApproveRequest && report.SecondaryLOBOwner_ID == reviewerId;
-
-            // 5. Global Approver Check (NBK)
-            // Assuming we have the User's NBK from the proxy/auth result
-            // bool flag5 = report.ReportingOrg.GlobalApproversList.Contains(NBK);
-            bool isGlobal = report.GlobalApproversList != null && report.GlobalApproversList.Contains(authResult.Value.First().NBK); // Example access
-
-            if (isPA || isBA || isRTM || isPLC || isBLC || isGlobal)
-            {
-                return Result<bool>.Success(true);
-            }
-
-            return Result<bool>.Failure($"User {reviewerId} is not authorized to approve requests for Report {report.ReportId}");
+            return await _context.SaveChangesAsync();
         }
-
-        private async Task<Result<ReportStatusDto>> VerifyReportIsActiveAsync(int reportId)
-        {
-            var reportResult = await _inventoryProxy.GetReportStatusAsync(reportId);
-            if (!reportResult.IsSuccess || !reportResult.Value.Exists) return Result<ReportStatusDto>.Failure($"Report {reportId} does not exist.");
-            if (!reportResult.Value.IsActive) return Result<ReportStatusDto>.Failure($"Requested report {reportId} is not active.");
-            return Result<ReportStatusDto>.Success(reportResult.Value);
-        }
-
-        private async Task<Result<bool>> VerifyUserAccessAsync(int requestorId, ReportStatusDto report)
-        {
-            var authResult = await _appUserProxy.AuthorizeUser(requestorId);
-            if (!authResult.IsSuccess) return Result<bool>.Failure($"Could not authorize user: {authResult.Error}");
-
-            var permissions = authResult.Value;
-            var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
-
-            if (appUserPermission == null) return Result<bool>.Failure($"Access Denied: User has no permissions for Division {report.Division_ID}");
-            if (!appUserPermission.HasAnyAccess) return Result<bool>.Failure("Access Denied: User does not have 'HasAnyAccess' flag.");
-
-            bool hasAccess = report.SecurityScope switch
-            {
-                "NonNPI" => appUserPermission.IsNonNPI,
-                "NPI" => appUserPermission.IsNPI,
-                "SSN" => appUserPermission.IsSSN,
-                _ => false
-            };
-
-            if (!hasAccess) return Result<bool>.Failure($"Access Denied: User does not have permissions for Scope '{report.SecurityScope}'.");
-
-            return Result<bool>.Success(true);
-        }
-
-        // ... Remaining Methods ...
-        public async Task<Result<GetSubscriptionResponse>> GetSubscriptionByIdAsync(GetSubscriptionByIdRequest request) { /*...*/ return Result<GetSubscriptionResponse>.Success(new GetSubscriptionResponse(0, null, null, null, null, null, DateTimeOffset.MinValue, null, null, 0, 0, 0, 0)); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionByUserIdAsync(GetSubscriptionByUserIdRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllSubscriptionsAsync(GetSubscriptionRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllPendingSubscriptionsAsync(GetSubscriptionRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionsForReportAsync(GetSubscriptionByReportIdRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
     }
 }
 
 
 
+
+// validator
+using FluentValidation;
+using BofA.ERGH.ReportHub.Rating.Shared.Request;
+using BofA.ERGH.ReportHub.Rating.Proxies; // Assuming InventoryProxy lives here or Shared
+
+namespace BofA.ERGH.ReportHub.Rating.Validators
+{
+    public class SaveRatingRequestValidator : AbstractValidator<SaveRatingRequest>
+    {
+        public SaveRatingRequestValidator(IReportInventoryProxy inventoryProxy)
+        {
+            RuleFor(x => x.ReportId).GreaterThan(0).WithMessage("Report ID is required.");
+            RuleFor(x => x.UserId).GreaterThan(0).WithMessage("User ID is required.");
+            RuleFor(x => x.Rating)
+                .InclusiveBetween(1, 5)
+                .WithMessage("Rating must be between 1 and 5.");
+
+            // Check if Report Exists via Proxy
+            RuleFor(x => x.ReportId).CustomAsync(async (reportId, context, ct) =>
+            {
+                var result = await inventoryProxy.GetReportStatusAsync(reportId);
+                if (!result.IsSuccess || !result.Value.Exists)
+                {
+                    context.AddFailure("ReportId", $"Report {reportId} not found.");
+                }
+            });
+        }
+    }
+
+    public class RemoveRatingRequestValidator : AbstractValidator<RemoveRatingRequest>
+    {
+        public RemoveRatingRequestValidator(IReportInventoryProxy inventoryProxy)
+        {
+            RuleFor(x => x.ReportId).GreaterThan(0);
+            RuleFor(x => x.UserId).GreaterThan(0);
+
+            // Optional: You could check if report exists here too, but for removal 
+            // of a rating, if the report is gone, the rating might still exist technically.
+            // Keeping it simple for now or you can add similar logic.
+        }
+    }
+}
+
+
+// services
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using FluentValidation;
-using BofA.ERGH.ReportHub.Subscription.Shared.Contracts;
-using BofA.ERGH.ReportHub.Subscription.Shared.Request;
-using BofA.ERGH.ReportHub.Subscription.Shared.Response;
-using BofA.ERGH.ReportHub.Subscription.Domain.Interface;
-using BofA.ERGH.ReportHub.Subscription.Domain.Entities;
-using BofA.ERGH.ReportHub.Subscription.Proxies; 
-using BofA.ERGH.ReportHub.Subscription.Validators; 
-using BofA.ERGH.Abstractions.Core; 
+using BofA.ERGH.Abstractions.Core;
+using BofA.ERGH.ReportHub.Rating.Shared.Contracts;
+using BofA.ERGH.ReportHub.Rating.Shared.Request;
+using BofA.ERGH.ReportHub.Rating.Shared.Response;
+using BofA.ERGH.ReportHub.Rating.Domain.Interface;
+using BofA.ERGH.ReportHub.Rating.Domain.Entities;
+using BofA.ERGH.ReportHub.Rating.Validators; // For manual instantiation team pattern
+using BofA.ERGH.ReportHub.Rating.Proxies;
 
-namespace BofA.ERGH.ReportHub.Subscription.Services
+namespace BofA.ERGH.ReportHub.Rating.Services
 {
-    public class SubscriptionService : ISubscription
+    public class RatingService : IRatingService
     {
-        private readonly ISubscriptionRepository _repository;
-        private readonly ILogger<SubscriptionService> _logger;
+        private readonly IRatingRepository _repository;
+        private readonly ILogger<RatingService> _logger;
         private readonly IReportInventoryProxy _inventoryProxy;
-        private readonly IAppUserProxy _appUserProxy;
 
-        public SubscriptionService(
-            ISubscriptionRepository repository,
-            ILogger<SubscriptionService> logger,
-            IReportInventoryProxy inventoryProxy,
-            IAppUserProxy appUserProxy)
+        public RatingService(
+            IRatingRepository repository,
+            ILogger<RatingService> logger,
+            IReportInventoryProxy inventoryProxy)
         {
             _repository = repository;
             _logger = logger;
             _inventoryProxy = inventoryProxy;
-            _appUserProxy = appUserProxy;
         }
 
-        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
+        public async Task<Result<RatingResponse>> SaveRatingAsync(SaveRatingRequest request)
         {
-            _logger.LogInformation("Validating request - CreateSubscriptionAsync - Type: {SubscriptionType}", request.SubscriptionType);
+            _logger.LogInformation("Saving rating for Report {ReportId} by User {UserId}", request.ReportId, request.UserId);
 
-            // 1. Manual Validator Instantiation (Team Approach)
-            var validator = new CreateSubscriptionRequestValidator(_repository, request.RequestorId);
+            // 1. Validate (Using Team Approach: Manual Instantiation to pass proxy)
+            var validator = new SaveRatingRequestValidator(_inventoryProxy);
             var validationResult = await validator.ValidateAsync(request);
 
             if (!validationResult.IsValid)
             {
                 var problems = validationResult.Problems().ToArray();
-                return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>("Validation failed", default, problems));
+                return Result<RatingResponse>.Failure(new Error<RatingResponse>("Validation failed", default, problems));
             }
 
-            // 2. Business Logic: Report Status Check
-            var reportResult = await VerifyReportIsActiveAsync(request.ReportId);
-            if (!reportResult.IsSuccess) return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(reportResult.Error));
+            // 2. Check Existing
+            var existingRating = await _repository.GetRatingAsync(request.ReportId, request.UserId);
 
-            // 3. Business Logic: Access/Entitlements Check
-            var accessCheck = await VerifyUserAccessAsync(request.RequestorId, reportResult.Value);
-            if (!accessCheck.IsSuccess) return Result<GetSubscriptionResponse>.Failure(new Error<GetSubscriptionResponse>(accessCheck.Error));
+            ReportRating entity;
+            if (existingRating != null)
+            {
+                // Update
+                existingRating.UpdateRating(request.Rating);
+                await _repository.UpdateRatingAsync(existingRating);
+                entity = existingRating;
+            }
+            else
+            {
+                // Create
+                entity = new ReportRating(request.ReportId, request.UserId, request.Rating);
+                await _repository.AddRatingAsync(entity);
+            }
 
-            // 4. Create
-            var entity = new ReportAccess(request.ReportId, request.RequestorId, request.Justification);
-            var createdEntity = await _repository.CreateSubscriptionAsync(entity);
+            await _repository.SaveChangesAsync();
 
-            _logger.LogInformation("Successfully created subscription {SubscriptionId}", createdEntity.Id);
-            return Result<GetSubscriptionResponse>.Success(createdEntity.ToDto());
+            return Result<RatingResponse>.Success(new RatingResponse(entity.Id, entity.ReportId, entity.UserId, entity.RatingValue));
         }
 
+        public async Task<Result<bool>> RemoveRatingAsync(RemoveRatingRequest request)
+        {
+            _logger.LogInformation("Removing rating for Report {ReportId} by User {UserId}", request.ReportId, request.UserId);
+
+            var validator = new RemoveRatingRequestValidator(_inventoryProxy);
+            var validationResult = await validator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var problems = validationResult.Problems().ToArray();
+                return Result<bool>.Failure(new Error<bool>("Validation failed", default, problems));
+            }
+
+            // 2. Check if Report Exists (Business Logic check before action)
+            var reportCheck = await _inventoryProxy.GetReportStatusAsync(request.ReportId);
+            if (!reportCheck.IsSuccess || !reportCheck.Value.Exists)
+                return Result<bool>.Failure(new Error<bool>("Report not found"));
+
+            var existingRating = await _repository.GetRatingAsync(request.ReportId, request.UserId);
+
+            if (existingRating != null)
+            {
+                await _repository.RemoveRatingAsync(existingRating);
+                await _repository.SaveChangesAsync();
+                return Result<bool>.Success(true);
+            }
+
+            // Logic from snippet: "Rating not found - already removed or never existed" returns Success
+            _logger.LogInformation("Rating not found for removal (idempotent success).");
+            return Result<bool>.Success(true);
+        }
+
+        public async Task<Result<RatingResponse>> GetRatingAsync(GetRatingRequest request)
+        {
+            var entity = await _repository.GetRatingAsync(request.ReportId, request.UserId);
+            if (entity == null)
+                return Result<RatingResponse>.Failure(new Error<RatingResponse>("Rating not found"));
+
+            return Result<RatingResponse>.Success(new RatingResponse(entity.Id, entity.ReportId, entity.UserId, entity.RatingValue));
+        }
+    }
+}
+
+
+
+//api controller
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using System;
+using BofA.ERGH.ReportHub.Rating.Shared.Contracts;
+using BofA.ERGH.ReportHub.Rating.Shared.Request;
+using BofA.ERGH.Abstractions.Core; // Assuming HandleResult logic lives in BaseController
+
+namespace BofA.ERGH.ReportHub.Rating.API
+{
+    public class RatingController : BaseApiController
+    {
+        private readonly IRatingService _ratingService;
+        private readonly ILogger<RatingController> _logger;
+
+        public RatingController(IRatingService ratingService, ILogger<RatingController> logger)
+        {
+            _ratingService = ratingService;
+            _logger = logger;
+        }
+
+        [HttpPost("SaveRating")]
+        public async Task<IActionResult> SaveRating([FromBody] SaveRatingRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Saving rating request received");
+                // Note: If you need to enforce that UserId comes from Context instead of DTO,
+                // you would extract it here: var userId = int.Parse(User.FindFirst("id").Value);
+                // and create a new request object or update the DTO property if mutable.
+
+                var result = await _ratingService.SaveRatingAsync(request);
+                return HandleResult(result);
+            }
+            catch (Exception ex)
+            {
+                string error = "An error occurred while saving rating.";
+                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
+                return HandleResult(Result<object>.Failure(error));
+            }
+        }
+
+        [HttpPost("RemoveRating")]
+        public async Task<IActionResult> RemoveRating([FromBody] RemoveRatingRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Remove rating request received");
+                var result = await _ratingService.RemoveRatingAsync(request);
+                return HandleResult(result);
+            }
+            catch (Exception ex)
+            {
+                string error = "An error occurred while removing rating.";
+                _logger.LogError(ex, "Error: {Error}\r\n\tRequest: {@Request}", error, request);
+                return HandleResult(Result<object>.Failure(error));
+            }
+        }
+
+        [HttpGet("GetRating")]
+        public async Task<IActionResult> GetRating([FromQuery] int reportId, [FromQuery] int userId)
+        {
+            try
+            {
+                var request = new GetRatingRequest(reportId, userId);
+                var result = await _ratingService.GetRatingAsync(request);
+                return HandleResult(result);
+            }
+            catch (Exception ex)
+            {
+                string error = "An error occurred while fetching rating.";
+                _logger.LogError(ex, "Error: {Error}", error);
+                return HandleResult(Result<object>.Failure(error));
+            }
+        }
+    }
+}
+
+
+
+// proxy report access
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using BofA.ERGH.Abstractions.Core;
+using BofA.ERGH.ReportHub.Subscription.Shared.Contracts;
+using BofA.ERGH.ReportHub.Subscription.Shared.Request;
+using BofA.ERGH.ReportHub.Subscription.Shared.Response;
+// Assuming ProxyBase, ICustomAuthenticator, etc. namespaces
+
+namespace BofA.ERGH.ReportHub.Subscription.Proxies
+{
+    public class SubscriptionProxy(
+        ILogger<SubscriptionProxy> logger,
+        ICustomAuthenticator authenticator,
+        IHttpClientFactory httpClientFactory) : ProxyBase(logger, authenticator), ISubscription
+    {
+        // 1. GetSubscriptionById
+        // Controller: [HttpGet("GetSubscriptionById")] -> Query: ?subscriptionId={id}
+        public async Task<Result<GetSubscriptionResponse>> GetSubscriptionByIdAsync(GetSubscriptionByIdRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                // Fix: Path matches controller route + query string
+                var response = await client.GetAsync($"/api/subscription/GetSubscriptionById?subscriptionId={request.SubscriptionId}");
+                return await GetResponseAsync<GetSubscriptionResponse>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<GetSubscriptionResponse>(logger, ex);
+            }
+        }
+
+        // 2. GetSubscriptionByUserId
+        // Controller: [HttpGet("GetSubscriptionByUserId")] -> Query: ?userId={id}
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionByUserIdAsync(GetSubscriptionByUserIdRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                // Fix: Path matches controller route + query string
+                var response = await client.GetAsync($"/api/subscription/GetSubscriptionByUserId?userId={request.UserId}");
+                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
+            }
+        }
+
+        // 3. GetSubscriptionsForReport
+        // Controller: [HttpGet("GetSubscriptionsForReport")] -> Query: ?reportId={id}
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionsForReportAsync(GetSubscriptionByReportIdRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                // Fix: Path matches controller route + query string
+                var response = await client.GetAsync($"/api/subscription/GetSubscriptionsForReport?reportId={request.ReportId}");
+                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
+            }
+        }
+
+        // 4. CreateSubscription
+        // Controller: [HttpPost("CreateSubscription")] -> Body: request
+        public async Task<Result<GetSubscriptionResponse>> CreateSubscriptionAsync(CreateSubscriptionRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                // Fix: Using PostAsJsonAsync for body
+                var response = await client.PostAsJsonAsync("/api/subscription/CreateSubscription", request);
+                return await GetResponseAsync<GetSubscriptionResponse>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<GetSubscriptionResponse>(logger, ex);
+            }
+        }
+
+        // 5. ApproveSubscription
+        // Controller: [HttpPost("ApproveSubscription")] -> Body: request
         public async Task<Result<bool>> ApproveSubscriptionAsync(ApproveSubscriptionRequest request)
         {
-            _logger.LogInformation("Approving subscription: {SubscriptionId} by Reviewer: {ReviewerId}", request.SubscriptionId, request.ReviewerId);
-
-            // 1. Validate Input & State (Pending Check + Self-Approval Check)
-            var validator = new ApproveSubscriptionRequestValidator(_repository);
-            var validationResult = await validator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-                return Result<bool>.Failure(new Error<bool>(validationResult.ToString()));
-
-            // 2. Fetch Subscription (Already validated existence, but need object for logic)
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-
-            // 3. Security Check: Verify Reviewer Authorization (CanReviewReportAccess)
-            var reportResult = await _inventoryProxy.GetReportStatusAsync(entity.ReportId);
-            if (!reportResult.IsSuccess) return Result<bool>.Failure(new Error<bool>("Report details not found"));
-            var report = reportResult.Value;
-
-            var authCheck = await VerifyReviewerAuthorizationAsync(request.ReviewerId, report);
-            if (!authCheck.IsSuccess)
+            try
             {
-                _logger.LogWarning("Reviewer {ReviewerId} is not authorized to approve Report {ReportId}. Reason: {Error}", request.ReviewerId, entity.ReportId, authCheck.Error);
-                return Result<bool>.Failure(new Error<bool>("You do not have permission to Approve/Reject the request"));
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                var response = await client.PostAsJsonAsync("/api/subscription/ApproveSubscription", request);
+                return await GetResponseAsync<bool>(response);
             }
-
-            // 4. Verify Requestor STILL has access (CanRequestAccess)
-            var requestorAccessCheck = await VerifyUserAccessAsync(entity.RequestorId, report);
-            if (!requestorAccessCheck.IsSuccess)
-                return Result<bool>.Failure(new Error<bool>("Requestor no longer has access to the report. The request is not valid anymore."));
-
-            // 5. Domain Logic: Approve
-            var res = entity.Approve(request.ReviewerId, request.ReviewComment);
-            if (!res.IsSuccess) return res;
-
-            await _repository.UpdateSubscriptionAsync(entity);
-            _logger.LogInformation("Subscription {SubscriptionId} approved successfully", request.SubscriptionId);
-            return Result<bool>.Success(true);
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<bool>(logger, ex);
+            }
         }
 
+        // 6. RejectSubscription
         public async Task<Result<bool>> RejectSubscriptionAsync(RejectSubscriptionRequest request)
         {
-            _logger.LogInformation("Rejecting subscription: {SubscriptionId}", request.SubscriptionId);
-
-            // 1. Validate Input & State (Pending Check)
-            // Note: If DTO doesn't have ReviewerId, we might need to pass it in constructor like CreateSubscriptionValidator
-            var validator = new RejectSubscriptionRequestValidator(_repository);
-            var validationResult = await validator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-                return Result<bool>.Failure(new Error<bool>(validationResult.ToString()));
-
-            // 2. Fetch Subscription
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-
-            // 3. Security Check: Verify Reviewer Authorization
-            // Note: Assuming we have ReviewerId from somewhere (Context/DTO) to check permissions
-            // Assuming for now DTO needs update or logic handles it outside
-            // Keeping auth check flow consistent with Approve if ReviewerId available
-            /* var reportResult = await _inventoryProxy.GetReportStatusAsync(entity.ReportId);
-            if (!reportResult.IsSuccess) return Result<bool>.Failure(new Error<bool>("Report details not found"));
-            
-            var authCheck = await VerifyReviewerAuthorizationAsync(request.ReviewerId, reportResult.Value);
-            if (!authCheck.IsSuccess)
-                return Result<bool>.Failure(new Error<bool>("You do not have permission to Approve/Reject the request"));
-            */
-
-            // 4. Domain Logic: Reject
-            // For now assuming we pass 0 or a valid ID if updated
-            var res = entity.Reject(999, request.ReviewComment); // Placeholder ReviewerId if not in DTO
-            if (!res.IsSuccess) return res;
-
-            await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                var response = await client.PostAsJsonAsync("/api/subscription/RejectSubscription", request);
+                return await GetResponseAsync<bool>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<bool>(logger, ex);
+            }
         }
 
+        // 7. RevokeSubscription
         public async Task<Result<bool>> RevokeSubscriptionAsync(RevokeSubscriptionRequest request)
         {
-            _logger.LogInformation("Revoking subscription: {SubscriptionId}", request.SubscriptionId);
-
-            // 1. Fetch
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure(new Error<bool>("Subscription not found"));
-
-            // 2. Validate Comment
-            if (string.IsNullOrWhiteSpace(request.RevocationComment))
-                return Result<bool>.Failure(new Error<bool>("Comment is required when Revoking access request"));
-
-            // 3. Security Check: Operator == Requestor OR Admin
-            bool isSelfRevoke = request.RevokerId == entity.RequestorId;
-
-            if (!isSelfRevoke)
+            try
             {
-                var reportResult = await _inventoryProxy.GetReportStatusAsync(entity.ReportId);
-                if (!reportResult.IsSuccess) return Result<bool>.Failure(new Error<bool>("Report details not found"));
-
-                var authCheck = await VerifyReviewerAuthorizationAsync(request.RevokerId, reportResult.Value);
-                if (!authCheck.IsSuccess)
-                    return Result<bool>.Failure(new Error<bool>("You do not have permission to Revoke access"));
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                var response = await client.PostAsJsonAsync("/api/subscription/RevokeSubscription", request);
+                return await GetResponseAsync<bool>(response);
             }
-
-            // 4. Domain Logic
-            var res = entity.Revoke(request.RevokerId, request.RevocationComment);
-            if (!res.IsSuccess) return res;
-
-            await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<bool>(logger, ex);
+            }
         }
 
+        // 8. CancelSubscription
         public async Task<Result<bool>> CancelSubscriptionAsync(CancelSubscriptionRequest request)
         {
-            // 1. Fetch
-            var entity = await _repository.GetSubscriptionByIdAsync(request.SubscriptionId);
-            if (entity == null) return Result<bool>.Failure(new Error<bool>("Subscription not found"));
-
-            // 2. Security: Only Requestor can Cancel
-            // Using ID from request assuming it represents current user
-            if (entity.RequestorId != request.OperatorId) // Ensure DTO has OperatorId
-                return Result<bool>.Failure(new Error<bool>("You cannot Cancel someone else's subscription"));
-
-            // 3. Update State (assuming Cancel logic similar to Revoke/Reject in entity)
-            // entity.Cancel(); 
-            // await _repository.UpdateSubscriptionAsync(entity);
-            return Result<bool>.Success(true);
-        }
-
-        // --- Helpers ---
-
-        private async Task<Result<bool>> VerifyReviewerAuthorizationAsync(int reviewerId, ReportStatusDto report)
-        {
-            var authResult = await _appUserProxy.AuthorizeUser(reviewerId);
-            if (!authResult.IsSuccess)
-                return Result<bool>.Failure($"Could not authorize reviewer: {authResult.Error}");
-
-            var permissions = authResult.Value;
-
-            var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
-
-            if (appUserPermission == null)
-                return Result<bool>.Failure($"Reviewer {reviewerId} has no permissions for Division {report.Division_ID}");
-
-            if (appUserPermission.HasAnyAccess && (appUserPermission.IsAdmin || appUserPermission.IsMohawkAdmin))
+            try
             {
-                return Result<bool>.Success(true);
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                var response = await client.PostAsJsonAsync("/api/subscription/CancelSubscription", request);
+                return await GetResponseAsync<bool>(response);
             }
-
-            bool isPA = report.PACanApproveRequest && report.PrimaryAnalyst_ID == reviewerId;
-            bool isBA = report.BACanApproveRequest && report.BackupAnalyst_ID == reviewerId;
-            bool isRTM = report.RTMCanApproveRequest && report.ReportingTeamManager_ID == reviewerId;
-            bool isPLC = report.PLCCanApproveRequest && report.PrimaryLOBOwner_ID == reviewerId;
-            bool isBLC = report.BLCCanApproveRequest && report.SecondaryLOBOwner_ID == reviewerId;
-
-            bool isGlobal = report.GlobalApproversList != null && report.GlobalApproversList.Contains(authResult.Value.First().NBK);
-
-            if (isPA || isBA || isRTM || isPLC || isBLC || isGlobal)
+            catch (Exception ex)
             {
-                return Result<bool>.Success(true);
+                return ExceptionHelper.HandleException<bool>(logger, ex);
             }
-
-            return Result<bool>.Failure($"User {reviewerId} is not authorized to approve requests for Report {report.ReportId}");
         }
 
-        private async Task<Result<ReportStatusDto>> VerifyReportIsActiveAsync(int reportId)
+        // 9. GetAllSubscriptions
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllSubscriptionsAsync(GetSubscriptionRequest request)
         {
-            var reportResult = await _inventoryProxy.GetReportStatusAsync(reportId);
-            if (!reportResult.IsSuccess || !reportResult.Value.Exists) return Result<ReportStatusDto>.Failure($"Report {reportId} does not exist.");
-            if (!reportResult.Value.IsActive) return Result<ReportStatusDto>.Failure($"Requested report {reportId} is not active.");
-            return Result<ReportStatusDto>.Success(reportResult.Value);
-        }
-
-        private async Task<Result<bool>> VerifyUserAccessAsync(int requestorId, ReportStatusDto report)
-        {
-            var authResult = await _appUserProxy.AuthorizeUser(requestorId);
-            if (!authResult.IsSuccess) return Result<bool>.Failure($"Could not authorize user: {authResult.Error}");
-
-            var permissions = authResult.Value;
-            var appUserPermission = permissions.SingleOrDefault(p => p.Division_ID == report.Division_ID);
-
-            if (appUserPermission == null) return Result<bool>.Failure($"Access Denied: User has no permissions for Division {report.Division_ID}");
-            if (!appUserPermission.HasAnyAccess) return Result<bool>.Failure("Access Denied: User does not have 'HasAnyAccess' flag.");
-
-            bool hasAccess = report.SecurityScope switch
+            try
             {
-                "NonNPI" => appUserPermission.IsNonNPI,
-                "NPI" => appUserPermission.IsNPI,
-                "SSN" => appUserPermission.IsSSN,
-                _ => false
-            };
-
-            if (!hasAccess) return Result<bool>.Failure($"Access Denied: User does not have permissions for Scope '{report.SecurityScope}'.");
-
-            return Result<bool>.Success(true);
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                // Note: GetSubscriptionRequest is empty, but if it had filters they would go here
+                var response = await client.GetAsync("/api/subscription/GetAllSubscriptions");
+                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
+            }
         }
 
-        // ... Remaining Methods ...
-        public async Task<Result<GetSubscriptionResponse>> GetSubscriptionByIdAsync(GetSubscriptionByIdRequest request) { /*...*/ return Result<GetSubscriptionResponse>.Success(new GetSubscriptionResponse(0, null, null, null, null, null, DateTimeOffset.MinValue, null, null, 0, 0, 0, 0)); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionByUserIdAsync(GetSubscriptionByUserIdRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllSubscriptionsAsync(GetSubscriptionRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllPendingSubscriptionsAsync(GetSubscriptionRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
-        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetSubscriptionsForReportAsync(GetSubscriptionByReportIdRequest request) { /*...*/ return Result<IEnumerable<GetSubscriptionResponse>>.Success(new List<GetSubscriptionResponse>()); }
+        // 10. GetAllPendingSubscriptions
+        public async Task<Result<IEnumerable<GetSubscriptionResponse>>> GetAllPendingSubscriptionsAsync(GetSubscriptionRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterSubscriptionProxy.HttpClientName);
+                var response = await client.GetAsync("/api/subscription/GetAllPendingSubscriptions");
+                return await GetResponseAsync<IEnumerable<GetSubscriptionResponse>>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<IEnumerable<GetSubscriptionResponse>>(logger, ex);
+            }
+        }
+    }
+}
+
+
+
+// proxy reportrating
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using BofA.ERGH.Abstractions.Core;
+using BofA.ERGH.ReportHub.Rating.Shared.Contracts;
+using BofA.ERGH.ReportHub.Rating.Shared.Request;
+using BofA.ERGH.ReportHub.Rating.Shared.Response;
+// Assuming ProxyBase, ICustomAuthenticator, etc. namespaces
+
+namespace BofA.ERGH.ReportHub.Rating.Proxies
+{
+    public class ReportRatingProxy(
+        ILogger<ReportRatingProxy> logger,
+        ICustomAuthenticator authenticator,
+        IHttpClientFactory httpClientFactory) : ProxyBase(logger, authenticator), IRatingService
+    {
+        // 1. SaveRating
+        // Controller: [HttpPost("SaveRating")] -> Body: request
+        public async Task<Result<RatingResponse>> SaveRatingAsync(SaveRatingRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterRatingProxy.HttpClientName); // Ensure registration name matches
+                var response = await client.PostAsJsonAsync("/api/rating/SaveRating", request);
+                return await GetResponseAsync<RatingResponse>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<RatingResponse>(logger, ex);
+            }
+        }
+
+        // 2. RemoveRating
+        // Controller: [HttpPost("RemoveRating")] -> Body: request
+        public async Task<Result<bool>> RemoveRatingAsync(RemoveRatingRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterRatingProxy.HttpClientName);
+                var response = await client.PostAsJsonAsync("/api/rating/RemoveRating", request);
+                return await GetResponseAsync<bool>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<bool>(logger, ex);
+            }
+        }
+
+        // 3. GetRating
+        // Controller: [HttpGet("GetRating")] -> Query: ?reportId={id}&userId={id}
+        // Note: IRatingService interface method signature might take GetRatingRequest object
+        public async Task<Result<RatingResponse>> GetRatingAsync(GetRatingRequest request)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient(RegisterRatingProxy.HttpClientName);
+                // Fix: Path matches controller route + query strings
+                var response = await client.GetAsync($"/api/rating/GetRating?reportId={request.ReportId}&userId={request.UserId}");
+                return await GetResponseAsync<RatingResponse>(response);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHelper.HandleException<RatingResponse>(logger, ex);
+            }
+        }
     }
 }
