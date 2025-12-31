@@ -42,970 +42,945 @@ namespace SchedulingTasks.Data
     }
 }
 
-< !DOCTYPE html >
-< html lang = "en" >
-< head >
-    < meta charset = "UTF-8" >
-    < meta name = "viewport" content = "width=device-width, initial-scale=1.0" >
-    < title > Manage Division </ title >
-    < style >
+// first
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Division</title>
+    <style>
         * {
-margin: 0;
-padding: 0;
-    box - sizing: border - box;
-}
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-body {
-            font-family: -apple - system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-background - color: #f5f5f5;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
             color: #333;
-            line - height: 1.5;
-padding: 20px;
+            line-height: 1.5;
+            padding: 20px;
         }
 
         .container {
             max-width: 1400px;
-margin: 0 auto;
-background: #fff;
-            border - radius: 8px;
-box - shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-padding: 24px 32px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px 32px;
         }
 
         h1 {
             font-size: 20px;
-font - weight: 600;
-margin - bottom: 24px;
-color: #1a1a1a;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1a1a1a;
         }
 
         /* Division Selector Row */
-        .division - selector {
-display: flex;
-    align - items: center;
-gap: 16px;
-    margin - bottom: 24px;
-}
+        .division-selector {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
 
-        .division - selector label {
+        .division-selector label {
             font-size: 14px;
-color: #666;
-            font - weight: 500;
+            color: #666;
+            font-weight: 500;
         }
 
-        .select - wrapper {
-position: relative;
-flex: 1;
-    max - width: 400px;
-}
+        .select-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
 
-        .select - wrapper select {
-            width: 100 %;
-padding: 10px 40px 10px 14px;
-font - size: 14px;
-border: 1px solid #ddd;
+        .select-wrapper select {
+            width: 100%;
+            padding: 10px 40px 10px 14px;
+            font-size: 14px;
+            border: 1px solid #ddd;
             border-radius: 4px;
-background: #fff;
+            background: #fff;
             appearance: none;
-cursor: pointer;
-color: #333;
+            cursor: pointer;
+            color: #333;
         }
 
-        .select - wrapper::after {
-content: '';
-position: absolute;
-right: 14px;
-top: 50 %;
-transform: translateY(-50 %);
-width: 0;
-height: 0;
-    border - left: 5px solid transparent;
-    border - right: 5px solid transparent;
-    border - top: 5px solid #666;
-            pointer - events: none;
-}
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #666;
+            pointer-events: none;
+        }
 
         .btn {
             padding: 10px 20px;
-font - size: 14px;
-border - radius: 4px;
-cursor: pointer;
-font - weight: 500;
-transition: all 0.2s;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
         }
 
-        .btn - secondary {
-background: #6b7280;
+        .btn-secondary {
+            background: #6b7280;
             color: #fff;
             border: none;
-}
+        }
 
-        .btn - secondary:hover {
+        .btn-secondary:hover {
             background: #5a6170;
         }
 
-        .btn - outline {
-background: #fff;
+        .btn-outline {
+            background: #fff;
             color: #0049ac;
             border: 1px solid #0049ac;
         }
 
-        .btn - outline:hover {
+        .btn-outline:hover {
             background: #f0f7ff;
         }
 
-        .btn - save {
-background: #0049ac;
+        .btn-save {
+            background: #0049ac;
             color: #fff;
             border: 1px solid #0049ac;
         }
 
-        .btn - save:hover {
+        .btn-save:hover {
             background: #003d91;
         }
 
-        .btn - cancel {
-background: #fff;
+        .btn-cancel {
+            background: #fff;
             color: #666;
             border: 1px solid #ccc;
         }
 
-        .btn - cancel:hover {
+        .btn-cancel:hover {
             background: #f5f5f5;
         }
 
         /* Division Card */
-        .division - card {
-display: flex;
-    align - items: center;
-    justify - content: space - between;
-padding: 16px 20px;
-background: #fafafa;
-            border - radius: 6px;
-    margin - bottom: 24px;
-}
-
-        .division - info {
-display: flex;
-    align - items: center;
-gap: 12px;
-}
-
-        .division - name {
-    font - size: 15px;
-    font - weight: 600;
-color: #1a1a1a;
+        .division-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: #fafafa;
+            border-radius: 6px;
+            margin-bottom: 24px;
         }
 
-        .division - name - input {
-    font - size: 15px;
-    font - weight: 600;
-color: #1a1a1a;
-            padding: 6px 12px;
-border: 1px solid #0049ac;
-            border - radius: 4px;
-outline: none;
-    min - width: 150px;
-}
+        .division-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-        .division - name - input:focus {
+        .division-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .division-name-input {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a1a;
+            padding: 6px 12px;
+            border: 1px solid #0049ac;
+            border-radius: 4px;
+            outline: none;
+            min-width: 150px;
+        }
+
+        .division-name-input:focus {
             box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.2);
         }
 
-        .division - actions {
-display: flex;
-gap: 8px;
-}
+        .division-actions {
+            display: flex;
+            gap: 8px;
+        }
 
-        .status - badge {
-display: inline - block;
-padding: 4px 12px;
-    font - size: 12px;
-    font - weight: 500;
-    border - radius: 4px;
-}
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 4px;
+        }
 
-        .status - active {
-background: #4a7c59;
+        .status-active {
+            background: #4a7c59;
             color: #fff;
         }
 
-        .status - approved {
-background: #4a7c59;
+        .status-approved {
+            background: #4a7c59;
             color: #fff;
         }
 
-        .status - rejected {
-background: #c53030;
+        .status-rejected {
+            background: #c53030;
             color: #fff;
         }
 
         /* Tabs */
         .tabs {
             display: flex;
-margin - bottom: 24px;
-position: relative;
-border - bottom: 1px solid #c5c5c5;
+            margin-bottom: 24px;
+            position: relative;
+            border-bottom: 1px solid #c5c5c5;
         }
 
         .tab {
             padding: 14px 40px;
-font - size: 15px;
-color: #1e3a5f;
+            font-size: 15px;
+            color: #1e3a5f;
             cursor: pointer;
-transition: all 0.2s;
-position: relative;
-background: transparent;
-font - weight: 500;
-margin - bottom: -1px;
+            transition: all 0.2s;
+            position: relative;
+            background: transparent;
+            font-weight: 500;
+            margin-bottom: -1px;
         }
 
-        .tab: hover {
-color: #1e3a5f;
-        }
-
-        .tab.active {
-color: #1a1a1a;
-            background: #fff;
-            border - left: 1px solid #c5c5c5;
-            border - right: 1px solid #c5c5c5;
-            border - top: 1px solid #c5c5c5;
-            border - bottom: 1px solid #fff;
-        }
-
-        .tab.active::before {
-content: '';
-position: absolute;
-top: -1px;
-left: -1px;
-right: -1px;
-height: 3px;
-background: #1e3a5f;
-        }
-
-        /* Table Header Row */
-        .table - header {
-display: flex;
-    justify - content: space - between;
-    align - items: center;
-    margin - bottom: 16px;
-}
-
-        .total - count {
-    font - size: 14px;
-color: #666;
-        }
-
-        .search - box {
-position: relative;
-}
-
-        .search - box input {
-            padding: 8px 14px 8px 36px;
-font - size: 13px;
-border: 1px solid #ddd;
-            border-radius: 4px;
-width: 240px;
-background: #fff;
-        }
-
-        .search - box input: focus {
-outline: none;
-    border - color: #999;
-        }
-
-        .search - box::before {
-content: '';
-position: absolute;
-left: 12px;
-top: 50 %;
-transform: translateY(-50 %);
-width: 14px;
-height: 14px;
-    background - image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
-    background - size: contain;
-}
-
-        /* Data Table */
-        .data - table {
-width: 100 %;
-    border - collapse: collapse;
-}
-
-        .data - table th {
-            text-align: left;
-padding: 12px 16px;
-font - size: 13px;
-font - weight: 500;
-color: #666;
-            border - bottom: 1px solid #e5e5e5;
-            white-space: nowrap;
-        }
-
-        .data - table th.sort - icon {
-display: inline - flex;
-    flex - direction: column;
-    margin - left: 6px;
-    vertical - align: middle;
-gap: 2px;
-}
-
-        .data - table th.sort - icon span {
-            display: block;
-width: 0;
-height: 0;
-border - left: 4px solid transparent;
-border - right: 4px solid transparent;
-        }
-
-        .data - table th.sort - icon.up {
-    border - bottom: 4px solid #999;
-        }
-
-        .data - table th.sort - icon.down {
-    border - top: 4px solid #999;
-        }
-
-        .data - table td {
-            padding: 16px;
-font - size: 14px;
-border - bottom: 1px solid #f0f0f0;
-            color: #333;
-        }
-
-        .data - table tbody tr:nth - child(odd) {
-background: #f7f7f8;
-        }
-
-        .data - table tbody tr:nth - child(even) {
-background: #fff;
-        }
-
-        .data - table tbody tr:hover {
-            background: #e6fcff;
-        }
-
-        .nbk - link {
-color: #2563eb;
-            text - decoration: none;
-    font - weight: 500;
-}
-
-        .nbk - link:hover {
-            text-decoration: underline;
-        }
-
-        .email - text {
-color: #666;
-        }
-
-        /* Action Buttons */
-        .action - buttons {
-display: flex;
-gap: 24px;
-    justify - content: flex - end;
-}
-
-        .action - btn {
-width: 22px;
-height: 22px;
-    border - radius: 50 %;
-border: 2px solid;
-display: flex;
-    align - items: center;
-    justify - content: center;
-cursor: pointer;
-transition: all 0.2s;
-background: transparent;
-padding: 0;
-}
-
-        .action - btn.approve {
-    border - color: #1e3a5f;
+        .tab:hover {
             color: #1e3a5f;
         }
 
-        .action - btn.approve:hover {
+        .tab.active {
+            color: #1a1a1a;
+            background: #fff;
+            border-left: 1px solid #c5c5c5;
+            border-right: 1px solid #c5c5c5;
+            border-top: 1px solid #c5c5c5;
+            border-bottom: 1px solid #fff;
+        }
+
+        .tab.active::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            height: 3px;
+            background: #1e3a5f;
+        }
+
+        /* Table Header Row */
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .total-count {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding: 8px 14px 8px 36px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 240px;
+            background: #fff;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #999;
+        }
+
+        .search-box::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+            background-size: contain;
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 1px solid #e5e5e5;
+            white-space: nowrap;
+        }
+
+        .data-table th .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            margin-left: 6px;
+            vertical-align: middle;
+            gap: 2px;
+        }
+
+        .data-table th .sort-icon span {
+            display: block;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+        }
+
+        .data-table th .sort-icon .up {
+            border-bottom: 4px solid #999;
+        }
+
+        .data-table th .sort-icon .down {
+            border-top: 4px solid #999;
+        }
+
+        .data-table td {
+            padding: 16px;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background: #f7f7f8;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #fff;
+        }
+
+        .data-table tbody tr:hover {
+            background: #e6fcff;
+        }
+
+        .nbk-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nbk-link:hover {
+            text-decoration: underline;
+        }
+
+        .email-text {
+            color: #666;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 24px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            padding: 0;
+        }
+
+        .action-btn.approve {
+            border-color: #1e3a5f;
+            color: #1e3a5f;
+        }
+
+        .action-btn.approve:hover {
             background: #1e3a5f;
             color: #fff;
         }
 
-        .action - btn.reject {
-    border - color: #9b2c2c;
+        .action-btn.reject {
+            border-color: #9b2c2c;
             color: #9b2c2c;
         }
 
-        .action - btn.reject:hover {
+        .action-btn.reject:hover {
             background: #9b2c2c;
             color: #fff;
         }
 
-        .action - btn svg {
+        .action-btn svg {
             width: 11px;
-height: 11px;
-stroke - width: 3;
+            height: 11px;
+            stroke-width: 3;
         }
 
         /* Pagination */
-        .pagination - wrapper {
-display: flex;
-    justify - content: space - between;
-    align - items: center;
-    margin - top: 24px;
-    padding - top: 16px;
-}
+        .pagination-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            padding-top: 16px;
+        }
 
-        .showing - text {
-    font - size: 13px;
-color: #666;
+        .showing-text {
+            font-size: 13px;
+            color: #666;
         }
 
         .pagination {
             display: flex;
-align - items: center;
-gap: 4px;
+            align-items: center;
+            gap: 4px;
         }
 
-        .pagination button
-{
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: #666;
+        .pagination button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: #666;
             cursor: pointer;
-    font-size: 13px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-        .pagination button:hover: not(.active):not(:disabled) {
-background: #f0f0f0;
+            font-size: 13px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .pagination button.active
-{
-    background: #2563eb;
+        .pagination button:hover:not(.active):not(:disabled) {
+            background: #f0f0f0;
+        }
+
+        .pagination button.active {
+            background: #2563eb;
             color: #fff;
         }
 
         .pagination button:disabled {
             color: #ccc;
-            cursor: not - allowed;
+            cursor: not-allowed;
         }
 
-        .pagination.dots {
-padding: 0 4px;
-color: #666;
+        .pagination .dots {
+            padding: 0 4px;
+            color: #666;
         }
 
-        .per - page {
-display: flex;
-    align - items: center;
-gap: 8px;
-    font - size: 13px;
-color: #666;
+        .per-page {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
         }
 
-        .per - page select {
+        .per-page select {
             padding: 6px 28px 6px 10px;
-font - size: 13px;
-border: 1px solid #ddd;
+            font-size: 13px;
+            border: 1px solid #ddd;
             border-radius: 4px;
-background: #fff;
+            background: #fff;
             appearance: none;
-cursor: pointer;
-background - image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-background - repeat: no - repeat;
-background - position: right 8px center;
-background - size: 14px;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
         }
 
         /* Responsive adjustments */
-        @media(max - width: 1024px) {
-            .data - table {
-    display: block;
-        overflow - x: auto;
-    }
-}
+        @media (max-width: 1024px) {
+            .data-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
 
-@media(max - width: 768px) {
+        @media (max-width: 768px) {
             .container {
-    padding: 16px;
-    }
+                padding: 16px;
+            }
 
-            .division - selector {
-        flex - wrap: wrap;
-    }
+            .division-selector {
+                flex-wrap: wrap;
+            }
 
-            .select - wrapper {
-        max - width: 100 %;
-    width: 100 %;
-    }
+            .select-wrapper {
+                max-width: 100%;
+                width: 100%;
+            }
 
-            .pagination - wrapper {
-        flex - direction: column;
-    gap: 16px;
-    }
-}
-    </ style >
-</ head >
-< body >
-    < div class= "container" >
-        < h1 > Manage Division </ h1 >
+            .pagination-wrapper {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Manage Division</h1>
 
-        < !--Division Selector-- >
-        < div class= "division-selector" >
-            < label > Division </ label >
-            < div class= "select-wrapper" >
-                < select >
-                    < option > DWO(ETS) </ option >
-                    < option > Division 2 </ option >
-                    < option > Division 3 </ option >
-                </ select >
-            </ div >
-            < button class= "btn btn-secondary" > View Fields </ button >
-        </ div >
+        <!-- Division Selector -->
+        <div class="division-selector">
+            <label>Division</label>
+            <div class="select-wrapper">
+                <select>
+                    <option>DWO (ETS)</option>
+                    <option>Division 2</option>
+                    <option>Division 3</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary">View Fields</button>
+        </div>
 
-        < !--Division Card-- >
-        < div class= "division-card" >
-            < div class= "division-info" >
-                < span class= "division-name" id = "division-name-display" > ETS(DWO) </ span >
-                < input type = "text" class= "division-name-input" id = "division-name-input" value = "ETS (DWO)" style = "display: none;" >
-                < span class= "status-badge status-active" > Active </ span >
-            </ div >
-            < div class= "division-actions" >
-                < button class= "btn btn-outline" id = "edit-btn" > Edit </ button >
-                < button class= "btn btn-save" id = "save-btn" style = "display: none;" > Save </ button >
-                < button class= "btn btn-cancel" id = "cancel-btn" style = "display: none;" > Cancel </ button >
-            </ div >
-        </ div >
+        <!-- Division Card -->
+        <div class="division-card">
+            <div class="division-info">
+                <span class="division-name" id="division-name-display">ETS (DWO)</span>
+                <input type="text" class="division-name-input" id="division-name-input" value="ETS (DWO)" style="display: none;">
+                <span class="status-badge status-active">Active</span>
+            </div>
+            <div class="division-actions">
+                <button class="btn btn-outline" id="edit-btn">Edit</button>
+                <button class="btn btn-save" id="save-btn" style="display: none;">Save</button>
+                <button class="btn btn-cancel" id="cancel-btn" style="display: none;">Cancel</button>
+            </div>
+        </div>
 
-        < !--Tabs-- >
-        < div class= "tabs" >
-            < div class= "tab active" data - tab = "pending" > Pending Request </ div >
-            < div class= "tab" data - tab = "approved" > Approved History </ div >
-        </ div >
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="pending">Pending Request</div>
+            <div class="tab" data-tab="approved">Approved History</div>
+        </div>
 
-        < !--Pending Request Content -->
-        <div id="pending-content" class= "tab-content" >
-            < !--Table Header-- >
-            < div class= "table-header" >
-                < span class= "total-count" > Total(4) </ span >
-                < div class= "search-box" >
-                    < input type = "text" placeholder = "Search by Report ID or Name" >
-                </ div >
-            </ div >
+        <!-- Pending Request Content -->
+        <div id="pending-content" class="tab-content">
+            <!-- Table Header -->
+            <div class="table-header">
+                <span class="total-count">Total (4)</span>
+                <div class="search-box">
+                    <input type="text" placeholder="Search by Report ID or Name">
+                </div>
+            </div>
 
-            < !--Data Table-- >
-            < table class= "data-table" >
-                < thead >
-                    < tr >
-                        < th >
-                            NBK ID
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
-                            Requested by
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
-                            Email Address
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th style = "width: 200px;" ></ th >
-                        < th >
-                            Requested on
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th style = "width: 100px;" ></ th >
-                    </ tr >
-                </ thead >
-                < tbody >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > ZK20GX8 </ a ></ td >
-                        < td > Jason Scott </ td >
-                        < td class= "email-text" > jason.scott@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 21, 2025 09:30 PM </ td >
-                        < td >
-                            < div class= "action-buttons" >
-                                < button class= "action-btn approve" title = "Approve" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M5 13l4 4L19 7" />
-                                    </ svg >
-                                </ button >
-                                < button class= "action-btn reject" title = "Reject" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M6 18L18 6M6 6l12 12" />
-                                    </ svg >
-                                </ button >
-                            </ div >
-                        </ td >
-                    </ tr >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > ZK20GX8 </ a ></ td >
-                        < td > Jason Scott </ td >
-                        < td class= "email-text" > jason.scott@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 21, 2025 09:30 PM </ td >
-                        < td >
-                            < div class= "action-buttons" >
-                                < button class= "action-btn approve" title = "Approve" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M5 13l4 4L19 7" />
-                                    </ svg >
-                                </ button >
-                                < button class= "action-btn reject" title = "Reject" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M6 18L18 6M6 6l12 12" />
-                                    </ svg >
-                                </ button >
-                            </ div >
-                        </ td >
-                    </ tr >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > ZK20GX8 </ a ></ td >
-                        < td > Jason Scott </ td >
-                        < td class= "email-text" > jason.scott@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 21, 2025 09:30 PM </ td >
-                        < td >
-                            < div class= "action-buttons" >
-                                < button class= "action-btn approve" title = "Approve" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M5 13l4 4L19 7" />
-                                    </ svg >
-                                </ button >
-                                < button class= "action-btn reject" title = "Reject" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M6 18L18 6M6 6l12 12" />
-                                    </ svg >
-                                </ button >
-                            </ div >
-                        </ td >
-                    </ tr >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > ZK20GX8 </ a ></ td >
-                        < td > Jason Scott </ td >
-                        < td class= "email-text" > jason.scott@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 21, 2025 09:30 PM </ td >
-                        < td >
-                            < div class= "action-buttons" >
-                                < button class= "action-btn approve" title = "Approve" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M5 13l4 4L19 7" />
-                                    </ svg >
-                                </ button >
-                                < button class= "action-btn reject" title = "Reject" >
-                                    < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                        < path d = "M6 18L18 6M6 6l12 12" />
-                                    </ svg >
-                                </ button >
-                            </ div >
-                        </ td >
-                    </ tr >
-                </ tbody >
-            </ table >
+            <!-- Data Table -->
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>
+                            NBK ID 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            Requested by 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            Email Address 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 200px;"></th>
+                        <th>
+                            Requested on 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><a href="#" class="nbk-link">ZK20GX8</a></td>
+                        <td>Jason Scott</td>
+                        <td class="email-text">jason.scott@bofa.com</td>
+                        <td></td>
+                        <td>May 21, 2025 09:30 PM</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn approve" title="Approve">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                                <button class="action-btn reject" title="Reject">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#" class="nbk-link">ZK20GX8</a></td>
+                        <td>Jason Scott</td>
+                        <td class="email-text">jason.scott@bofa.com</td>
+                        <td></td>
+                        <td>May 21, 2025 09:30 PM</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn approve" title="Approve">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                                <button class="action-btn reject" title="Reject">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#" class="nbk-link">ZK20GX8</a></td>
+                        <td>Jason Scott</td>
+                        <td class="email-text">jason.scott@bofa.com</td>
+                        <td></td>
+                        <td>May 21, 2025 09:30 PM</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn approve" title="Approve">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                                <button class="action-btn reject" title="Reject">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#" class="nbk-link">ZK20GX8</a></td>
+                        <td>Jason Scott</td>
+                        <td class="email-text">jason.scott@bofa.com</td>
+                        <td></td>
+                        <td>May 21, 2025 09:30 PM</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn approve" title="Approve">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                                <button class="action-btn reject" title="Reject">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-            < !--Pagination-- >
-            < div class= "pagination-wrapper" >
-                < span class= "showing-text" > Showing 1 - 4 of 4</span>
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-4 of 4</span>
                 
-                <div class= "pagination" >
-                    < button disabled >«</ button >
-                    < button disabled >‹</ button >
-                    < button > 1 </ button >
-                    < button class= "active" > 2 </ button >
-                    < button > 3 </ button >
-                    < span class= "dots" > ...</ span >
-                    < button > 5 </ button >
-                    < button > 6 </ button >
-                    < button >›</ button >
-                    < button >»</ button >
-                </ div >
+                <div class="pagination">
+                    <button disabled>«</button>
+                    <button disabled>‹</button>
+                    <button>1</button>
+                    <button class="active">2</button>
+                    <button>3</button>
+                    <span class="dots">...</span>
+                    <button>5</button>
+                    <button>6</button>
+                    <button>›</button>
+                    <button>»</button>
+                </div>
 
-                < div class= "per-page" >
-                    < span > Show per page:</ span >
-                    < select >
-                        < option > 10 </ option >
-                        < option > 25 </ option >
-                        < option > 50 </ option >
-                        < option > 100 </ option >
-                    </ select >
-                </ div >
-            </ div >
-        </ div >
+                <div class="per-page">
+                    <span>Show per page:</span>
+                    <select>
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
 
-        < !--Approved History Content -->
-        <div id="approved-content" class= "tab-content" style = "display: none;" >
-            < div class= "table-header" >
-                < span class= "total-count" > Total(12) </ span >
-                < div class= "search-box" >
-                    < input type = "text" placeholder = "Search by Report ID or Name" >
-                </ div >
-            </ div >
+        <!-- Approved History Content -->
+        <div id="approved-content" class="tab-content" style="display: none;">
+            <div class="table-header">
+                <span class="total-count">Total (12)</span>
+                <div class="search-box">
+                    <input type="text" placeholder="Search by Report ID or Name">
+                </div>
+            </div>
 
-            < table class= "data-table" >
-                < thead >
-                    < tr >
-                        < th >
-                            NBK ID
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
-                            Requested by
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
-                            Email Address
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th style = "width: 200px;" ></ th >
-                        < th >
-                            Approved on
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th > Status </ th >
-                    </ tr >
-                </ thead >
-                < tbody >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > ZK20GX8 </ a ></ td >
-                        < td > Jason Scott </ td >
-                        < td class= "email-text" > jason.scott@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 20, 2025 02:15 PM </ td >
-                        < td >< span class= "status-badge status-approved" > Approved </ span ></ td >
-                    </ tr >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > AB45XY2 </ a ></ td >
-                        < td > Sarah Johnson </ td >
-                        < td class= "email-text" > sarah.johnson@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 19, 2025 11:30 AM </ td >
-                        < td >< span class= "status-badge status-approved" > Approved </ span ></ td >
-                    </ tr >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > CD78MN3 </ a ></ td >
-                        < td > Mike Chen </ td >
-                        < td class= "email-text" > mike.chen@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 18, 2025 04:45 PM </ td >
-                        < td >< span class= "status-badge status-rejected" > Rejected </ span ></ td >
-                    </ tr >
-                    < tr >
-                        < td >< a href = "#" class= "nbk-link" > EF90PQ4 </ a ></ td >
-                        < td > Emily Davis </ td >
-                        < td class= "email-text" > emily.davis@bofa.com </ td >
-                        < td ></ td >
-                        < td > May 17, 2025 09:00 AM </ td >
-                        < td >< span class= "status-badge status-approved" > Approved </ span ></ td >
-                    </ tr >
-                </ tbody >
-            </ table >
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>
+                            NBK ID 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            Requested by 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            Email Address 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 200px;"></th>
+                        <th>
+                            Approved on 
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><a href="#" class="nbk-link">ZK20GX8</a></td>
+                        <td>Jason Scott</td>
+                        <td class="email-text">jason.scott@bofa.com</td>
+                        <td></td>
+                        <td>May 20, 2025 02:15 PM</td>
+                        <td><span class="status-badge status-approved">Approved</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="#" class="nbk-link">AB45XY2</a></td>
+                        <td>Sarah Johnson</td>
+                        <td class="email-text">sarah.johnson@bofa.com</td>
+                        <td></td>
+                        <td>May 19, 2025 11:30 AM</td>
+                        <td><span class="status-badge status-approved">Approved</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="#" class="nbk-link">CD78MN3</a></td>
+                        <td>Mike Chen</td>
+                        <td class="email-text">mike.chen@bofa.com</td>
+                        <td></td>
+                        <td>May 18, 2025 04:45 PM</td>
+                        <td><span class="status-badge status-rejected">Rejected</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="#" class="nbk-link">EF90PQ4</a></td>
+                        <td>Emily Davis</td>
+                        <td class="email-text">emily.davis@bofa.com</td>
+                        <td></td>
+                        <td>May 17, 2025 09:00 AM</td>
+                        <td><span class="status-badge status-approved">Approved</span></td>
+                    </tr>
+                </tbody>
+            </table>
 
-            < div class= "pagination-wrapper" >
-                < span class= "showing-text" > Showing 1 - 4 of 12</span>
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-4 of 12</span>
                 
-                <div class= "pagination" >
-                    < button disabled >«</ button >
-                    < button disabled >‹</ button >
-                    < button class= "active" > 1 </ button >
-                    < button > 2 </ button >
-                    < button > 3 </ button >
-                    < button >›</ button >
-                    < button >»</ button >
-                </ div >
+                <div class="pagination">
+                    <button disabled>«</button>
+                    <button disabled>‹</button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button>›</button>
+                    <button>»</button>
+                </div>
 
-                < div class= "per-page" >
-                    < span > Show per page:</ span >
-                    < select >
-                        < option > 10 </ option >
-                        < option > 25 </ option >
-                        < option > 50 </ option >
-                        < option > 100 </ option >
-                    </ select >
-                </ div >
-            </ div >
-        </ div >
+                <div class="per-page">
+                    <span>Show per page:</span>
+                    <select>
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
 
-    </ div >
+    </div>
 
-    < script >
+    <script>
         // Edit functionality
         let originalValue = '';
-const display = document.getElementById('division-name-display');
-const input = document.getElementById('division-name-input');
-const editBtn = document.getElementById('edit-btn');
-const saveBtn = document.getElementById('save-btn');
-const cancelBtn = document.getElementById('cancel-btn');
+        const display = document.getElementById('division-name-display');
+        const input = document.getElementById('division-name-input');
+        const editBtn = document.getElementById('edit-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
 
-editBtn.addEventListener('click', function() {
-    originalValue = display.textContent;
-    input.value = originalValue;
+        editBtn.addEventListener('click', function() {
+            originalValue = display.textContent;
+            input.value = originalValue;
 
-    display.style.display = 'none';
-    input.style.display = 'block';
-    editBtn.style.display = 'none';
-    saveBtn.style.display = 'inline-block';
-    cancelBtn.style.display = 'inline-block';
+            display.style.display = 'none';
+            input.style.display = 'block';
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline-block';
+            cancelBtn.style.display = 'inline-block';
 
-    input.focus();
-    input.select();
-});
-
-saveBtn.addEventListener('click', function() {
-    display.textContent = input.value;
-
-    display.style.display = 'inline';
-    input.style.display = 'none';
-    editBtn.style.display = 'inline-block';
-    saveBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
-});
-
-cancelBtn.addEventListener('click', function() {
-    input.value = originalValue;
-
-    display.style.display = 'inline';
-    input.style.display = 'none';
-    editBtn.style.display = 'inline-block';
-    saveBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
-});
-
-// Handle Enter key to save and Escape to cancel
-input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter')
-    {
-        saveBtn.click();
-    }
-    else if (e.key === 'Escape')
-    {
-        cancelBtn.click();
-    }
-});
-
-// Tab switching functionality
-document.querySelectorAll('.tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-        // Remove active class from all tabs
-        document.querySelectorAll('.tab').forEach(function(t) {
-            t.classList.remove('active');
+            input.focus();
+            input.select();
         });
-        // Add active class to clicked tab
-        this.classList.add('active');
 
-        // Show/hide corresponding content
-        const pendingContent = document.getElementById('pending-content');
-        const approvedContent = document.getElementById('approved-content');
+        saveBtn.addEventListener('click', function() {
+            display.textContent = input.value;
 
-        if (this.getAttribute('data-tab') === 'pending')
-        {
-            pendingContent.style.display = 'block';
-            approvedContent.style.display = 'none';
-        }
-        else
-        {
-            pendingContent.style.display = 'none';
-            approvedContent.style.display = 'block';
-        }
-    });
-});
+            display.style.display = 'inline';
+            input.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+        });
 
-// Pagination functionality
-document.querySelectorAll('.pagination button:not(:disabled)').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        if (!this.classList.contains('active') && this.textContent.match(/\d /))
-        {
-            const pagination = this.closest('.pagination');
-            pagination.querySelectorAll('button').forEach(function(b) {
-                b.classList.remove('active');
+        cancelBtn.addEventListener('click', function() {
+            input.value = originalValue;
+
+            display.style.display = 'inline';
+            input.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+        });
+
+        // Handle Enter key to save and Escape to cancel
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                saveBtn.click();
+            } else if (e.key === 'Escape') {
+                cancelBtn.click();
+            }
+        });
+
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Show/hide corresponding content
+                const pendingContent = document.getElementById('pending-content');
+                const approvedContent = document.getElementById('approved-content');
+                
+                if (this.getAttribute('data-tab') === 'pending') {
+                    pendingContent.style.display = 'block';
+                    approvedContent.style.display = 'none';
+                } else {
+                    pendingContent.style.display = 'none';
+                    approvedContent.style.display = 'block';
+                }
             });
-            this.classList.add('active');
-        }
-    });
-});
-
-// Search functionality
-document.querySelectorAll('.search-box input').forEach(function(searchInput) {
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const tabContent = this.closest('.tab-content');
-        const table = tabContent.querySelector('.data-table');
-        const rows = table.querySelectorAll('tbody tr');
-        let visibleCount = 0;
-
-        rows.forEach(function(row) {
-            const nbkId = row.querySelector('.nbk-link') ? row.querySelector('.nbk-link').textContent.toLowerCase() : '';
-            const name = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
-            const email = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
-
-            if (nbkId.includes(searchTerm) || name.includes(searchTerm) || email.includes(searchTerm))
-            {
-                row.style.display = '';
-                visibleCount++;
-            }
-            else
-            {
-                row.style.display = 'none';
-            }
         });
 
-        // Update total count
-        const totalCount = tabContent.querySelector('.total-count');
-        if (searchTerm === '')
-        {
-            totalCount.textContent = 'Total (' + rows.length + ')';
-        }
-        else
-        {
-            totalCount.textContent = 'Showing ' + visibleCount + ' of ' + rows.length;
-        }
-    });
-});
-    </ script >
-</ body >
-</ html >
+        // Pagination functionality
+        document.querySelectorAll('.pagination button:not(:disabled)').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (!this.classList.contains('active') && this.textContent.match(/\d/)) {
+                    const pagination = this.closest('.pagination');
+                    pagination.querySelectorAll('button').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                }
+            });
+        });
 
+        // Search functionality
+        document.querySelectorAll('.search-box input').forEach(function(searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const tabContent = this.closest('.tab-content');
+                const table = tabContent.querySelector('.data-table');
+                const rows = table.querySelectorAll('tbody tr');
+                let visibleCount = 0;
 
+                rows.forEach(function(row) {
+                    const nbkId = row.querySelector('.nbk-link') ? row.querySelector('.nbk-link').textContent.toLowerCase() : '';
+                    const name = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
+                    const email = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
 
+                    if (nbkId.includes(searchTerm) || name.includes(searchTerm) || email.includes(searchTerm)) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
 
-
-
-
-
-
-
-
+                // Update total count
+                const totalCount = tabContent.querySelector('.total-count');
+                if (searchTerm === '') {
+                    totalCount.textContent = 'Total (' + rows.length + ')';
+                } else {
+                    totalCount.textContent = 'Showing ' + visibleCount + ' of ' + rows.length;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
 
 
 
@@ -1017,964 +992,912 @@ document.querySelectorAll('.search-box input').forEach(function(searchInput) {
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-< style >
+<style>
     * {
-margin: 0;
-padding: 0;
-    box - sizing: border - box;
-}
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-    .manage - division - container {
-    font - family: -apple - system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans - serif;
-    background - color: #f5f5f5;
+    .manage-division-container {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f5f5f5;
         color: #333;
-        line - height: 1.5;
-padding: 20px;
-}
+        line-height: 1.5;
+        padding: 20px;
+    }
 
     .container {
         max-width: 1400px;
-margin: 0 auto;
-background: #fff;
-        border - radius: 8px;
-box - shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-padding: 24px 32px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 24px 32px;
     }
 
     h1 {
         font-size: 20px;
-font - weight: 600;
-margin - bottom: 24px;
-color: #1a1a1a;
+        font-weight: 600;
+        margin-bottom: 24px;
+        color: #1a1a1a;
     }
 
     /* Division Selector Row */
-    .division - selector {
-display: flex;
-    align - items: center;
-gap: 16px;
-    margin - bottom: 24px;
-}
+    .division-selector {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
 
-    .division - selector label {
+    .division-selector label {
         font-size: 14px;
-color: #666;
-        font - weight: 500;
+        color: #666;
+        font-weight: 500;
     }
 
-    .select - wrapper {
-position: relative;
-flex: 1;
-    max - width: 400px;
-}
+    .select-wrapper {
+        position: relative;
+        flex: 1;
+        max-width: 400px;
+    }
 
-    .select - wrapper select {
-        width: 100 %;
-padding: 10px 40px 10px 14px;
-font - size: 14px;
-border: 1px solid #ddd;
+    .select-wrapper select {
+        width: 100%;
+        padding: 10px 40px 10px 14px;
+        font-size: 14px;
+        border: 1px solid #ddd;
         border-radius: 4px;
-background: #fff;
+        background: #fff;
         appearance: none;
-cursor: pointer;
-color: #333;
+        cursor: pointer;
+        color: #333;
     }
 
-    .select - wrapper::after {
-content: '';
-position: absolute;
-right: 14px;
-top: 50 %;
-transform: translateY(-50 %);
-width: 0;
-height: 0;
-    border - left: 5px solid transparent;
-    border - right: 5px solid transparent;
-    border - top: 5px solid #666;
-        pointer - events: none;
-}
+    .select-wrapper::after {
+        content: '';
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #666;
+        pointer-events: none;
+    }
 
     .btn {
         padding: 10px 20px;
-font - size: 14px;
-border - radius: 4px;
-cursor: pointer;
-font - weight: 500;
-transition: all 0.2s;
+        font-size: 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
     }
 
-    .btn - secondary {
-background: #6b7280;
+    .btn-secondary {
+        background: #6b7280;
         color: #fff;
         border: none;
-}
+    }
 
-    .btn - secondary:hover {
+    .btn-secondary:hover {
         background: #5a6170;
     }
 
-    .btn - outline {
-background: #fff;
+    .btn-outline {
+        background: #fff;
         color: #0049ac;
         border: 1px solid #0049ac;
     }
 
-    .btn - outline:hover {
+    .btn-outline:hover {
         background: #f0f7ff;
     }
 
-    .btn - save {
-background: #0049ac;
+    .btn-save {
+        background: #0049ac;
         color: #fff;
         border: 1px solid #0049ac;
     }
 
-    .btn - save:hover {
+    .btn-save:hover {
         background: #003d91;
     }
 
-    .btn - cancel {
-background: #fff;
+    .btn-cancel {
+        background: #fff;
         color: #666;
         border: 1px solid #ccc;
     }
 
-    .btn - cancel:hover {
+    .btn-cancel:hover {
         background: #f5f5f5;
     }
 
     /* Division Card */
-    .division - card {
-display: flex;
-    align - items: center;
-    justify - content: space - between;
-padding: 16px 20px;
-background: #fafafa;
-        border - radius: 6px;
-    margin - bottom: 24px;
-}
-
-    .division - info {
-display: flex;
-    align - items: center;
-gap: 12px;
-}
-
-    .division - name {
-    font - size: 15px;
-    font - weight: 600;
-color: #1a1a1a;
+    .division-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: #fafafa;
+        border-radius: 6px;
+        margin-bottom: 24px;
     }
 
-    .division - name - input {
-    font - size: 15px;
-    font - weight: 600;
-color: #1a1a1a;
-        padding: 6px 12px;
-border: 1px solid #0049ac;
-        border - radius: 4px;
-outline: none;
-    min - width: 150px;
-}
+    .division-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
-    .division - name - input:focus {
+    .division-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .division-name-input {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1a1a1a;
+        padding: 6px 12px;
+        border: 1px solid #0049ac;
+        border-radius: 4px;
+        outline: none;
+        min-width: 150px;
+    }
+
+    .division-name-input:focus {
         box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.2);
     }
 
-    .division - actions {
-display: flex;
-gap: 8px;
-}
+    .division-actions {
+        display: flex;
+        gap: 8px;
+    }
 
-    .status - badge {
-display: inline - block;
-padding: 4px 12px;
-    font - size: 12px;
-    font - weight: 500;
-    border - radius: 4px;
-}
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 4px;
+    }
 
-    .status - active {
-background: #4a7c59;
+    .status-active {
+        background: #4a7c59;
         color: #fff;
     }
 
-    .status - approved {
-background: #4a7c59;
+    .status-approved {
+        background: #4a7c59;
         color: #fff;
     }
 
-    .status - rejected {
-background: #c53030;
+    .status-rejected {
+        background: #c53030;
         color: #fff;
     }
 
     /* Tabs */
     .tabs {
         display: flex;
-margin - bottom: 24px;
-position: relative;
-border - bottom: 1px solid #c5c5c5;
+        margin-bottom: 24px;
+        position: relative;
+        border-bottom: 1px solid #c5c5c5;
     }
 
     .tab {
         padding: 14px 40px;
-font - size: 15px;
-color: #1e3a5f;
+        font-size: 15px;
+        color: #1e3a5f;
         cursor: pointer;
-transition: all 0.2s;
-position: relative;
-background: transparent;
-font - weight: 500;
-margin - bottom: -1px;
+        transition: all 0.2s;
+        position: relative;
+        background: transparent;
+        font-weight: 500;
+        margin-bottom: -1px;
     }
 
-    .tab: hover {
-color: #1e3a5f;
-    }
-
-    .tab.active {
-color: #1a1a1a;
-        background: #fff;
-        border - left: 1px solid #c5c5c5;
-        border - right: 1px solid #c5c5c5;
-        border - top: 1px solid #c5c5c5;
-        border - bottom: 1px solid #fff;
-    }
-
-    .tab.active::before {
-content: '';
-position: absolute;
-top: -1px;
-left: -1px;
-right: -1px;
-height: 3px;
-background: #1e3a5f;
-    }
-
-    /* Table Header Row */
-    .table - header {
-display: flex;
-    justify - content: space - between;
-    align - items: center;
-    margin - bottom: 16px;
-}
-
-    .total - count {
-    font - size: 14px;
-color: #666;
-    }
-
-    .search - box {
-position: relative;
-}
-
-    .search - box input {
-        padding: 8px 14px 8px 36px;
-font - size: 13px;
-border: 1px solid #ddd;
-        border-radius: 4px;
-width: 240px;
-background: #fff;
-    }
-
-    .search - box input: focus {
-outline: none;
-    border - color: #999;
-    }
-
-    .search - box::before {
-content: '';
-position: absolute;
-left: 12px;
-top: 50 %;
-transform: translateY(-50 %);
-width: 14px;
-height: 14px;
-    background - image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
-    background - size: contain;
-}
-
-    /* Data Table */
-    .data - table {
-width: 100 %;
-    border - collapse: collapse;
-}
-
-    .data - table th {
-        text-align: left;
-padding: 12px 16px;
-font - size: 13px;
-font - weight: 500;
-color: #666;
-        border - bottom: 1px solid #e5e5e5;
-        white-space: nowrap;
-    }
-
-    .data - table th.sort - icon {
-display: inline - flex;
-    flex - direction: column;
-    margin - left: 6px;
-    vertical - align: middle;
-gap: 2px;
-}
-
-    .data - table th.sort - icon span {
-        display: block;
-width: 0;
-height: 0;
-border - left: 4px solid transparent;
-border - right: 4px solid transparent;
-    }
-
-    .data - table th.sort - icon.up {
-    border - bottom: 4px solid #999;
-    }
-
-    .data - table th.sort - icon.down {
-    border - top: 4px solid #999;
-    }
-
-    .data - table td {
-        padding: 16px;
-font - size: 14px;
-border - bottom: 1px solid #f0f0f0;
-        color: #333;
-    }
-
-    .data - table tbody tr:nth - child(odd) {
-background: #f7f7f8;
-    }
-
-    .data - table tbody tr:nth - child(even) {
-background: #fff;
-    }
-
-    .data - table tbody tr:hover {
-        background: #e6fcff;
-    }
-
-    .nbk - link {
-color: #2563eb;
-        text - decoration: none;
-    font - weight: 500;
-}
-
-    .nbk - link:hover {
-        text-decoration: underline;
-    }
-
-    .email - text {
-color: #666;
-    }
-
-    /* Action Buttons */
-    .action - buttons {
-display: flex;
-gap: 24px;
-    justify - content: flex - end;
-}
-
-    .action - btn {
-width: 22px;
-height: 22px;
-    border - radius: 50 %;
-border: 2px solid;
-display: flex;
-    align - items: center;
-    justify - content: center;
-cursor: pointer;
-transition: all 0.2s;
-background: transparent;
-padding: 0;
-}
-
-    .action - btn.approve {
-    border - color: #1e3a5f;
+    .tab:hover {
         color: #1e3a5f;
     }
 
-    .action - btn.approve:hover {
+    .tab.active {
+        color: #1a1a1a;
+        background: #fff;
+        border-left: 1px solid #c5c5c5;
+        border-right: 1px solid #c5c5c5;
+        border-top: 1px solid #c5c5c5;
+        border-bottom: 1px solid #fff;
+    }
+
+    .tab.active::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        right: -1px;
+        height: 3px;
+        background: #1e3a5f;
+    }
+
+    /* Table Header Row */
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .total-count {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box input {
+        padding: 8px 14px 8px 36px;
+        font-size: 13px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 240px;
+        background: #fff;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: #999;
+    }
+
+    .search-box::before {
+        content: '';
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+        background-size: contain;
+    }
+
+    /* Data Table */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th {
+        text-align: left;
+        padding: 12px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #666;
+        border-bottom: 1px solid #e5e5e5;
+        white-space: nowrap;
+    }
+
+    .data-table th .sort-icon {
+        display: inline-flex;
+        flex-direction: column;
+        margin-left: 6px;
+        vertical-align: middle;
+        gap: 2px;
+    }
+
+    .data-table th .sort-icon span {
+        display: block;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+    }
+
+    .data-table th .sort-icon .up {
+        border-bottom: 4px solid #999;
+    }
+
+    .data-table th .sort-icon .down {
+        border-top: 4px solid #999;
+    }
+
+    .data-table td {
+        padding: 16px;
+        font-size: 14px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #333;
+    }
+
+    .data-table tbody tr:nth-child(odd) {
+        background: #f7f7f8;
+    }
+
+    .data-table tbody tr:nth-child(even) {
+        background: #fff;
+    }
+
+    .data-table tbody tr:hover {
+        background: #e6fcff;
+    }
+
+    .nbk-link {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .nbk-link:hover {
+        text-decoration: underline;
+    }
+
+    .email-text {
+        color: #666;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 24px;
+        justify-content: flex-end;
+    }
+
+    .action-btn {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: transparent;
+        padding: 0;
+    }
+
+    .action-btn.approve {
+        border-color: #1e3a5f;
+        color: #1e3a5f;
+    }
+
+    .action-btn.approve:hover {
         background: #1e3a5f;
         color: #fff;
     }
 
-    .action - btn.reject {
-    border - color: #9b2c2c;
+    .action-btn.reject {
+        border-color: #9b2c2c;
         color: #9b2c2c;
     }
 
-    .action - btn.reject:hover {
+    .action-btn.reject:hover {
         background: #9b2c2c;
         color: #fff;
     }
 
-    .action - btn svg {
+    .action-btn svg {
         width: 11px;
-height: 11px;
-stroke - width: 3;
+        height: 11px;
+        stroke-width: 3;
     }
 
     /* Pagination */
-    .pagination - wrapper {
-display: flex;
-    justify - content: space - between;
-    align - items: center;
-    margin - top: 24px;
-    padding - top: 16px;
-}
+    .pagination-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        padding-top: 16px;
+    }
 
-    .showing - text {
-    font - size: 13px;
-color: #666;
+    .showing-text {
+        font-size: 13px;
+        color: #666;
     }
 
     .pagination {
         display: flex;
-align - items: center;
-gap: 4px;
+        align-items: center;
+        gap: 4px;
     }
 
-    .pagination button
-{
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: #666;
+    .pagination button {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: transparent;
+        color: #666;
         cursor: pointer;
-    font-size: 13px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-    .pagination button:hover: not(.active):not(:disabled) {
-background: #f0f0f0;
+        font-size: 13px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    .pagination button.active
-{
-    background: #2563eb;
+    .pagination button:hover:not(.active):not(:disabled) {
+        background: #f0f0f0;
+    }
+
+    .pagination button.active {
+        background: #2563eb;
         color: #fff;
     }
 
     .pagination button:disabled {
         color: #ccc;
-        cursor: not - allowed;
+        cursor: not-allowed;
     }
 
-    .pagination.dots {
-padding: 0 4px;
-color: #666;
+    .pagination .dots {
+        padding: 0 4px;
+        color: #666;
     }
 
-    .per - page {
-display: flex;
-    align - items: center;
-gap: 8px;
-    font - size: 13px;
-color: #666;
+    .per-page {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #666;
     }
 
-    .per - page select {
+    .per-page select {
         padding: 6px 28px 6px 10px;
-font - size: 13px;
-border: 1px solid #ddd;
+        font-size: 13px;
+        border: 1px solid #ddd;
         border-radius: 4px;
-background: #fff;
+        background: #fff;
         appearance: none;
-cursor: pointer;
-background - image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-background - repeat: no - repeat;
-background - position: right 8px center;
-background - size: 14px;
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 14px;
     }
 
     /* Responsive adjustments */
-    @@media(max - width: 1024px) {
-        .data - table {
-    display: block;
-        overflow - x: auto;
+    @@media (max-width: 1024px) {
+        .data-table {
+            display: block;
+            overflow-x: auto;
+        }
     }
-}
 
-@@media(max - width: 768px) {
+    @@media (max-width: 768px) {
         .container {
-    padding: 16px;
-    }
-
-        .division - selector {
-        flex - wrap: wrap;
-    }
-
-        .select - wrapper {
-        max - width: 100 %;
-    width: 100 %;
-    }
-
-        .pagination - wrapper {
-        flex - direction: column;
-    gap: 16px;
-    }
-}
-</ style >
-
-< div class= "manage-division-container" >
-    < div class= "container" >
-        < h1 > Manage Division </ h1 >
-
-        @using(Html.BeginForm("Index", "ManageDivision", FormMethod.Post, new { id = "divisionForm" }))
-        {
-    @Html.AntiForgeryToken()
-
-    < !--Division Selector-- >
-
-    < div class= "division-selector" >
-        @Html.LabelFor(m => m.SelectedDivisionId, "Division", new { @class = "division-label" })
-        < div class= "select-wrapper" >
-            @Html.DropDownListFor(m => m.SelectedDivisionId, Model.DivisionList, new { @class = "form-control", id = "divisionDropdown" })
-        </ div >
-
-        < button type = "button" class= "btn btn-secondary" id = "viewFieldsBtn" > View Fields </ button >
-
-    </ div >
-
-
-    < !--Division Card-- >
-
-    < div class= "division-card" >
-
-        < div class= "division-info" >
-
-            < span class= "division-name" id = "division-name-display" > @Model.DivisionName </ span >
-            @Html.TextBoxFor(m => m.DivisionName, new { @class = "division-name-input", id = "division-name-input", style = "display: none;" })
-            < span class= "status-badge @(Model.IsActive ? "status - active" : "")" >@(Model.IsActive ? "Active" : "Inactive") </ span >
-
-        </ div >
-
-        < div class= "division-actions" >
-
-            < button type = "button" class= "btn btn-outline" id = "edit-btn" > Edit </ button >
-
-            < button type = "submit" class= "btn btn-save" id = "save-btn" style = "display: none;" > Save </ button >
-
-            < button type = "button" class= "btn btn-cancel" id = "cancel-btn" style = "display: none;" > Cancel </ button >
-
-        </ div >
-
-    </ div >
+            padding: 16px;
         }
 
-        < !--Tabs-- >
-        < div class= "tabs" >
-            < div class= "tab active" data - tab = "pending" > Pending Request </ div >
-            < div class= "tab" data - tab = "approved" > Approved History </ div >
-        </ div >
+        .division-selector {
+            flex-wrap: wrap;
+        }
 
-        < !--Pending Request Content -->
-        <div id="pending-content" class= "tab-content" >
-            < !--Table Header-- >
-            < div class= "table-header" >
-                < span class= "total-count" id = "pending-total-count" > Total(@Model.PendingRequests.Count()) </ span >
-                < div class= "search-box" >
+        .select-wrapper {
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .pagination-wrapper {
+            flex-direction: column;
+            gap: 16px;
+        }
+    }
+</style>
+
+<div class="manage-division-container">
+    <div class="container">
+        <h1>Manage Division</h1>
+
+        @using (Html.BeginForm("Index", "ManageDivision", FormMethod.Post, new { id = "divisionForm" }))
+        {
+            @Html.AntiForgeryToken()
+
+            <!-- Division Selector -->
+            <div class="division-selector">
+                @Html.LabelFor(m => m.SelectedDivisionId, "Division", new { @class = "division-label" })
+                <div class="select-wrapper">
+                    @Html.DropDownListFor(m => m.SelectedDivisionId, Model.DivisionList, new { @class = "form-control", id = "divisionDropdown" })
+                </div>
+                <button type="button" class="btn btn-secondary" id="viewFieldsBtn">View Fields</button>
+            </div>
+
+            <!-- Division Card -->
+            <div class="division-card">
+                <div class="division-info">
+                    <span class="division-name" id="division-name-display">@Model.DivisionName</span>
+                    @Html.TextBoxFor(m => m.DivisionName, new { @class = "division-name-input", id = "division-name-input", style = "display: none;" })
+                    <span class="status-badge @(Model.IsActive ? "status-active" : "")">@(Model.IsActive ? "Active" : "Inactive")</span>
+                </div>
+                <div class="division-actions">
+                    <button type="button" class="btn btn-outline" id="edit-btn">Edit</button>
+                    <button type="submit" class="btn btn-save" id="save-btn" style="display: none;">Save</button>
+                    <button type="button" class="btn btn-cancel" id="cancel-btn" style="display: none;">Cancel</button>
+                </div>
+            </div>
+        }
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="pending">Pending Request</div>
+            <div class="tab" data-tab="approved">Approved History</div>
+        </div>
+
+        <!-- Pending Request Content -->
+        <div id="pending-content" class="tab-content">
+            <!-- Table Header -->
+            <div class="table-header">
+                <span class="total-count" id="pending-total-count">Total (@Model.PendingRequests.Count())</span>
+                <div class="search-box">
                     @Html.TextBox("PendingSearchTerm", "", new { @class = "form-control", id = "pending-search", placeholder = "Search by Report ID or Name" })
-                </ div >
-            </ div >
+                </div>
+            </div>
 
-            < !--Data Table-- >
-            < table class= "data-table" id = "pending-table" >
-                < thead >
-                    < tr >
-                        < th >
+            <!-- Data Table -->
+            <table class="data-table" id="pending-table">
+                <thead>
+                    <tr>
+                        <th>
                             NBK ID
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
                             Requested by
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
                             Email Address
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th style = "width: 200px;" ></ th >
-                        < th >
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 200px;"></th>
+                        <th>
                             Requested on
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th style = "width: 100px;" ></ th >
-                    </ tr >
-                </ thead >
-                < tbody >
-                    @foreach(var request in Model.PendingRequests)
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var request in Model.PendingRequests)
                     {
-                        < tr data - request - id = "@request.Id" >
-                            < td >< a href = "@Url.Action("Details", "Request", new { id = request.NbkId })" class= "nbk-link" > @request.NbkId </ a ></ td >
-                            < td > @request.RequestedBy </ td >
-                            < td class= "email-text" > @request.EmailAddress </ td >
-                            < td ></ td >
-                            < td > @request.RequestedOn.ToString("MMM dd, yyyy hh:mm tt") </ td >
-                            < td >
-                                < div class= "action-buttons" >
-                                    < button type = "button" class= "action-btn approve" title = "Approve" data - id = "@request.Id" onclick = "approveRequest(@request.Id)" >
-                                        < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                            < path d = "M5 13l4 4L19 7" />
-                                        </ svg >
-                                    </ button >
-                                    < button type = "button" class= "action-btn reject" title = "Reject" data - id = "@request.Id" onclick = "rejectRequest(@request.Id)" >
-                                        < svg viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width = "3" >
-                                            < path d = "M6 18L18 6M6 6l12 12" />
-                                        </ svg >
-                                    </ button >
-                                </ div >
-                            </ td >
-                        </ tr >
-                    }
-                </ tbody >
-            </ table >
-
-            < !--Pagination-- >
-            < div class= "pagination-wrapper" >
-                < span class= "showing-text" > Showing 1 - @Model.PendingRequests.Count() of @Model.PendingRequestsTotalCount </ span >
-
-                < div class= "pagination" >
-                    < button type = "button" disabled >«</ button >
-                    < button type = "button" disabled >‹</ button >
-                    @for(int i = 1; i <= Model.PendingTotalPages; i++)
-                    {
-                        < button type = "button" class= "@(i == Model.PendingCurrentPage ? "active" : "")" onclick="goToPage(@i, 'pending')">@i</button>
-                    }
-                    < button type = "button" >›</ button >
-                    < button type = "button" >»</ button >
-                </ div >
-
-                < div class= "per-page" >
-                    @Html.Label("Show per page:")
-                    @Html.DropDownList("PendingPageSize", new SelectList(new[] { 10, 25, 50, 100 }, Model.PageSize), new { @class = "form-control", id = "pending-page-size", onchange = "changePageSize(this.value, 'pending')" })
-                </ div >
-            </ div >
-        </ div >
-
-        < !--Approved History Content -->
-        <div id="approved-content" class= "tab-content" style = "display: none;" >
-            < div class= "table-header" >
-                < span class= "total-count" id = "approved-total-count" > Total(@Model.ApprovedHistory.Count()) </ span >
-                < div class= "search-box" >
-                    @Html.TextBox("ApprovedSearchTerm", "", new { @class = "form-control", id = "approved-search", placeholder = "Search by Report ID or Name" })
-                </ div >
-            </ div >
-
-            < table class= "data-table" id = "approved-table" >
-                < thead >
-                    < tr >
-                        < th >
-                            NBK ID
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
-                            Requested by
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th >
-                            Email Address
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th style = "width: 200px;" ></ th >
-                        < th >
-                            Approved on
-                            < span class= "sort-icon" >
-                                < span class= "up" ></ span >
-                                < span class= "down" ></ span >
-                            </ span >
-                        </ th >
-                        < th > Status </ th >
-                    </ tr >
-                </ thead >
-                < tbody >
-                    @foreach(var history in Model.ApprovedHistory)
-                    {
-                        < tr >
-                            < td >< a href = "@Url.Action("Details", "Request", new { id = history.NbkId })" class= "nbk-link" > @history.NbkId </ a ></ td >
-                            < td > @history.RequestedBy </ td >
-                            < td class= "email-text" > @history.EmailAddress </ td >
-                            < td ></ td >
-                            < td > @history.ApprovedOn.ToString("MMM dd, yyyy hh:mm tt") </ td >
-                            < td >
-                                < span class= "status-badge @(history.Status == "Approved" ? "status-approved" : "status-rejected")">@history.Status</span>
+                        <tr data-request-id="@request.Id">
+                            <td><a href="@Url.Action("Details", "Request", new { id = request.NbkId })" class="nbk-link">@request.NbkId</a></td>
+                            <td>@request.RequestedBy</td>
+                            <td class="email-text">@request.EmailAddress</td>
+                            <td></td>
+                            <td>@request.RequestedOn.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button type="button" class="action-btn approve" title="Approve" data-id="@request.Id" onclick="approveRequest(@request.Id)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <path d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="action-btn reject" title="Reject" data-id="@request.Id" onclick="rejectRequest(@request.Id)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <path d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     }
-                </ tbody >
-            </ table >
+                </tbody>
+            </table>
 
-            < div class= "pagination-wrapper" >
-                < span class= "showing-text" > Showing 1 - @Model.ApprovedHistory.Count() of @Model.ApprovedHistoryTotalCount </ span >
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-@Model.PendingRequests.Count() of @Model.PendingRequestsTotalCount</span>
 
-                < div class= "pagination" >
-                    < button type = "button" disabled >«</ button >
-                    < button type = "button" disabled >‹</ button >
-                    @for(int i = 1; i <= Model.ApprovedTotalPages; i++)
+                <div class="pagination">
+                    <button type="button" disabled>«</button>
+                    <button type="button" disabled>‹</button>
+                    @for (int i = 1; i <= Model.PendingTotalPages; i++)
                     {
-                        < button type = "button" class= "@(i == Model.ApprovedCurrentPage ? "active" : "")" onclick="goToPage(@i, 'approved')">@i</button>
+                        <button type="button" class="@(i == Model.PendingCurrentPage ? "active" : "")" onclick="goToPage(@i, 'pending')">@i</button>
                     }
-                    < button type = "button" >›</ button >
-                    < button type = "button" >»</ button >
-                </ div >
+                    <button type="button">›</button>
+                    <button type="button">»</button>
+                </div>
 
-                < div class= "per-page" >
+                <div class="per-page">
+                    @Html.Label("Show per page:")
+                    @Html.DropDownList("PendingPageSize", new SelectList(new[] { 10, 25, 50, 100 }, Model.PageSize), new { @class = "form-control", id = "pending-page-size", onchange = "changePageSize(this.value, 'pending')" })
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved History Content -->
+        <div id="approved-content" class="tab-content" style="display: none;">
+            <div class="table-header">
+                <span class="total-count" id="approved-total-count">Total (@Model.ApprovedHistory.Count())</span>
+                <div class="search-box">
+                    @Html.TextBox("ApprovedSearchTerm", "", new { @class = "form-control", id = "approved-search", placeholder = "Search by Report ID or Name" })
+                </div>
+            </div>
+
+            <table class="data-table" id="approved-table">
+                <thead>
+                    <tr>
+                        <th>
+                            NBK ID
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            Requested by
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            Email Address
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 200px;"></th>
+                        <th>
+                            Approved on
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var history in Model.ApprovedHistory)
+                    {
+                        <tr>
+                            <td><a href="@Url.Action("Details", "Request", new { id = history.NbkId })" class="nbk-link">@history.NbkId</a></td>
+                            <td>@history.RequestedBy</td>
+                            <td class="email-text">@history.EmailAddress</td>
+                            <td></td>
+                            <td>@history.ApprovedOn.ToString("MMM dd, yyyy hh:mm tt")</td>
+                            <td>
+                                <span class="status-badge @(history.Status == "Approved" ? "status-approved" : "status-rejected")">@history.Status</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-@Model.ApprovedHistory.Count() of @Model.ApprovedHistoryTotalCount</span>
+
+                <div class="pagination">
+                    <button type="button" disabled>«</button>
+                    <button type="button" disabled>‹</button>
+                    @for (int i = 1; i <= Model.ApprovedTotalPages; i++)
+                    {
+                        <button type="button" class="@(i == Model.ApprovedCurrentPage ? "active" : "")" onclick="goToPage(@i, 'approved')">@i</button>
+                    }
+                    <button type="button">›</button>
+                    <button type="button">»</button>
+                </div>
+
+                <div class="per-page">
                     @Html.Label("Show per page:")
                     @Html.DropDownList("ApprovedPageSize", new SelectList(new[] { 10, 25, 50, 100 }, Model.PageSize), new { @class = "form-control", id = "approved-page-size", onchange = "changePageSize(this.value, 'approved')" })
-                </ div >
-            </ div >
-        </ div >
+                </div>
+            </div>
+        </div>
 
-    </ div >
-</ div >
+    </div>
+</div>
 
 @section Scripts {
     <script>
         // Edit functionality
         var originalValue = '';
-var display = document.getElementById('division-name-display');
-var input = document.getElementById('division-name-input');
-var editBtn = document.getElementById('edit-btn');
-var saveBtn = document.getElementById('save-btn');
-var cancelBtn = document.getElementById('cancel-btn');
+        var display = document.getElementById('division-name-display');
+        var input = document.getElementById('division-name-input');
+        var editBtn = document.getElementById('edit-btn');
+        var saveBtn = document.getElementById('save-btn');
+        var cancelBtn = document.getElementById('cancel-btn');
 
-editBtn.addEventListener('click', function() {
-    originalValue = display.textContent;
-    input.value = originalValue;
+        editBtn.addEventListener('click', function () {
+            originalValue = display.textContent;
+            input.value = originalValue;
 
-    display.style.display = 'none';
-    input.style.display = 'block';
-    editBtn.style.display = 'none';
-    saveBtn.style.display = 'inline-block';
-    cancelBtn.style.display = 'inline-block';
+            display.style.display = 'none';
+            input.style.display = 'block';
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline-block';
+            cancelBtn.style.display = 'inline-block';
 
-    input.focus();
-    input.select();
-});
-
-cancelBtn.addEventListener('click', function() {
-    input.value = originalValue;
-
-    display.style.display = 'inline';
-    input.style.display = 'none';
-    editBtn.style.display = 'inline-block';
-    saveBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
-});
-
-// Handle Enter key to save and Escape to cancel
-input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter')
-    {
-        document.getElementById('divisionForm').submit();
-    }
-    else if (e.key === 'Escape')
-    {
-        cancelBtn.click();
-    }
-});
-
-// Tab switching functionality
-document.querySelectorAll('.tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-        // Remove active class from all tabs
-        document.querySelectorAll('.tab').forEach(function(t) {
-            t.classList.remove('active');
+            input.focus();
+            input.select();
         });
-        // Add active class to clicked tab
-        this.classList.add('active');
 
-        // Show/hide corresponding content
-        var pendingContent = document.getElementById('pending-content');
-        var approvedContent = document.getElementById('approved-content');
+        cancelBtn.addEventListener('click', function () {
+            input.value = originalValue;
 
-        if (this.getAttribute('data-tab') === 'pending')
-        {
-            pendingContent.style.display = 'block';
-            approvedContent.style.display = 'none';
-        }
-        else
-        {
-            pendingContent.style.display = 'none';
-            approvedContent.style.display = 'block';
-        }
-    });
-});
+            display.style.display = 'inline';
+            input.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+        });
 
-// Pagination functionality
-document.querySelectorAll('.pagination button:not(:disabled)').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        if (!this.classList.contains('active') && this.textContent.match(/\d /))
-        {
-            var pagination = this.closest('.pagination');
-            pagination.querySelectorAll('button').forEach(function(b) {
-                b.classList.remove('active');
+        // Handle Enter key to save and Escape to cancel
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('divisionForm').submit();
+            } else if (e.key === 'Escape') {
+                cancelBtn.click();
+            }
+        });
+
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(function (t) {
+                    t.classList.remove('active');
+                });
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Show/hide corresponding content
+                var pendingContent = document.getElementById('pending-content');
+                var approvedContent = document.getElementById('approved-content');
+
+                if (this.getAttribute('data-tab') === 'pending') {
+                    pendingContent.style.display = 'block';
+                    approvedContent.style.display = 'none';
+                } else {
+                    pendingContent.style.display = 'none';
+                    approvedContent.style.display = 'block';
+                }
             });
-            this.classList.add('active');
+        });
+
+        // Pagination functionality
+        document.querySelectorAll('.pagination button:not(:disabled)').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (!this.classList.contains('active') && this.textContent.match(/\d/)) {
+                    var pagination = this.closest('.pagination');
+                    pagination.querySelectorAll('button').forEach(function (b) {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // Search functionality for Pending Requests
+        document.getElementById('pending-search').addEventListener('input', function () {
+            filterTable(this.value, 'pending-table', 'pending-total-count');
+        });
+
+        // Search functionality for Approved History
+        document.getElementById('approved-search').addEventListener('input', function () {
+            filterTable(this.value, 'approved-table', 'approved-total-count');
+        });
+
+        function filterTable(searchTerm, tableId, totalCountId) {
+            var term = searchTerm.toLowerCase();
+            var table = document.getElementById(tableId);
+            var rows = table.querySelectorAll('tbody tr');
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var nbkId = row.querySelector('.nbk-link') ? row.querySelector('.nbk-link').textContent.toLowerCase() : '';
+                var name = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
+                var email = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
+
+                if (nbkId.indexOf(term) > -1 || name.indexOf(term) > -1 || email.indexOf(term) > -1) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update total count
+            var totalCount = document.getElementById(totalCountId);
+            if (term === '') {
+                totalCount.textContent = 'Total (' + rows.length + ')';
+            } else {
+                totalCount.textContent = 'Showing ' + visibleCount + ' of ' + rows.length;
+            }
         }
-    });
-});
 
-// Search functionality for Pending Requests
-document.getElementById('pending-search').addEventListener('input', function() {
-    filterTable(this.value, 'pending-table', 'pending-total-count');
-});
-
-// Search functionality for Approved History
-document.getElementById('approved-search').addEventListener('input', function() {
-    filterTable(this.value, 'approved-table', 'approved-total-count');
-});
-
-function filterTable(searchTerm, tableId, totalCountId)
-{
-    var term = searchTerm.toLowerCase();
-    var table = document.getElementById(tableId);
-    var rows = table.querySelectorAll('tbody tr');
-    var visibleCount = 0;
-
-    rows.forEach(function(row) {
-        var nbkId = row.querySelector('.nbk-link') ? row.querySelector('.nbk-link').textContent.toLowerCase() : '';
-        var name = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
-        var email = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
-
-        if (nbkId.indexOf(term) > -1 || name.indexOf(term) > -1 || email.indexOf(term) > -1)
-        {
-            row.style.display = '';
-            visibleCount++;
-        }
-        else
-        {
-            row.style.display = 'none';
-        }
-    });
-
-    // Update total count
-    var totalCount = document.getElementById(totalCountId);
-    if (term === '')
-    {
-        totalCount.textContent = 'Total (' + rows.length + ')';
-    }
-    else
-    {
-        totalCount.textContent = 'Showing ' + visibleCount + ' of ' + rows.length;
-    }
-}
-
-// Approve request
-function approveRequest(requestId)
-{
-    if (confirm('Are you sure you want to approve this request?'))
-    {
+        // Approve request
+        function approveRequest(requestId) {
+            if (confirm('Are you sure you want to approve this request?')) {
                 $.ajax({
-        url: '@Url.Action("Approve", "ManageDivision")',
+                    url: '@Url.Action("Approve", "ManageDivision")',
                     type: 'POST',
-                    data:
-            {
-            id: requestId,
+                    data: {
+                        id: requestId,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
-                    success: function(response) {
-                if (response.success)
-                {
-                    location.reload();
-                }
-                else
-                {
-                    alert('Error: ' + response.message);
-                }
-            },
-                    error: function() {
-                alert('An error occurred while processing your request.');
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
             }
-        });
-    }
-}
+        }
 
-// Reject request
-function rejectRequest(requestId)
-{
-    if (confirm('Are you sure you want to reject this request?'))
-    {
+        // Reject request
+        function rejectRequest(requestId) {
+            if (confirm('Are you sure you want to reject this request?')) {
                 $.ajax({
-        url: '@Url.Action("Reject", "ManageDivision")',
+                    url: '@Url.Action("Reject", "ManageDivision")',
                     type: 'POST',
-                    data:
-            {
-            id: requestId,
+                    data: {
+                        id: requestId,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
-                    success: function(response) {
-                if (response.success)
-                {
-                    location.reload();
-                }
-                else
-                {
-                    alert('Error: ' + response.message);
-                }
-            },
-                    error: function() {
-                alert('An error occurred while processing your request.');
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
             }
+        }
+
+        // Pagination
+        function goToPage(page, type) {
+            var url = '@Url.Action("Index", "ManageDivision")';
+            window.location.href = url + '?page=' + page + '&type=' + type;
+        }
+
+        // Change page size
+        function changePageSize(size, type) {
+            var url = '@Url.Action("Index", "ManageDivision")';
+            window.location.href = url + '?pageSize=' + size + '&type=' + type;
+        }
+
+        // View Fields button
+        document.getElementById('viewFieldsBtn').addEventListener('click', function () {
+            var divisionId = document.getElementById('divisionDropdown').value;
+            window.location.href = '@Url.Action("ViewFields", "ManageDivision")' + '?divisionId=' + divisionId;
         });
-    }
+    </script>
 }
-
-// Pagination
-function goToPage(page, type)
-{
-    var url = '@Url.Action("Index", "ManageDivision")';
-    window.location.href = url + '?page=' + page + '&type=' + type;
-}
-
-// Change page size
-function changePageSize(size, type)
-{
-    var url = '@Url.Action("Index", "ManageDivision")';
-    window.location.href = url + '?pageSize=' + size + '&type=' + type;
-}
-
-// View Fields button
-document.getElementById('viewFieldsBtn').addEventListener('click', function() {
-    var divisionId = document.getElementById('divisionDropdown').value;
-    window.location.href = '@Url.Action("ViewFields", "ManageDivision")' + '?divisionId=' + divisionId;
-});
-    </ script >
-}
-
-
-
-
-
-
-
-
 
 
 
