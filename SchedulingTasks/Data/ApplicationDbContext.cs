@@ -2757,3 +2757,1035 @@ namespace YourNamespace.Models
     </script>
 </body>
 </html>
+
+
+
+
+
+// resource
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources</title>
+    <style>
+        /* ============================================
+           SHARED STYLES (reused from manage-division)
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px 32px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+        }
+
+        /* Selector Row */
+        .selector-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .selector-row label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .select-wrapper select {
+            width: 100%;
+            padding: 10px 40px 10px 14px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            appearance: none;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #666;
+            pointer-events: none;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: #fff;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6170;
+        }
+
+        .btn-primary {
+            background: #1e3a5f;
+            color: #fff;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary:hover {
+            background: #162d4a;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 24px;
+            position: relative;
+            border-bottom: 1px solid #c5c5c5;
+        }
+
+        .tab {
+            padding: 14px 40px;
+            font-size: 15px;
+            color: #1e3a5f;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: transparent;
+            font-weight: 500;
+            margin-bottom: -1px;
+        }
+
+        .tab:hover {
+            color: #1e3a5f;
+        }
+
+        .tab.active {
+            color: #1a1a1a;
+            background: #fff;
+            border-left: 1px solid #c5c5c5;
+            border-right: 1px solid #c5c5c5;
+            border-top: 1px solid #c5c5c5;
+            border-bottom: 1px solid #fff;
+        }
+
+        .tab.active::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            height: 3px;
+            background: #1e3a5f;
+        }
+
+        /* Table Header Row */
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding: 8px 14px 8px 36px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 240px;
+            background: #fff;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #999;
+        }
+
+        .search-box::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+            background-size: contain;
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 1px solid #e5e5e5;
+            white-space: nowrap;
+        }
+
+        .data-table th .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            margin-left: 8px;
+            vertical-align: middle;
+            gap: 2px;
+        }
+
+        .data-table th .sort-icon span {
+            display: block;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+        }
+
+        .data-table th .sort-icon .up {
+            border-bottom: 6px solid #1e3a5f;
+        }
+
+        .data-table th .sort-icon .down {
+            border-top: 6px solid #1e3a5f;
+        }
+
+        .data-table td {
+            padding: 16px;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background: #f7f7f8;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #fff;
+        }
+
+        .data-table tbody tr:hover {
+            background: #e6fcff;
+        }
+
+        /* Editing Row */
+        .data-table tbody tr.editing {
+            background: #fffde7;
+        }
+
+        .data-table tbody tr.editing:hover {
+            background: #fffde7;
+        }
+
+        /* Pagination */
+        .pagination-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            padding-top: 16px;
+        }
+
+        .showing-text {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pagination button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pagination button:hover:not(.active):not(:disabled) {
+            background: #f0f0f0;
+        }
+
+        .pagination button.active {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .pagination button:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .pagination .dots {
+            padding: 0 4px;
+            color: #666;
+        }
+
+        .per-page {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .per-page select {
+            padding: 6px 28px 6px 10px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+        }
+
+        /* ============================================
+           PAGE-SPECIFIC STYLES (Resources)
+           ============================================ */
+
+        /* Status Text */
+        .status-active {
+            color: #4a7c59;
+            font-weight: 500;
+        }
+
+        .status-inactive {
+            color: #c53030;
+            font-weight: 500;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 28px;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            padding: 0;
+        }
+
+        .action-btn.approve {
+            border-color: #1e3a5f;
+            color: #1e3a5f;
+        }
+
+        .action-btn.approve:hover {
+            background: #1e3a5f;
+            color: #fff;
+        }
+
+        .action-btn.reject {
+            border-color: #9b2c2c;
+            color: #9b2c2c;
+        }
+
+        .action-btn.reject:hover {
+            background: #9b2c2c;
+            color: #fff;
+        }
+
+        .action-btn svg {
+            width: 12px;
+            height: 12px;
+            stroke-width: 3;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #333;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: #1e3a5f;
+        }
+
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Inline Edit Input */
+        .inline-input {
+            padding: 6px 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 120px;
+        }
+
+        .inline-input:focus {
+            outline: none;
+            border-color: #0049ac;
+            box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.2);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .data-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .selector-row {
+                flex-wrap: wrap;
+            }
+
+            .select-wrapper {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .table-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .pagination-wrapper {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resources</h1>
+
+        <!-- Division Selector -->
+        <div class="selector-row">
+            <label>Division</label>
+            <div class="select-wrapper">
+                <select id="divisionDropdown">
+                    <option>DWO (ETS)</option>
+                    <option>Division 2</option>
+                    <option>Division 3</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary">View Fields</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="executives">Executives (20)</div>
+            <div class="tab" data-tab="report-leads">Report Leads (10)</div>
+            <div class="tab" data-tab="report-manager">Report Manager (10)</div>
+            <div class="tab" data-tab="idrives">iDrives (5)</div>
+        </div>
+
+        <!-- Executives Tab Content -->
+        <div id="executives-content" class="tab-content active">
+            <!-- Table Header -->
+            <div class="table-header">
+                <button class="btn btn-primary" id="add-new-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    New
+                </button>
+                <div class="search-box">
+                    <input type="text" id="executives-search" placeholder="Search by Report ID or Name">
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <table class="data-table" id="executives-table">
+                <thead>
+                    <tr>
+                        <th>
+                            ID
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            NBK ID
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th>
+                            Full Name
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 300px;"></th>
+                        <th>
+                            Status
+                            <span class="sort-icon">
+                                <span class="up"></span>
+                                <span class="down"></span>
+                            </span>
+                        </th>
+                        <th style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>123</td>
+                        <td>ZKA6IED</td>
+                        <td>Jason Scott</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>123</td>
+                        <td>IMP</td>
+                        <td>Jason Scott</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="editing">
+                        <td><input type="text" class="inline-input" value="123"></td>
+                        <td><input type="text" class="inline-input" value="IMP"></td>
+                        <td><input type="text" class="inline-input" value="Jason Scott"></td>
+                        <td></td>
+                        <td><span class="status-inactive">Inactive</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn approve" title="Save">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                                <button class="action-btn reject" title="Cancel">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>123</td>
+                        <td>IMP</td>
+                        <td>Jason Scott</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>123</td>
+                        <td>IMP</td>
+                        <td>Jason Scott</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-5 of 5</span>
+
+                <div class="pagination">
+                    <button disabled>«</button>
+                    <button disabled>‹</button>
+                    <button>1</button>
+                    <button class="active">2</button>
+                    <button>3</button>
+                    <span class="dots">...</span>
+                    <button>5</button>
+                    <button>6</button>
+                    <button>›</button>
+                    <button>»</button>
+                </div>
+
+                <div class="per-page">
+                    <span>Show per page:</span>
+                    <select>
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Leads Tab Content -->
+        <div id="report-leads-content" class="tab-content">
+            <div class="table-header">
+                <button class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    New
+                </button>
+                <div class="search-box">
+                    <input type="text" placeholder="Search by Report ID or Name">
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th>NBK ID <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th>Full Name <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th style="width: 300px;"></th>
+                        <th>Status <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>456</td>
+                        <td>RL001</td>
+                        <td>Sarah Johnson</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>457</td>
+                        <td>RL002</td>
+                        <td>Mike Chen</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-2 of 10</span>
+                <div class="pagination">
+                    <button disabled>«</button>
+                    <button disabled>‹</button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button>›</button>
+                    <button>»</button>
+                </div>
+                <div class="per-page">
+                    <span>Show per page:</span>
+                    <select><option>10</option><option>25</option><option>50</option><option>100</option></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Manager Tab Content -->
+        <div id="report-manager-content" class="tab-content">
+            <div class="table-header">
+                <button class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    New
+                </button>
+                <div class="search-box">
+                    <input type="text" placeholder="Search by Report ID or Name">
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th>NBK ID <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th>Full Name <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th style="width: 300px;"></th>
+                        <th>Status <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>789</td>
+                        <td>RM001</td>
+                        <td>Emily Davis</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-1 of 10</span>
+                <div class="pagination">
+                    <button disabled>«</button>
+                    <button disabled>‹</button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button>›</button>
+                    <button>»</button>
+                </div>
+                <div class="per-page">
+                    <span>Show per page:</span>
+                    <select><option>10</option><option>25</option><option>50</option><option>100</option></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- iDrives Tab Content -->
+        <div id="idrives-content" class="tab-content">
+            <div class="table-header">
+                <button class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    New
+                </button>
+                <div class="search-box">
+                    <input type="text" placeholder="Search by Report ID or Name">
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th>NBK ID <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th>Full Name <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th style="width: 300px;"></th>
+                        <th>Status <span class="sort-icon"><span class="up"></span><span class="down"></span></span></th>
+                        <th style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>101</td>
+                        <td>ID001</td>
+                        <td>Alex Thompson</td>
+                        <td></td>
+                        <td><span class="status-active">Active</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="icon-btn edit-btn" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn more-btn" title="More options">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <circle cx="12" cy="12" r="2"/>
+                                        <circle cx="12" cy="19" r="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination-wrapper">
+                <span class="showing-text">Showing 1-1 of 5</span>
+                <div class="pagination">
+                    <button disabled>«</button>
+                    <button disabled>‹</button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>›</button>
+                    <button>»</button>
+                </div>
+                <div class="per-page">
+                    <span>Show per page:</span>
+                    <select><option>10</option><option>25</option><option>50</option><option>100</option></select>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(function(content) {
+                    content.classList.remove('active');
+                });
+
+                // Show corresponding content
+                var tabName = this.getAttribute('data-tab');
+                document.getElementById(tabName + '-content').classList.add('active');
+            });
+        });
+
+        // Pagination functionality
+        document.querySelectorAll('.pagination button:not(:disabled)').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (!this.classList.contains('active') && this.textContent.match(/\d/)) {
+                    var pagination = this.closest('.pagination');
+                    pagination.querySelectorAll('button').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // Search functionality
+        document.getElementById('executives-search').addEventListener('input', function() {
+            filterTable(this.value, 'executives-table');
+        });
+
+        function filterTable(searchTerm, tableId) {
+            var term = searchTerm.toLowerCase();
+            var table = document.getElementById(tableId);
+            var rows = table.querySelectorAll('tbody tr');
+
+            rows.forEach(function(row) {
+                var id = row.cells[0] ? row.cells[0].textContent.toLowerCase() : '';
+                var nbkId = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
+                var name = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
+
+                if (id.indexOf(term) > -1 || nbkId.indexOf(term) > -1 || name.indexOf(term) > -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Edit button functionality
+        document.querySelectorAll('.edit-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var row = this.closest('tr');
+                // Toggle editing class and convert cells to inputs
+                alert('Edit row clicked - implement inline editing functionality');
+            });
+        });
+
+        // Add New button functionality
+        document.getElementById('add-new-btn').addEventListener('click', function() {
+            alert('Add New clicked - implement add new row functionality');
+        });
+    </script>
+</body>
+</html>
