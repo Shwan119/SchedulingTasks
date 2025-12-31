@@ -2199,3 +2199,561 @@ namespace YourNamespace.Models
         public string Status { get; set; } // "Approved" or "Rejected"
     }
 }
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporting Organisation</title>
+    <!-- Link to shared styles - in production, extract common CSS to a shared file -->
+    <style>
+        /* ============================================
+           SHARED STYLES (reused from manage-division)
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px 32px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+        }
+
+        /* Division/Organisation Selector Row */
+        .selector-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .selector-row label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .select-wrapper select {
+            width: 100%;
+            padding: 10px 40px 10px 14px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            appearance: none;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #666;
+            pointer-events: none;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: #fff;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6170;
+        }
+
+        .btn-outline {
+            background: #fff;
+            color: #0049ac;
+            border: 1px solid #0049ac;
+        }
+
+        .btn-outline:hover {
+            background: #f0f7ff;
+        }
+
+        .btn-save {
+            background: #0049ac;
+            color: #fff;
+            border: 1px solid #0049ac;
+        }
+
+        .btn-save:hover {
+            background: #003d91;
+        }
+
+        .btn-cancel {
+            background: #fff;
+            color: #666;
+            border: 1px solid #ccc;
+        }
+
+        .btn-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+
+        .status-active {
+            background: #4a7c59;
+            color: #fff;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 24px;
+            position: relative;
+            border-bottom: 1px solid #c5c5c5;
+        }
+
+        .tab {
+            padding: 14px 40px;
+            font-size: 15px;
+            color: #1e3a5f;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: transparent;
+            font-weight: 500;
+            margin-bottom: -1px;
+        }
+
+        .tab:hover {
+            color: #1e3a5f;
+        }
+
+        .tab.active {
+            color: #1a1a1a;
+            background: #fff;
+            border-left: 1px solid #c5c5c5;
+            border-right: 1px solid #c5c5c5;
+            border-top: 1px solid #c5c5c5;
+            border-bottom: 1px solid #fff;
+        }
+
+        .tab.active::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            height: 3px;
+            background: #1e3a5f;
+        }
+
+        /* ============================================
+           PAGE-SPECIFIC STYLES (Reporting Organisation)
+           ============================================ */
+
+        /* Info Card */
+        .info-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: #fafafa;
+            border-radius: 6px;
+            margin-bottom: 24px;
+        }
+
+        .info-card-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .info-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        /* Details Grid */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 24px;
+            padding: 20px 0;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: #1a1a1a;
+            font-weight: 400;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .details-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .selector-row {
+                flex-wrap: wrap;
+            }
+
+            .select-wrapper {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reporting Organisation</h1>
+
+        <!-- Division Selector -->
+        <div class="selector-row">
+            <label>Division</label>
+            <div class="select-wrapper">
+                <select id="divisionDropdown">
+                    <option>DWO (ETS)</option>
+                    <option>Division 2</option>
+                    <option>Division 3</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary">View Fields</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="general">General</div>
+            <div class="tab" data-tab="communication">Communication</div>
+            <div class="tab" data-tab="report-custom">Report Custom Fields</div>
+            <div class="tab" data-tab="process-custom">Process Custom Fields</div>
+        </div>
+
+        <!-- General Tab Content -->
+        <div id="general-content" class="tab-content active">
+            <!-- Reporting Organisation Selector -->
+            <div class="selector-row">
+                <label>Reporting Organisation</label>
+                <div class="select-wrapper">
+                    <select id="reportingOrgDropdown">
+                        <option>RAM (RAM Reporting Org)</option>
+                        <option>Organisation 2</option>
+                        <option>Organisation 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Organisation Info Card -->
+            <div class="info-card">
+                <div class="info-card-left">
+                    <span class="info-card-title" id="org-name-display">RAM Reporting Org (RAM)</span>
+                    <span class="status-badge status-active">Active</span>
+                </div>
+                <button class="btn btn-outline" id="edit-details-btn">Edit Details</button>
+            </div>
+
+            <!-- Details Grid -->
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Name</span>
+                    <span class="detail-value">RAM Reporting Org</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Reporting Storage Locations</span>
+                    <span class="detail-value">..\Temp\ReportHubData\RAM</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Auto Publish Source Path</span>
+                    <span class="detail-value">..\Temp\AutoPublisherData\RAM</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Auto Publish Flag</span>
+                    <span class="detail-value">Enabled</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Report Expiration Flag</span>
+                    <span class="detail-value">Enabled</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Auto Upload Retirement</span>
+                    <span class="detail-value">Enabled</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communication Tab Content -->
+        <div id="communication-content" class="tab-content">
+            <div class="selector-row">
+                <label>Reporting Organisation</label>
+                <div class="select-wrapper">
+                    <select>
+                        <option>RAM (RAM Reporting Org)</option>
+                        <option>Organisation 2</option>
+                        <option>Organisation 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-card-left">
+                    <span class="info-card-title">Communication Settings</span>
+                    <span class="status-badge status-active">Active</span>
+                </div>
+                <button class="btn btn-outline">Edit Details</button>
+            </div>
+
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Email Server</span>
+                    <span class="detail-value">smtp.company.com</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Email Port</span>
+                    <span class="detail-value">587</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Default From Address</span>
+                    <span class="detail-value">reports@company.com</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Email Notifications</span>
+                    <span class="detail-value">Enabled</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">SMS Notifications</span>
+                    <span class="detail-value">Disabled</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Retry Attempts</span>
+                    <span class="detail-value">3</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Custom Fields Tab Content -->
+        <div id="report-custom-content" class="tab-content">
+            <div class="selector-row">
+                <label>Reporting Organisation</label>
+                <div class="select-wrapper">
+                    <select>
+                        <option>RAM (RAM Reporting Org)</option>
+                        <option>Organisation 2</option>
+                        <option>Organisation 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-card-left">
+                    <span class="info-card-title">Report Custom Fields</span>
+                    <span class="status-badge status-active">Active</span>
+                </div>
+                <button class="btn btn-outline">Edit Details</button>
+            </div>
+
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Custom Field 1</span>
+                    <span class="detail-value">Region Code</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Custom Field 2</span>
+                    <span class="detail-value">Department ID</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Custom Field 3</span>
+                    <span class="detail-value">Cost Center</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Custom Field 4</span>
+                    <span class="detail-value">Project Code</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Custom Field 5</span>
+                    <span class="detail-value">Not Configured</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Custom Field 6</span>
+                    <span class="detail-value">Not Configured</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Custom Fields Tab Content -->
+        <div id="process-custom-content" class="tab-content">
+            <div class="selector-row">
+                <label>Reporting Organisation</label>
+                <div class="select-wrapper">
+                    <select>
+                        <option>RAM (RAM Reporting Org)</option>
+                        <option>Organisation 2</option>
+                        <option>Organisation 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-card-left">
+                    <span class="info-card-title">Process Custom Fields</span>
+                    <span class="status-badge status-active">Active</span>
+                </div>
+                <button class="btn btn-outline">Edit Details</button>
+            </div>
+
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Process Field 1</span>
+                    <span class="detail-value">Workflow ID</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Process Field 2</span>
+                    <span class="detail-value">Approval Level</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Process Field 3</span>
+                    <span class="detail-value">Priority Flag</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Process Field 4</span>
+                    <span class="detail-value">SLA Category</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Process Field 5</span>
+                    <span class="detail-value">Not Configured</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Process Field 6</span>
+                    <span class="detail-value">Not Configured</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(function(content) {
+                    content.classList.remove('active');
+                });
+
+                // Show corresponding content
+                var tabName = this.getAttribute('data-tab');
+                document.getElementById(tabName + '-content').classList.add('active');
+            });
+        });
+
+        // Edit Details button functionality
+        document.getElementById('edit-details-btn').addEventListener('click', function() {
+            // Redirect to edit page or open modal
+            alert('Edit Details clicked - implement your edit functionality here');
+        });
+    </script>
+</body>
+</html>
