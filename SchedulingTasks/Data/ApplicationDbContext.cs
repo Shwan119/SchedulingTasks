@@ -3789,3 +3789,398 @@ namespace YourNamespace.Models
     </script>
 </body>
 </html>
+
+
+
+
+
+
+// mapping
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Mapping</title>
+    <style>
+        /* ============================================
+           SHARED STYLES (reused from manage-division & reporting-organisation)
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px 32px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+        }
+
+        /* Selector Row */
+        .selector-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .selector-row label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .select-wrapper select {
+            width: 100%;
+            padding: 10px 40px 10px 14px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            appearance: none;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #666;
+            pointer-events: none;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: #fff;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6170;
+        }
+
+        .btn-outline {
+            background: #fff;
+            color: #0049ac;
+            border: 1px solid #0049ac;
+        }
+
+        .btn-outline:hover {
+            background: #f0f7ff;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 24px;
+            position: relative;
+            border-bottom: 1px solid #c5c5c5;
+        }
+
+        .tab {
+            padding: 14px 40px;
+            font-size: 15px;
+            color: #1e3a5f;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: transparent;
+            font-weight: 500;
+            margin-bottom: -1px;
+        }
+
+        .tab:hover {
+            color: #1e3a5f;
+        }
+
+        .tab.active {
+            color: #1a1a1a;
+            background: #fff;
+            border-left: 1px solid #c5c5c5;
+            border-right: 1px solid #c5c5c5;
+            border-top: 1px solid #c5c5c5;
+            border-bottom: 1px solid #fff;
+        }
+
+        .tab.active::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            height: 3px;
+            background: #1e3a5f;
+        }
+
+        /* Info Card / Section Header */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: #fafafa;
+            border-radius: 6px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        /* Details Grid */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 24px;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: #1a1a1a;
+            font-weight: 400;
+        }
+
+        /* Description Section */
+        .description-section {
+            padding: 20px 0;
+        }
+
+        .description-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .description-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .details-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .selector-row {
+                flex-wrap: wrap;
+            }
+
+            .select-wrapper {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Field Mapping</h1>
+
+        <!-- Division Selector -->
+        <div class="selector-row">
+            <label>Division</label>
+            <div class="select-wrapper">
+                <select id="divisionDropdown">
+                    <option>DWO (ETS)</option>
+                    <option>Division 2</option>
+                    <option>Division 3</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary">View Fields</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="lob-mapping">LOB Mapping</div>
+        </div>
+
+        <!-- LOB Mapping Tab Content -->
+        <div id="lob-mapping-content" class="tab-content active">
+            <!-- LOB Selector -->
+            <div class="selector-row">
+                <label>LOB</label>
+                <div class="select-wrapper">
+                    <select id="lobDropdown">
+                        <option>All DSRA Access Request</option>
+                        <option>LOB Option 2</option>
+                        <option>LOB Option 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Report Information Section -->
+            <div class="section-header">
+                <span class="section-title">Report Information</span>
+                <button class="btn btn-outline" id="edit-details-btn">Edit Details</button>
+            </div>
+
+            <!-- Details Grid -->
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">LOB Group</span>
+                    <span class="detail-value">ETS Issues Report</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Reporting Organisation</span>
+                    <span class="detail-value">RAM Reporting Org</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Reporting Manager</span>
+                    <span class="detail-value">RAM Reporting Org</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Reporting Lead</span>
+                    <span class="detail-value">RAM Reporting Org</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">iDrive</span>
+                    <span class="detail-value">RAM Reporting Org</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Executive</span>
+                    <span class="detail-value">RAM Reporting Org</span>
+                </div>
+            </div>
+
+            <!-- Data Ready Logic Section -->
+            <div class="description-section">
+                <div class="description-label">Data Ready Logic</div>
+                <p class="description-text">
+                    Data Ready Logic is a crucial component in digital systems, responsible for signaling when valid data is available for processing or transfer. It ensures data integrity and prevents race conditions by synchronizing data flow.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(function(content) {
+                    content.classList.remove('active');
+                });
+
+                // Show corresponding content
+                var tabName = this.getAttribute('data-tab');
+                document.getElementById(tabName + '-content').classList.add('active');
+            });
+        });
+
+        // Edit Details button functionality
+        document.getElementById('edit-details-btn').addEventListener('click', function() {
+            alert('Edit Details clicked - implement your edit functionality here');
+        });
+    </script>
+</body>
+</html>
