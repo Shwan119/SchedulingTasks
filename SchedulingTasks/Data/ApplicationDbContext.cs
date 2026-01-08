@@ -42,6 +42,8 @@ namespace SchedulingTasks.Data
     }
 }
 
+
+
 /* ============================================
    GLOBAL RESET & TYPOGRAPHY
    ============================================ */
@@ -76,9 +78,9 @@ h1 {
 }
 
 /* ============================================
-   FORMS & SELECTORS
+   FORMS, SELECTORS & INPUTS
    ============================================ */
-/* Handles both 'division-selector' and 'selector-row' variations */
+/* Unified class for selector rows (handles variations across files) */
 .division-selector,
 .selector-row {
     display: flex;
@@ -100,8 +102,8 @@ h1 {
     max-width: 400px;
 }
 
-/* Field Values page used a slightly wider max-width */
-.select-wrapper.wide-select {
+/* Helper for wider selects (used in Field Values) */
+.select-wrapper.wide {
     max-width: 500px;
 }
 
@@ -131,7 +133,6 @@ h1 {
     pointer-events: none;
 }
 
-/* Search Box */
 .search-box {
     position: relative;
 }
@@ -150,6 +151,7 @@ h1 {
     border-color: #999;
 }
 
+/* SVG Search Icon */
 .search-box::before {
     content: '';
     position: absolute;
@@ -162,7 +164,6 @@ h1 {
     background-size: contain;
 }
 
-/* Inline Inputs */
 .inline-input {
     padding: 6px 10px;
     font-size: 14px;
@@ -180,21 +181,6 @@ h1 {
 
 .inline-input.wide {
     max-width: 300px;
-}
-
-.division-name-input {
-    font-size: 15px;
-    font-weight: 600;
-    color: #1a1a1a;
-    padding: 6px 12px;
-    border: 1px solid #0049ac;
-    border-radius: 4px;
-    outline: none;
-    min-width: 150px;
-}
-
-.division-name-input:focus {
-    box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.2);
 }
 
 /* ============================================
@@ -262,7 +248,29 @@ h1 {
     background: #f5f5f5;
 }
 
-/* Action Buttons (Approve/Reject Circles) */
+/* Action Icon Buttons (Edit, More Options) */
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #333;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.icon-btn:hover {
+    color: #1e3a5f;
+}
+
+.icon-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Circle Action Buttons (Approve/Reject) */
 .action-buttons {
     display: flex;
     gap: 24px;
@@ -310,28 +318,6 @@ h1 {
     stroke-width: 3;
 }
 
-/* Icon Buttons (Edit/More) */
-.icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #333;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s;
-}
-
-.icon-btn:hover {
-    color: #1e3a5f;
-}
-
-.icon-btn svg {
-    width: 20px;
-    height: 20px;
-}
-
 /* ============================================
    TABS
    ============================================ */
@@ -340,7 +326,7 @@ h1 {
     margin-bottom: 24px;
     position: relative;
     border-bottom: 1px solid #c5c5c5;
-    flex-wrap: wrap; /* Added wrap for responsiveness */
+    flex-wrap: wrap;
 }
 
 .tab {
@@ -353,11 +339,6 @@ h1 {
     background: transparent;
     font-weight: 500;
     margin-bottom: -1px;
-}
-
-/* Field Values had slightly tighter tabs, handling gracefully */
-.tab-tight {
-    padding: 14px 30px;
 }
 
 .tab:hover {
@@ -387,14 +368,14 @@ h1 {
     display: none;
 }
 
-.tab-content.active,
-#pending-content {
+.tab-content.active {
     display: block;
 }
 
 /* ============================================
    CARDS & SECTIONS
    ============================================ */
+/* Unified styling for cards across different pages */
 .division-card,
 .info-card,
 .section-header {
@@ -427,6 +408,23 @@ h1 {
     gap: 8px;
 }
 
+.description-section {
+    padding: 20px 0;
+}
+
+.description-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.description-text {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+}
+
 /* ============================================
    GRIDS & DETAILS
    ============================================ */
@@ -437,8 +435,7 @@ h1 {
     padding: 20px 0;
 }
 
-/* Field Mapping uses a border bottom on grid */
-.details-grid.with-border {
+.details-grid.bordered {
     border-bottom: 1px solid #eee;
 }
 
@@ -460,25 +457,8 @@ h1 {
     font-weight: 400;
 }
 
-.description-section {
-    padding: 20px 0;
-}
-
-.description-label {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-    margin-bottom: 8px;
-}
-
-.description-text {
-    font-size: 14px;
-    color: #333;
-    line-height: 1.6;
-}
-
 /* ============================================
-   TABLES
+   DATA TABLES
    ============================================ */
 .table-header {
     display: flex;
@@ -507,10 +487,11 @@ h1 {
     white-space: nowrap;
 }
 
+/* Sort Icons */
 .data-table th .sort-icon {
     display: inline-flex;
     flex-direction: column;
-    margin-left: 8px; /* Standardized to 8px */
+    margin-left: 8px;
     vertical-align: middle;
     gap: 2px;
 }
@@ -519,22 +500,19 @@ h1 {
     display: block;
     width: 0;
     height: 0;
-    border-left: 4px solid transparent; /* Standardized to 4px/5px visual average */
+    border-left: 4px solid transparent;
     border-right: 4px solid transparent;
 }
 
 .data-table th .sort-icon .up {
-    border-bottom: 5px solid #999; /* Adjusted for visibility */
+    border-bottom: 5px solid #999;
 }
-
-/* Specific color override for Resources/Field Values style sort icons */
-.resources-style .sort-icon .up { border-bottom-color: #1e3a5f; border-width: 6px; }
-.resources-style .sort-icon .down { border-top-color: #1e3a5f; border-width: 6px; }
 
 .data-table th .sort-icon .down {
     border-top: 5px solid #999;
 }
 
+/* Table Body */
 .data-table td {
     padding: 16px;
     font-size: 14px;
@@ -579,7 +557,7 @@ h1 {
 /* ============================================
    STATUS INDICATORS
    ============================================ */
-/* Text-only style (used in Resources/Field Values) */
+/* Simple Text Status */
 .status-active {
     color: #4a7c59;
     font-weight: 500;
@@ -590,7 +568,7 @@ h1 {
     font-weight: 500;
 }
 
-/* Badge style (used in Manage Division/Reporting Org) */
+/* Badge Status */
 .status-badge {
     display: inline-block;
     padding: 4px 12px;
@@ -599,7 +577,7 @@ h1 {
     border-radius: 4px;
 }
 
-/* Override text color when inside a badge */
+/* Status colors within badges override text colors */
 .status-badge.status-active,
 .status-badge.status-approved {
     background: #4a7c59;
@@ -609,45 +587,6 @@ h1 {
 .status-badge.status-rejected {
     background: #c53030;
     color: #fff;
-}
-
-/* ============================================
-   DROPDOWNS (Popups)
-   ============================================ */
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    min-width: 120px;
-    z-index: 100;
-}
-
-.dropdown-menu.show {
-    display: block;
-}
-
-.dropdown-item {
-    display: block;
-    padding: 10px 16px;
-    font-size: 14px;
-    color: #333;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.dropdown-item:hover {
-    background: #f5f5f5;
 }
 
 /* ============================================
@@ -725,6 +664,45 @@ h1 {
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 14px;
+}
+
+/* ============================================
+   DROPDOWN MENUS
+   ============================================ */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    min-width: 120px;
+    z-index: 100;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+    background: #f5f5f5;
 }
 
 /* ============================================
