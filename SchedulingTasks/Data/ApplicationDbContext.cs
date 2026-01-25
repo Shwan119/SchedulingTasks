@@ -102,7 +102,7 @@ namespace SchedulingTasks.Data
             <div class="select-wrapper">
                 @Html.DropDownList("SelectedDivision", divisionList, new { @id = "divisionDropdown" })
             </div>
-            <button class="btn btn-secondary">View Fields</button>
+            <button type="button" class="btn btn-secondary">View Fields</button>
         </div>
 
         <!-- Tabs -->
@@ -120,34 +120,41 @@ namespace SchedulingTasks.Data
                 </div>
             </div>
 
-            <!-- Report Information Section -->
-            <div class="section-header">
-                <span class="section-title">Report Information</span>
-                <div class="header-actions">
-                    <button class="btn btn-outline" id="edit-details-btn">Edit Details</button>
-                    <button class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
-                    <button class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
-                </div>
-            </div>
+            <!-- Form Start -->
+            @using (Html.BeginForm("Save", "FieldMapping", FormMethod.Post, new { id = "mappingForm" }))
+            {
+                @Html.AntiForgeryToken()
 
-            <!-- Details Grid -->
-            <div class="details-grid bordered" id="details-grid-container">
-                @foreach (var item in reportDetails)
-                {
-                    <div class="detail-item">
-                        <span class="detail-label">@item.Key</span>
-                        <span class="detail-value">@item.Value</span>
+                <!-- Report Information Section -->
+                <div class="section-header">
+                    <span class="section-title">Report Information</span>
+                    <div class="header-actions">
+                        <button type="button" class="btn btn-outline" id="edit-details-btn">Edit Details</button>
+                        <button type="submit" class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
+                        <button type="button" class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
                     </div>
-                }
-            </div>
+                </div>
 
-            <!-- Data Ready Logic Section -->
-            <div class="description-section">
-                <div class="description-label">Data Ready Logic</div>
-                <p class="description-text" id="logic-description">
-                    @dataReadyLogicDescription
-                </p>
-            </div>
+                <!-- Details Grid -->
+                <div class="details-grid bordered" id="details-grid-container">
+                    @foreach (var item in reportDetails)
+                    {
+                        <div class="detail-item">
+                            <span class="detail-label">@item.Key</span>
+                            <span class="detail-value">@item.Value</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Data Ready Logic Section -->
+                <div class="description-section">
+                    <div class="description-label">Data Ready Logic</div>
+                    <p class="description-text" id="logic-description">
+                        @dataReadyLogicDescription
+                    </p>
+                </div>
+            }
+            <!-- Form End -->
         </div>
 
     </div>
@@ -240,7 +247,10 @@ namespace SchedulingTasks.Data
             // ==========================================
             // SAVE CHANGES
             // ==========================================
-            $saveBtn.on('click', function() {
+            $saveBtn.on('click', function(e) {
+                // Prevent form submission for this mock demo
+                e.preventDefault(); 
+                
                 // Toggle Buttons
                 $editBtn.removeClass('hidden');
                 $saveBtn.addClass('hidden');
