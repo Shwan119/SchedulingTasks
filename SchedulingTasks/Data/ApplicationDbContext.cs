@@ -42,261 +42,385 @@ namespace SchedulingTasks.Data
     }
 }
 
-@using System.Web.Mvc.Html
-@using System.Collections.Generic
-
+//
+@using ROV.ReportHub.ViewModels
+@model ManageFieldMappingViewModel
 @{
-    Layout = null;
-
-    // ==========================================================================
-    // MOCK VIEW MODEL (Simulating Server-Side Data)
-    // ==========================================================================
-    
-    // Dropdown Lists
-    var divisionList = new List<SelectListItem>
-    {
-        new SelectListItem { Text = "DWO (ETS)", Value = "DWO", Selected = true },
-        new SelectListItem { Text = "Division 2", Value = "DIV2" },
-        new SelectListItem { Text = "Division 3", Value = "DIV3" }
-    };
-
-    var lobList = new List<SelectListItem>
-    {
-        new SelectListItem { Text = "All DSRA Access Request", Value = "DSRA", Selected = true },
-        new SelectListItem { Text = "LOB Option 2", Value = "LOB2" },
-        new SelectListItem { Text = "LOB Option 3", Value = "LOB3" }
-    };
-
-    // Report Details Data
-    var reportDetails = new Dictionary<string, string>
-    {
-        { "LOB Group", "ETS Issues Report" },
-        { "Reporting Organisation", "RAM Reporting Org" },
-        { "Reporting Manager", "RAM Reporting Org" },
-        { "Reporting Lead", "RAM Reporting Org" },
-        { "iDrive", "RAM Reporting Org" },
-        { "Executive", "RAM Reporting Org" }
-    };
-
-    // Description Data
-    var dataReadyLogicDescription = "Data Ready Logic is a crucial component in digital systems, responsible for signaling when valid data is available for processing or transfer. It ensures data integrity and prevents race conditions by synchronizing data flow.";
+    ViewBag.Title = "Manage Field Mapping";
 }
+<link href="~/_css/styles.css" rel="stylesheet" />
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Field Mapping</title>
-    <!-- Add jQuery CDN -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Field Mapping</h1>
+<div class="container">
+    <h1>Field Mapping</h1>
+
+    @using (Html.BeginForm("ManageFieldMapping", "Division", FormMethod.Post, new { @id = "frmManageMapping" }))
+    {
+        @Html.AntiForgeryToken()
 
         <!-- Division Selector -->
         <div class="selector-row">
-            @Html.Label("SelectedDivision", "Division")
+            <label>Division</label>
             <div class="select-wrapper">
-                @Html.DropDownList("SelectedDivision", divisionList, new { @id = "divisionDropdown" })
+                @Html.DropDownListFor(m => m.SelectedDivisionID,
+                    new SelectList(Model.Divisions, "ID", "CodeName"), 
+                    "(Please Select)", 
+                    new { @id = "SelectedDivisionID" })
             </div>
-            <button type="button" class="btn btn-secondary">View Fields</button>
+            <button type="button" class="btn btn-secondary" id="btnViewFields">View Fields</button>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <div class="tab active" data-tab="lob-mapping">LOB Mapping</div>
-        </div>
+        @if (Model.SelectedDivisionID > 0)
+        {
+            string acLOBMapping = "";
+            string inLOBMapping = "";
 
-        <!-- LOB Mapping Tab Content -->
-        <div id="lob-mapping-content" class="tab-content active">
-            <!-- LOB Selector -->
-            <div class="selector-row">
-                @Html.Label("SelectedLOB", "LOB")
-                <div class="select-wrapper">
-                    @Html.DropDownList("SelectedLOB", lobList, new { @id = "lobDropdown" })
-                </div>
-            </div>
-
-            <!-- Form Start -->
-            @using (Html.BeginForm("Save", "FieldMapping", FormMethod.Post, new { id = "mappingForm" }))
+            switch (Model.PageAction)
             {
-                @Html.AntiForgeryToken()
+                case FieldMappingManagementrPageAction.paLOBMapping:
+                    acLOBMapping = "active";
+                    inLOBMapping = "in";
+                    break;
+                case FieldMappingManagementrPageAction.paStackholders:
+                    break;
+                case FieldMappingManagementrPageAction.paCustomFields:
+                    break;
+                default:
+                    break;
+            }
 
-                <!-- Report Information Section -->
-                <div class="section-header">
-                    <span class="section-title">Report Information</span>
-                    <div class="header-actions">
-                        <button type="button" class="btn btn-outline" id="edit-details-btn">Edit Details</button>
-                        <button type="submit" class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
-                        <button type="button" class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
-                    </div>
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab @(acLOBMapping == "active" ? "active" : "")" data-tab="lob-mapping">
+                    <a data-toggle="tab" href="#divLOBMapping">LOB Mapping</a>
                 </div>
+            </div>
 
-                <!-- Details Grid -->
-                <div class="details-grid bordered" id="details-grid-container">
-                    @foreach (var item in reportDetails)
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <div id="divLOBMapping" class="tab-pane fade @acLOBMapping @inLOBMapping">
+
+                    <!-- LOB Selector -->
+                    <div class="selector-row">
+                        <label>LOB</label>
+                        <div class="select-wrapper">
+                            @if (Model.SelectedDivisionID.HasValue)
+                            {
+                                @Html.DropDownListFor(m => m.SelectedLOBID, 
+                                    new SelectList(Model.LOBs.FindAll(r => r.ActiveFlag == true), "ID", "AlternateName"), 
+                                    "(Please Select)", 
+                                    new { @id = "SelectedLOBID" })
+                            }
+                        </div>
+                    </div>
+
+                    @if (Model.SelectedLOBID > 0)
                     {
-                        <div class="detail-item">
-                            <span class="detail-label">@item.Key</span>
-                            <span class="detail-value">@item.Value</span>
+                        @Html.HiddenFor(m => m.TheLOB.ID)
+
+                        <!-- Report Information Section -->
+                        <div class="section-header">
+                            <span class="section-title">Report Information</span>
+                            <div class="header-actions">
+                                <button type="button" class="btn btn-outline" id="edit-details-btn">Edit Details</button>
+                                <button type="button" class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
+                                <button type="button" class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
+                            </div>
+                        </div>
+
+                        <!-- Details Grid - 6 columns -->
+                        <div class="details-grid" id="details-grid-container">
+                            <!-- LOB Group -->
+                            <div class="detail-item" data-field="lobGroup">
+                                <span class="detail-label">LOB Group</span>
+                                <div class="detail-value-box">
+                                    <span class="display-value @(Model.TheLOB.LOBGroup_ID == null ? "empty" : "")">
+                                        @(Model.TheLOB.LOBGroup_ID != null ? Model.LOBGroups.FirstOrDefault(x => x.ID == Model.TheLOB.LOBGroup_ID)?.Name : "(Please Select)")
+                                    </span>
+                                    @Html.DropDownListFor(m => m.TheLOB.LOBGroup_ID, 
+                                        new SelectList(Model.LOBGroups, "ID", "Name", Model.TheLOB.LOBGroup_ID), 
+                                        "(Please Select)", 
+                                        new { @class = "edit-select hidden" })
+                                </div>
+                            </div>
+
+                            <!-- Reporting Org -->
+                            <div class="detail-item" data-field="reportingOrg">
+                                <span class="detail-label">
+                                    Reporting Org
+                                    <span class="info-icon" data-toggle="popover" data-trigger="hover" 
+                                          data-content="For adding a new Reporting Org., please contact site owner" 
+                                          title="">ⓘ</span>
+                                </span>
+                                <div class="detail-value-box">
+                                    <span class="display-value @(Model.TheLOB.ReportingOrg_ID == null ? "empty" : "")">
+                                        @(Model.TheLOB.ReportingOrg_ID != null ? Model.ReportingOrgs.FirstOrDefault(x => x.ID == Model.TheLOB.ReportingOrg_ID)?.CodeName : "(Please Select)")
+                                    </span>
+                                    @Html.DropDownListFor(m => m.TheLOB.ReportingOrg_ID, 
+                                        new SelectList(Model.ReportingOrgs, "ID", "CodeName", Model.TheLOB.ReportingOrg_ID),
+                                        "(Please Select)", 
+                                        new { @class = "edit-select hidden" })
+                                </div>
+                            </div>
+
+                            <!-- Report Manager -->
+                            <div class="detail-item" data-field="reportManager">
+                                <span class="detail-label">Report Manager</span>
+                                <div class="detail-value-box">
+                                    <span class="display-value @(Model.TheLOBReportManager == null || Model.TheLOBReportManager.ID == 0 ? "empty" : "")">
+                                        @(Model.TheLOBReportManager != null && Model.TheLOBReportManager.ID > 0 ? Model.ReportManagers.FirstOrDefault(x => x.ID == Model.TheLOBReportManager.ID)?.Name : "(Please Select)")
+                                    </span>
+                                    @Html.DropDownListFor(m => m.TheLOBReportManager.ID,
+                                        new SelectList(Model.ReportManagers, "ID", "Name", Model.TheLOBReportManager != null ? Model.TheLOBReportManager.ID : 0), 
+                                        "(Please Select)", 
+                                        new { @class = "edit-select hidden" })
+                                </div>
+                            </div>
+
+                            <!-- Report Lead -->
+                            <div class="detail-item" data-field="reportLead">
+                                <span class="detail-label">Report Lead</span>
+                                <div class="detail-value-box">
+                                    <span class="display-value @(Model.TheLOBReportLead == null || Model.TheLOBReportLead.ID == 0 ? "empty" : "")">
+                                        @(Model.TheLOBReportLead != null && Model.TheLOBReportLead.ID > 0 ? Model.ReportLeads.FirstOrDefault(x => x.ID == Model.TheLOBReportLead.ID)?.Name : "(Please Select)")
+                                    </span>
+                                    @Html.DropDownListFor(m => m.TheLOBReportLead.ID,
+                                        new SelectList(Model.ReportLeads, "ID", "Name", Model.TheLOBReportLead != null ? Model.TheLOBReportLead.ID : 0), 
+                                        "(Please Select)", 
+                                        new { @class = "edit-select hidden" })
+                                </div>
+                            </div>
+
+                            <!-- iDrive -->
+                            <div class="detail-item" data-field="iDrive">
+                                <span class="detail-label">iDrive</span>
+                                <div class="detail-value-box">
+                                    <span class="display-value @(Model.TheLOBiDrive == null || Model.TheLOBiDrive.ID == 0 ? "empty" : "")">
+                                        @(Model.TheLOBiDrive != null && Model.TheLOBiDrive.ID > 0 ? Model.iDrives.FirstOrDefault(x => x.ID == Model.TheLOBiDrive.ID)?.Name : "(Please Select)")
+                                    </span>
+                                    @Html.DropDownListFor(m => m.TheLOBiDrive.ID,
+                                        new SelectList(Model.iDrives, "ID", "Name", Model.TheLOBiDrive != null ? Model.TheLOBiDrive.ID : 0), 
+                                        "(Please Select)", 
+                                        new { @class = "edit-select hidden" })
+                                </div>
+                            </div>
+
+                            <!-- Executive -->
+                            <div class="detail-item" data-field="executive">
+                                <span class="detail-label">Executive</span>
+                                <div class="detail-value-box">
+                                    <span class="display-value @(Model.TheLOBExecutive == null || Model.TheLOBExecutive.ID == 0 ? "empty" : "")">
+                                        @(Model.TheLOBExecutive != null && Model.TheLOBExecutive.ID > 0 ? Model.Executives.FirstOrDefault(x => x.ID == Model.TheLOBExecutive.ID)?.Name : "(Please Select)")
+                                    </span>
+                                    @Html.DropDownListFor(m => m.TheLOBExecutive.ID,
+                                        new SelectList(Model.Executives, "ID", "Name", Model.TheLOBExecutive != null ? Model.TheLOBExecutive.ID : 0), 
+                                        "(Please Select)", 
+                                        new { @class = "edit-select hidden" })
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LOB Details Section -->
+                        <div class="lob-details-section">
+                            <label class="lob-details-label">LOB Details</label>
+                            <div class="lob-details-container">
+                                <!-- Filter Input -->
+                                <div class="lob-filter-wrapper">
+                                    <input type="text" 
+                                           class="lob-filter-input" 
+                                           id="txtLOBDetailFilter" 
+                                           name="txtLOBDetailFilter" 
+                                           placeholder="Start typing to filter on LOB Details..." />
+                                </div>
+
+                                <!-- Checkbox Grid -->
+                                <div class="lob-checkbox-grid" id="divLOBDetailContainer">
+                                    @{
+                                        List<ROV.Common.DataModel.LOBDetail> dtlList = new List<ROV.Common.DataModel.LOBDetail>();
+                                        foreach (var item in Model.TheLOB.LOBDetails)
+                                        {
+                                            dtlList.Add(item);
+                                        }
+                                        foreach (var item in Model.LOBDetails.OrderByDescending(r => r.ActiveFlag).ToList())
+                                        {
+                                            if ((item.ActiveFlag) && (!dtlList.Any(r => r.ID == item.ID)))
+                                            {
+                                                dtlList.Add(item);
+                                            }
+                                        }
+                                    }
+
+                                    @foreach (var lobDtl in dtlList)
+                                    {
+                                        bool isChecked = Model.TheLOB.LOBDetails.SingleOrDefault(r => r.ID == lobDtl.ID) != null;
+                                        bool isInactive = !lobDtl.ActiveFlag && !isChecked;
+                                        
+                                        <div class="checkbox-item" data-label="@lobDtl.Name.ToLower()">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" 
+                                                       class="checkbox-input"
+                                                       id="cbx_LOBDetail_@lobDtl.ID" 
+                                                       name="cbx_LOBDetail_@lobDtl.ID" 
+                                                       value="@lobDtl.ID" 
+                                                       @(isChecked ? "checked" : "") 
+                                                       @(isInactive ? "data-inactive=true" : "")
+                                                       disabled />
+                                                <span class="checkbox-custom"></span>
+                                                <span class="checkbox-text">@lobDtl.Name</span>
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     }
                 </div>
+            </div>
+        }
+    }
+</div>
 
-                <!-- Data Ready Logic Section -->
-                <div class="description-section">
-                    <div class="description-label">Data Ready Logic</div>
-                    <p class="description-text" id="logic-description">
-                        @dataReadyLogicDescription
-                    </p>
-                </div>
-            }
-            <!-- Form End -->
-        </div>
-
-    </div>
-
+@section Scripts
+{
     <script>
-        $(document).ready(function() {
-            // Configuration for Dropdown Options (Client-side logic for Edit mode)
-            const dropdownOptions = {
-                "LOB Group": ["ETS Issues Report", "LOB Group A", "LOB Group B"],
-                "Reporting Organisation": ["RAM Reporting Org", "Finance Org", "Operations Org"],
-                "Reporting Manager": ["RAM Reporting Org", "Manager A", "Manager B"],
-                "Reporting Lead": ["RAM Reporting Org", "Lead A", "Lead B"],
-                "iDrive": ["RAM Reporting Org", "iDrive A", "iDrive B"],
-                "Executive": ["RAM Reporting Org", "Executive A", "Executive B"]
-            };
+        $(document).ready(function () {
+            // Initialize popovers
+            $('[data-toggle="popover"]').popover();
 
-            // Store original state
-            let originalValues = [];
-            let originalDescription = "";
+            // Store original values
+            var originalValues = {};
+            var originalLobSelections = {};
+            var isEditMode = false;
 
             // Cache selectors
-            const $editBtn = $('#edit-details-btn');
-            const $saveBtn = $('#save-details-btn');
-            const $cancelBtn = $('#cancel-details-btn');
-            const $gridContainer = $('#details-grid-container');
-            const $descText = $('#logic-description');
+            var $editBtn = $('#edit-details-btn');
+            var $saveBtn = $('#save-details-btn');
+            var $cancelBtn = $('#cancel-details-btn');
+            var $gridContainer = $('#details-grid-container');
+            var $lobDetailsSection = $('.lob-details-section');
 
             // ==========================================
-            // TAB SWITCHING
+            // DIVISION DROPDOWN CHANGE
             // ==========================================
-            $('.tab').on('click', function() {
-                $('.tab').removeClass('active');
-                $(this).addClass('active');
-                
-                $('.tab-content').removeClass('active');
-                var tabName = $(this).data('tab');
-                $('#' + tabName + '-content').addClass('active');
+            $('#SelectedDivisionID').change(function () {
+                $('#frmManageMapping').submit();
+            });
+
+            // ==========================================
+            // LOB DROPDOWN CHANGE
+            // ==========================================
+            $('#SelectedLOBID').change(function () {
+                $('#frmManageMapping').submit();
+            });
+
+            // ==========================================
+            // LOB DETAILS FILTER
+            // ==========================================
+            $('#txtLOBDetailFilter').on('input', function () {
+                var filterText = $(this).val().toLowerCase();
+
+                $('.checkbox-item').each(function () {
+                    var labelText = $(this).data('label');
+                    if (labelText.indexOf(filterText) !== -1) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
             });
 
             // ==========================================
             // EDIT MODE
             // ==========================================
-            $editBtn.on('click', function() {
+            $editBtn.on('click', function () {
+                isEditMode = true;
+
                 // Toggle Buttons
                 $editBtn.addClass('hidden');
                 $saveBtn.removeClass('hidden');
                 $cancelBtn.removeClass('hidden');
 
-                // 1. Handle Grid Items (Convert to Select wrapped in Div)
-                originalValues = [];
-                
-                $gridContainer.find('.detail-item').each(function() {
-                    const $item = $(this);
-                    const label = $item.find('.detail-label').text().trim();
-                    const $valueEl = $item.find('.detail-value');
-                    const currentText = $valueEl.text().trim();
-                    
-                    originalValues.push(currentText); // Save for cancel
-                    
-                    // Create Wrapper
-                    const $wrapper = $('<div class="edit-select-wrapper"></div>');
-                    const $select = $('<select></select>');
-                    
-                    // Get options or default
-                    const options = dropdownOptions[label] || [currentText, "Option 1", "Option 2"];
-                    
-                    // Populate options
-                    $.each(options, function(i, opt) {
-                        const $option = $('<option></option>').val(opt).text(opt);
-                        if(opt === currentText) $option.prop('selected', true);
-                        $select.append($option);
-                    });
-                    
-                    // Ensure current value is in list if custom
-                    if ($.inArray(currentText, options) === -1 && currentText !== "") {
-                         const $option = $('<option></option>').val(currentText).text(currentText).prop('selected', true);
-                         $select.prepend($option);
-                    }
+                // Save original values and show dropdowns
+                $gridContainer.find('.detail-item').each(function () {
+                    var $item = $(this);
+                    var field = $item.data('field');
+                    var $valueBox = $item.find('.detail-value-box');
+                    var $displayValue = $valueBox.find('.display-value');
+                    var $select = $valueBox.find('.edit-select');
 
-                    $wrapper.append($select);
-                    $valueEl.empty().append($wrapper);
+                    // Store original selected value
+                    originalValues[field] = $select.val();
+
+                    // Hide display value, show select
+                    $displayValue.addClass('hidden');
+                    $select.removeClass('hidden');
                 });
 
-                // 2. Handle Description (Convert to Textarea)
-                originalDescription = $descText.text().trim();
-                const $textarea = $('<textarea class="edit-textarea"></textarea>').val(originalDescription);
-                $descText.empty().append($textarea);
+                // Save original LOB selections and enable checkboxes
+                $('.checkbox-input').each(function () {
+                    var id = $(this).attr('id');
+                    originalLobSelections[id] = $(this).is(':checked');
+                    
+                    // Only enable if not inactive
+                    if (!$(this).data('inactive')) {
+                        $(this).prop('disabled', false);
+                    }
+                });
+
+                $lobDetailsSection.addClass('edit-mode');
             });
 
             // ==========================================
             // SAVE CHANGES
             // ==========================================
-            $saveBtn.on('click', function(e) {
-                // Prevent form submission for this mock demo
-                e.preventDefault(); 
-                
-                // Toggle Buttons
-                $editBtn.removeClass('hidden');
-                $saveBtn.addClass('hidden');
-                $cancelBtn.addClass('hidden');
-
-                // 1. Save Grid Items
-                $gridContainer.find('.detail-value').each(function() {
-                    const $el = $(this);
-                    const $select = $el.find('select');
-                    if ($select.length) {
-                        const newValue = $select.val();
-                        $el.text(newValue);
-                    }
-                });
-
-                // 2. Save Description
-                const $textarea = $descText.find('textarea');
-                if ($textarea.length) {
-                    $descText.text($textarea.val());
-                }
+            $saveBtn.on('click', function () {
+                // Submit the form to save changes
+                $('#frmManageMapping').submit();
             });
 
             // ==========================================
             // CANCEL CHANGES
             // ==========================================
-            $cancelBtn.on('click', function() {
+            $cancelBtn.on('click', function () {
+                isEditMode = false;
+
                 // Toggle Buttons
                 $editBtn.removeClass('hidden');
                 $saveBtn.addClass('hidden');
                 $cancelBtn.addClass('hidden');
 
-                // 1. Restore Grid Items
-                $gridContainer.find('.detail-value').each(function(index) {
-                    $(this).text(originalValues[index]);
+                // Restore original values and hide dropdowns
+                $gridContainer.find('.detail-item').each(function () {
+                    var $item = $(this);
+                    var field = $item.data('field');
+                    var $valueBox = $item.find('.detail-value-box');
+                    var $displayValue = $valueBox.find('.display-value');
+                    var $select = $valueBox.find('.edit-select');
+
+                    // Restore original selected value
+                    $select.val(originalValues[field]);
+
+                    // Show display value, hide select
+                    $displayValue.removeClass('hidden');
+                    $select.addClass('hidden');
                 });
 
-                // 2. Restore Description
-                $descText.text(originalDescription);
+                // Restore LOB selections and disable checkboxes
+                $('.checkbox-input').each(function () {
+                    var id = $(this).attr('id');
+                    $(this).prop('checked', originalLobSelections[id]);
+                    $(this).prop('disabled', true);
+                });
+
+                $lobDetailsSection.removeClass('edit-mode');
             });
         });
     </script>
-</body>
-</html>
+}
 
 
 
+
+//
 /* ============================================
    RESET & BASICS
    ============================================ */
@@ -604,9 +728,6 @@ td .inline-input {
 .container.layout-flex .tab {
     padding: 14px 30px; 
 }
-/* Revert override for Resources (which is also layout-flex but had 40px) if strictly needed, 
-   but 30px works generally. Sticking to individual overrides if specific files need it, 
-   but here we will keep the general rule robust. */
    
 .tab:hover {
     color: #1e3a5f;
@@ -941,39 +1062,97 @@ td .inline-input {
     box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.2);
 }
 
-/* Editing Dropdowns (Custom) */
-.edit-select-wrapper {
-    position: relative;
-    width: 140px; 
+/* ============================================
+   DETAILS GRID - 6 Columns with Input Box Styling
+   ============================================ */
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+    padding: 24px 0;
+    border-bottom: 1px solid #eee;
 }
-/* Standard width for larger forms */
-.details-grid .edit-select-wrapper {
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-icon {
+    color: #0049ac;
+    cursor: help;
+    font-size: 14px;
+    font-weight: normal;
+}
+
+/* Value Box - Input-like appearance - FIXED WIDTH */
+.detail-value-box {
+    position: relative;
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+}
+
+.display-value {
+    font-size: 14px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 14px;
     width: 100%;
+}
+
+.display-value.empty {
+    color: #6b7280;
+}
+
+/* Edit Select Wrapper - Same size as display box */
+.edit-select-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .edit-select-wrapper select {
     width: 100%;
-    padding: 6px 30px 6px 10px;
+    height: 100%;
+    padding: 0 36px 0 14px;
     font-size: 14px;
-    border: 1px solid #ddd;
+    border: 1px solid #1e3a5f;
     border-radius: 4px;
     background: #fff;
     appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     cursor: pointer;
     color: #333;
     outline: none;
-    transition: border-color 0.2s;
-}
-
-/* Variant padding for Reporting Org / Field Mapping */
-.details-grid .edit-select-wrapper select {
-    padding: 8px 30px 8px 12px;
 }
 
 .edit-select-wrapper select:focus {
     border-color: #0049ac;
+    box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.15);
 }
 
+/* Dropdown Arrow - Consistent styling */
 .edit-select-wrapper::after {
     content: '';
     position: absolute;
@@ -984,109 +1163,168 @@ td .inline-input {
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-top: 5px solid #666;
+    border-top: 6px solid #1e3a5f;
     pointer-events: none;
 }
 
-.edit-textarea {
+/* ============================================
+   LOB DETAILS SECTION
+   ============================================ */
+.lob-details-section {
+    margin-top: 24px;
+    padding-top: 0;
+}
+
+.lob-details-label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.lob-details-container {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+}
+
+/* Filter Input */
+.lob-filter-wrapper {
+    padding: 0;
+    background: #f3f4f6;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.lob-filter-input {
     width: 100%;
-    padding: 10px;
+    padding: 14px 16px;
     font-size: 14px;
-    border: 1px solid #0049ac;
-    border-radius: 4px;
-    font-family: inherit;
-    min-height: 100px;
-    resize: vertical;
+    border: none;
+    background: transparent;
+    color: #333;
     outline: none;
-    line-height: 1.5;
 }
 
-/* Details Grid */
-.details-grid {
+.lob-filter-input::placeholder {
+    color: #6b7280;
+}
+
+.lob-filter-input:focus {
+    background: #fff;
+}
+
+/* Checkbox Grid */
+.lob-checkbox-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 24px;
-    padding: 20px 0;
-}
-/* Border only on Field Mapping */
-.details-grid.bordered {
-    border-bottom: 1px solid #eee;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    max-height: 350px;
+    overflow-y: auto;
+    padding: 16px;
 }
 
-.detail-item {
+.checkbox-item {
+    padding: 10px 8px;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: flex-start;
 }
 
-.detail-label {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
+/* Alternating row backgrounds - every 3 items is a row */
+.checkbox-item:nth-child(6n+1),
+.checkbox-item:nth-child(6n+2),
+.checkbox-item:nth-child(6n+3) {
+    background: #fff;
 }
 
-.detail-value {
+.checkbox-item:nth-child(6n+4),
+.checkbox-item:nth-child(6n+5),
+.checkbox-item:nth-child(6n+6) {
+    background: #f9fafb;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
     font-size: 14px;
-    color: #1a1a1a;
-    font-weight: 400;
-    min-height: 24px;
+    color: #333;
+    line-height: 1.4;
+}
+
+/* Disabled state for checkboxes */
+.checkbox-label input[type="checkbox"]:disabled + .checkbox-custom {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.checkbox-label input[type="checkbox"]:disabled ~ .checkbox-text {
+    opacity: 0.7;
+}
+
+/* When in edit mode, restore full opacity */
+.lob-details-section.edit-mode .checkbox-label input[type="checkbox"]:disabled + .checkbox-custom,
+.lob-details-section.edit-mode .checkbox-label input[type="checkbox"]:disabled ~ .checkbox-text {
+    opacity: 1;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border: 2px solid #9ca3af;
+    border-radius: 3px;
+    background: #fff;
     display: flex;
     align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-top: 1px;
 }
 
-/* Description Section */
-.description-section {
-    padding: 20px 0;
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+    background: #0049ac;
+    border-color: #0049ac;
 }
 
-.description-label {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-    margin-bottom: 8px;
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: '';
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 2px;
 }
 
-.description-text {
-    font-size: 14px;
-    color: #333;
-    line-height: 1.6;
+.checkbox-text {
+    flex: 1;
+    word-break: break-word;
 }
 
-/* Dropdown Menu (Field Values) */
-.dropdown {
-    position: relative;
-    display: inline-block;
+/* Scrollbar Styling */
+.lob-checkbox-grid::-webkit-scrollbar {
+    width: 8px;
 }
 
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    background: #fff;
-    border: 1px solid #ddd;
+.lob-checkbox-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    min-width: 120px;
-    z-index: 100;
 }
 
-.dropdown-menu.show {
-    display: block;
+.lob-checkbox-grid::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
 }
 
-.dropdown-item {
-    display: block;
-    padding: 10px 16px;
-    font-size: 14px;
-    color: #333;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.dropdown-item:hover {
-    background: #f5f5f5;
+.lob-checkbox-grid::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
 }
 
 /* Utilities */
@@ -1111,9 +1349,15 @@ td .inline-input {
 /* ============================================
    RESPONSIVE
    ============================================ */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
     .details-grid {
         grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 1200px) {
+    .lob-checkbox-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -1121,6 +1365,12 @@ td .inline-input {
     .data-table {
         display: block;
         overflow-x: auto;
+    }
+}
+
+@media (max-width: 900px) {
+    .details-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -1142,10 +1392,6 @@ td .inline-input {
     .pagination-wrapper {
         flex-direction: column;
         gap: 16px;
-    }
-
-    .details-grid {
-        grid-template-columns: repeat(2, 1fr);
     }
 
     .tabs {
@@ -1173,6 +1419,10 @@ td .inline-input {
         flex-direction: column;
         gap: 12px;
         align-items: flex-start;
+    }
+    
+    .lob-checkbox-grid {
+        grid-template-columns: 1fr;
     }
 }
 
