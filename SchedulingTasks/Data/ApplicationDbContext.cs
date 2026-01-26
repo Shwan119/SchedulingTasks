@@ -71,209 +71,191 @@ namespace SchedulingTasks.Data
 
         @if (Model.SelectedDivisionID > 0)
         {
-            string acLOBMapping = "";
-            string inLOBMapping = "";
-
-            switch (Model.PageAction)
-            {
-                case FieldMappingManagementrPageAction.paLOBMapping:
-                    acLOBMapping = "active";
-                    inLOBMapping = "in";
-                    break;
-                case FieldMappingManagementrPageAction.paStackholders:
-                    break;
-                case FieldMappingManagementrPageAction.paCustomFields:
-                    break;
-                default:
-                    break;
-            }
-
             <!-- Tabs -->
             <div class="tabs">
-                <div class="tab @(acLOBMapping == "active" ? "active" : "")" data-tab="lob-mapping">
-                    <a data-toggle="tab" href="#divLOBMapping">LOB Mapping</a>
-                </div>
+                <div class="tab active" data-tab="lob-mapping">LOB Mapping</div>
             </div>
 
             <!-- Tab Content -->
-            <div class="tab-content">
-                <div id="divLOBMapping" class="tab-pane fade @acLOBMapping @inLOBMapping">
+            <div id="lob-mapping-content" class="tab-content active">
 
-                    <!-- LOB Selector -->
-                    <div class="selector-row">
-                        <label>LOB</label>
-                        <div class="select-wrapper">
-                            @if (Model.SelectedDivisionID.HasValue)
-                            {
-                                @Html.DropDownListFor(m => m.SelectedLOBID, 
-                                    new SelectList(Model.LOBs.FindAll(r => r.ActiveFlag == true), "ID", "AlternateName"), 
-                                    "(Please Select)", 
-                                    new { @id = "SelectedLOBID" })
-                            }
+                <!-- LOB Selector -->
+                <div class="selector-row">
+                    <label>LOB</label>
+                    <div class="select-wrapper">
+                        @if (Model.SelectedDivisionID.HasValue)
+                        {
+                            @Html.DropDownListFor(m => m.SelectedLOBID, 
+                                new SelectList(Model.LOBs.FindAll(r => r.ActiveFlag == true), "ID", "AlternateName"), 
+                                "(Please Select)", 
+                                new { @id = "SelectedLOBID" })
+                        }
+                    </div>
+                </div>
+
+                @if (Model.SelectedLOBID > 0)
+                {
+                    @Html.HiddenFor(m => m.TheLOB.ID)
+
+                    <!-- Report Information Section -->
+                    <div class="section-header">
+                        <span class="section-title">Report Information</span>
+                        <div class="header-actions">
+                            <button type="button" class="btn btn-outline" id="edit-details-btn">Edit Details</button>
+                            <button type="button" class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
+                            <button type="button" class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
                         </div>
                     </div>
 
-                    @if (Model.SelectedLOBID > 0)
-                    {
-                        @Html.HiddenFor(m => m.TheLOB.ID)
-
-                        <!-- Report Information Section -->
-                        <div class="section-header">
-                            <span class="section-title">Report Information</span>
-                            <div class="header-actions">
-                                <button type="button" class="btn btn-outline" id="edit-details-btn">Edit Details</button>
-                                <button type="button" class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
-                                <button type="button" class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
-                            </div>
-                        </div>
-
-                        <!-- Details Grid - 6 columns -->
-                        <div class="details-grid" id="details-grid-container">
-                            <!-- LOB Group -->
-                            <div class="detail-item" data-field="lobGroup">
-                                <span class="detail-label">LOB Group</span>
-                                <div class="detail-value-box">
-                                    <span class="display-value @(Model.TheLOB.LOBGroup_ID == null ? "empty" : "")">
-                                        @(Model.TheLOB.LOBGroup_ID != null ? Model.LOBGroups.FirstOrDefault(x => x.ID == Model.TheLOB.LOBGroup_ID)?.Name : "(Please Select)")
-                                    </span>
+                    <!-- Details Grid - 6 columns -->
+                    <div class="details-grid" id="details-grid-container">
+                        <!-- LOB Group -->
+                        <div class="detail-item" data-field="lobGroup">
+                            <span class="detail-label">LOB Group</span>
+                            <div class="detail-value-box">
+                                <span class="display-value @(Model.TheLOB.LOBGroup_ID == null ? "empty" : "")">
+                                    @(Model.TheLOB.LOBGroup_ID != null ? Model.LOBGroups.FirstOrDefault(x => x.ID == Model.TheLOB.LOBGroup_ID)?.Name : "(Please Select)")
+                                </span>
+                                <div class="edit-select-wrapper hidden">
                                     @Html.DropDownListFor(m => m.TheLOB.LOBGroup_ID, 
                                         new SelectList(Model.LOBGroups, "ID", "Name", Model.TheLOB.LOBGroup_ID), 
-                                        "(Please Select)", 
-                                        new { @class = "edit-select hidden" })
-                                </div>
-                            </div>
-
-                            <!-- Reporting Org -->
-                            <div class="detail-item" data-field="reportingOrg">
-                                <span class="detail-label">
-                                    Reporting Org
-                                    <span class="info-icon" data-toggle="popover" data-trigger="hover" 
-                                          data-content="For adding a new Reporting Org., please contact site owner" 
-                                          title="">ⓘ</span>
-                                </span>
-                                <div class="detail-value-box">
-                                    <span class="display-value @(Model.TheLOB.ReportingOrg_ID == null ? "empty" : "")">
-                                        @(Model.TheLOB.ReportingOrg_ID != null ? Model.ReportingOrgs.FirstOrDefault(x => x.ID == Model.TheLOB.ReportingOrg_ID)?.CodeName : "(Please Select)")
-                                    </span>
-                                    @Html.DropDownListFor(m => m.TheLOB.ReportingOrg_ID, 
-                                        new SelectList(Model.ReportingOrgs, "ID", "CodeName", Model.TheLOB.ReportingOrg_ID),
-                                        "(Please Select)", 
-                                        new { @class = "edit-select hidden" })
-                                </div>
-                            </div>
-
-                            <!-- Report Manager -->
-                            <div class="detail-item" data-field="reportManager">
-                                <span class="detail-label">Report Manager</span>
-                                <div class="detail-value-box">
-                                    <span class="display-value @(Model.TheLOBReportManager == null || Model.TheLOBReportManager.ID == 0 ? "empty" : "")">
-                                        @(Model.TheLOBReportManager != null && Model.TheLOBReportManager.ID > 0 ? Model.ReportManagers.FirstOrDefault(x => x.ID == Model.TheLOBReportManager.ID)?.Name : "(Please Select)")
-                                    </span>
-                                    @Html.DropDownListFor(m => m.TheLOBReportManager.ID,
-                                        new SelectList(Model.ReportManagers, "ID", "Name", Model.TheLOBReportManager != null ? Model.TheLOBReportManager.ID : 0), 
-                                        "(Please Select)", 
-                                        new { @class = "edit-select hidden" })
-                                </div>
-                            </div>
-
-                            <!-- Report Lead -->
-                            <div class="detail-item" data-field="reportLead">
-                                <span class="detail-label">Report Lead</span>
-                                <div class="detail-value-box">
-                                    <span class="display-value @(Model.TheLOBReportLead == null || Model.TheLOBReportLead.ID == 0 ? "empty" : "")">
-                                        @(Model.TheLOBReportLead != null && Model.TheLOBReportLead.ID > 0 ? Model.ReportLeads.FirstOrDefault(x => x.ID == Model.TheLOBReportLead.ID)?.Name : "(Please Select)")
-                                    </span>
-                                    @Html.DropDownListFor(m => m.TheLOBReportLead.ID,
-                                        new SelectList(Model.ReportLeads, "ID", "Name", Model.TheLOBReportLead != null ? Model.TheLOBReportLead.ID : 0), 
-                                        "(Please Select)", 
-                                        new { @class = "edit-select hidden" })
-                                </div>
-                            </div>
-
-                            <!-- iDrive -->
-                            <div class="detail-item" data-field="iDrive">
-                                <span class="detail-label">iDrive</span>
-                                <div class="detail-value-box">
-                                    <span class="display-value @(Model.TheLOBiDrive == null || Model.TheLOBiDrive.ID == 0 ? "empty" : "")">
-                                        @(Model.TheLOBiDrive != null && Model.TheLOBiDrive.ID > 0 ? Model.iDrives.FirstOrDefault(x => x.ID == Model.TheLOBiDrive.ID)?.Name : "(Please Select)")
-                                    </span>
-                                    @Html.DropDownListFor(m => m.TheLOBiDrive.ID,
-                                        new SelectList(Model.iDrives, "ID", "Name", Model.TheLOBiDrive != null ? Model.TheLOBiDrive.ID : 0), 
-                                        "(Please Select)", 
-                                        new { @class = "edit-select hidden" })
-                                </div>
-                            </div>
-
-                            <!-- Executive -->
-                            <div class="detail-item" data-field="executive">
-                                <span class="detail-label">Executive</span>
-                                <div class="detail-value-box">
-                                    <span class="display-value @(Model.TheLOBExecutive == null || Model.TheLOBExecutive.ID == 0 ? "empty" : "")">
-                                        @(Model.TheLOBExecutive != null && Model.TheLOBExecutive.ID > 0 ? Model.Executives.FirstOrDefault(x => x.ID == Model.TheLOBExecutive.ID)?.Name : "(Please Select)")
-                                    </span>
-                                    @Html.DropDownListFor(m => m.TheLOBExecutive.ID,
-                                        new SelectList(Model.Executives, "ID", "Name", Model.TheLOBExecutive != null ? Model.TheLOBExecutive.ID : 0), 
-                                        "(Please Select)", 
-                                        new { @class = "edit-select hidden" })
+                                        "(Please Select)")
                                 </div>
                             </div>
                         </div>
 
-                        <!-- LOB Details Section -->
-                        <div class="lob-details-section">
-                            <label class="lob-details-label">LOB Details</label>
-                            <div class="lob-details-container">
-                                <!-- Filter Input -->
-                                <div class="lob-filter-wrapper">
-                                    <input type="text" 
-                                           class="lob-filter-input" 
-                                           id="txtLOBDetailFilter" 
-                                           name="txtLOBDetailFilter" 
-                                           placeholder="Start typing to filter on LOB Details..." />
+                        <!-- Reporting Org -->
+                        <div class="detail-item" data-field="reportingOrg">
+                            <span class="detail-label">
+                                Reporting Org
+                                <span class="info-icon" title="For adding a new Reporting Org., please contact site owner">ⓘ</span>
+                            </span>
+                            <div class="detail-value-box">
+                                <span class="display-value @(Model.TheLOB.ReportingOrg_ID == null ? "empty" : "")">
+                                    @(Model.TheLOB.ReportingOrg_ID != null ? Model.ReportingOrgs.FirstOrDefault(x => x.ID == Model.TheLOB.ReportingOrg_ID)?.CodeName : "(Please Select)")
+                                </span>
+                                <div class="edit-select-wrapper hidden">
+                                    @Html.DropDownListFor(m => m.TheLOB.ReportingOrg_ID, 
+                                        new SelectList(Model.ReportingOrgs, "ID", "CodeName", Model.TheLOB.ReportingOrg_ID),
+                                        "(Please Select)")
                                 </div>
+                            </div>
+                        </div>
 
-                                <!-- Checkbox Grid -->
-                                <div class="lob-checkbox-grid" id="divLOBDetailContainer">
-                                    @{
-                                        List<ROV.Common.DataModel.LOBDetail> dtlList = new List<ROV.Common.DataModel.LOBDetail>();
-                                        foreach (var item in Model.TheLOB.LOBDetails)
+                        <!-- Report Manager -->
+                        <div class="detail-item" data-field="reportManager">
+                            <span class="detail-label">Report Manager</span>
+                            <div class="detail-value-box">
+                                <span class="display-value @(Model.TheLOBReportManager == null || Model.TheLOBReportManager.ID == 0 ? "empty" : "")">
+                                    @(Model.TheLOBReportManager != null && Model.TheLOBReportManager.ID > 0 ? Model.ReportManagers.FirstOrDefault(x => x.ID == Model.TheLOBReportManager.ID)?.Name : "(Please Select)")
+                                </span>
+                                <div class="edit-select-wrapper hidden">
+                                    @Html.DropDownListFor(m => m.TheLOBReportManager.ID,
+                                        new SelectList(Model.ReportManagers, "ID", "Name", Model.TheLOBReportManager != null ? Model.TheLOBReportManager.ID : 0), 
+                                        "(Please Select)")
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Report Lead -->
+                        <div class="detail-item" data-field="reportLead">
+                            <span class="detail-label">Report Lead</span>
+                            <div class="detail-value-box">
+                                <span class="display-value @(Model.TheLOBReportLead == null || Model.TheLOBReportLead.ID == 0 ? "empty" : "")">
+                                    @(Model.TheLOBReportLead != null && Model.TheLOBReportLead.ID > 0 ? Model.ReportLeads.FirstOrDefault(x => x.ID == Model.TheLOBReportLead.ID)?.Name : "(Please Select)")
+                                </span>
+                                <div class="edit-select-wrapper hidden">
+                                    @Html.DropDownListFor(m => m.TheLOBReportLead.ID,
+                                        new SelectList(Model.ReportLeads, "ID", "Name", Model.TheLOBReportLead != null ? Model.TheLOBReportLead.ID : 0), 
+                                        "(Please Select)")
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- iDrive -->
+                        <div class="detail-item" data-field="iDrive">
+                            <span class="detail-label">iDrive</span>
+                            <div class="detail-value-box">
+                                <span class="display-value @(Model.TheLOBiDrive == null || Model.TheLOBiDrive.ID == 0 ? "empty" : "")">
+                                    @(Model.TheLOBiDrive != null && Model.TheLOBiDrive.ID > 0 ? Model.iDrives.FirstOrDefault(x => x.ID == Model.TheLOBiDrive.ID)?.Name : "(Please Select)")
+                                </span>
+                                <div class="edit-select-wrapper hidden">
+                                    @Html.DropDownListFor(m => m.TheLOBiDrive.ID,
+                                        new SelectList(Model.iDrives, "ID", "Name", Model.TheLOBiDrive != null ? Model.TheLOBiDrive.ID : 0), 
+                                        "(Please Select)")
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Executive -->
+                        <div class="detail-item" data-field="executive">
+                            <span class="detail-label">Executive</span>
+                            <div class="detail-value-box">
+                                <span class="display-value @(Model.TheLOBExecutive == null || Model.TheLOBExecutive.ID == 0 ? "empty" : "")">
+                                    @(Model.TheLOBExecutive != null && Model.TheLOBExecutive.ID > 0 ? Model.Executives.FirstOrDefault(x => x.ID == Model.TheLOBExecutive.ID)?.Name : "(Please Select)")
+                                </span>
+                                <div class="edit-select-wrapper hidden">
+                                    @Html.DropDownListFor(m => m.TheLOBExecutive.ID,
+                                        new SelectList(Model.Executives, "ID", "Name", Model.TheLOBExecutive != null ? Model.TheLOBExecutive.ID : 0), 
+                                        "(Please Select)")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOB Details Section -->
+                    <div class="lob-details-section">
+                        <label class="lob-details-label">LOB Details</label>
+                        <div class="lob-details-container">
+                            <!-- Filter Input -->
+                            <div class="lob-filter-wrapper">
+                                <input type="text" 
+                                       class="lob-filter-input" 
+                                       id="txtLOBDetailFilter" 
+                                       name="txtLOBDetailFilter" 
+                                       placeholder="Start typing to filter on LOB Details..." />
+                            </div>
+
+                            <!-- Checkbox Grid -->
+                            <div class="lob-checkbox-grid" id="divLOBDetailContainer">
+                                @{
+                                    List<ROV.Common.DataModel.LOBDetail> dtlList = new List<ROV.Common.DataModel.LOBDetail>();
+                                    foreach (var item in Model.TheLOB.LOBDetails)
+                                    {
+                                        dtlList.Add(item);
+                                    }
+                                    foreach (var item in Model.LOBDetails.OrderByDescending(r => r.ActiveFlag).ToList())
+                                    {
+                                        if ((item.ActiveFlag) && (!dtlList.Any(r => r.ID == item.ID)))
                                         {
                                             dtlList.Add(item);
                                         }
-                                        foreach (var item in Model.LOBDetails.OrderByDescending(r => r.ActiveFlag).ToList())
-                                        {
-                                            if ((item.ActiveFlag) && (!dtlList.Any(r => r.ID == item.ID)))
-                                            {
-                                                dtlList.Add(item);
-                                            }
-                                        }
                                     }
+                                }
 
-                                    @foreach (var lobDtl in dtlList)
-                                    {
-                                        bool isChecked = Model.TheLOB.LOBDetails.SingleOrDefault(r => r.ID == lobDtl.ID) != null;
-                                        bool isInactive = !lobDtl.ActiveFlag && !isChecked;
-                                        
-                                        <div class="checkbox-item" data-label="@lobDtl.Name.ToLower()">
-                                            <label class="checkbox-label">
-                                                <input type="checkbox" 
-                                                       class="checkbox-input"
-                                                       id="cbx_LOBDetail_@lobDtl.ID" 
-                                                       name="cbx_LOBDetail_@lobDtl.ID" 
-                                                       value="@lobDtl.ID" 
-                                                       @(isChecked ? "checked" : "") 
-                                                       @(isInactive ? "data-inactive=true" : "")
-                                                       disabled />
-                                                <span class="checkbox-custom"></span>
-                                                <span class="checkbox-text">@lobDtl.Name</span>
-                                            </label>
-                                        </div>
-                                    }
-                                </div>
+                                @foreach (var lobDtl in dtlList)
+                                {
+                                    bool isChecked = Model.TheLOB.LOBDetails.SingleOrDefault(r => r.ID == lobDtl.ID) != null;
+                                    bool isInactive = !lobDtl.ActiveFlag && !isChecked;
+                                    
+                                    <div class="checkbox-item" data-label="@lobDtl.Name.ToLower()">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" 
+                                                   id="cbx_LOBDetail_@lobDtl.ID" 
+                                                   name="cbx_LOBDetail_@lobDtl.ID" 
+                                                   value="@lobDtl.ID" 
+                                                   @(isChecked ? "checked" : "") 
+                                                   @(isInactive ? "data-inactive=true" : "")
+                                                   disabled />
+                                            <span class="checkbox-custom"></span>
+                                            <span class="checkbox-text">@lobDtl.Name</span>
+                                        </label>
+                                    </div>
+                                }
                             </div>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             </div>
         }
     }
@@ -283,13 +265,9 @@ namespace SchedulingTasks.Data
 {
     <script>
         $(document).ready(function () {
-            // Initialize popovers
-            $('[data-toggle="popover"]').popover();
-
             // Store original values
             var originalValues = {};
             var originalLobSelections = {};
-            var isEditMode = false;
 
             // Cache selectors
             var $editBtn = $('#edit-details-btn');
@@ -332,8 +310,6 @@ namespace SchedulingTasks.Data
             // EDIT MODE
             // ==========================================
             $editBtn.on('click', function () {
-                isEditMode = true;
-
                 // Toggle Buttons
                 $editBtn.addClass('hidden');
                 $saveBtn.removeClass('hidden');
@@ -345,18 +321,18 @@ namespace SchedulingTasks.Data
                     var field = $item.data('field');
                     var $valueBox = $item.find('.detail-value-box');
                     var $displayValue = $valueBox.find('.display-value');
-                    var $select = $valueBox.find('.edit-select');
+                    var $selectWrapper = $valueBox.find('.edit-select-wrapper');
 
                     // Store original selected value
-                    originalValues[field] = $select.val();
+                    originalValues[field] = $selectWrapper.find('select').val();
 
                     // Hide display value, show select
                     $displayValue.addClass('hidden');
-                    $select.removeClass('hidden');
+                    $selectWrapper.removeClass('hidden');
                 });
 
                 // Save original LOB selections and enable checkboxes
-                $('.checkbox-input').each(function () {
+                $('.checkbox-item input[type="checkbox"]').each(function () {
                     var id = $(this).attr('id');
                     originalLobSelections[id] = $(this).is(':checked');
                     
@@ -381,8 +357,6 @@ namespace SchedulingTasks.Data
             // CANCEL CHANGES
             // ==========================================
             $cancelBtn.on('click', function () {
-                isEditMode = false;
-
                 // Toggle Buttons
                 $editBtn.removeClass('hidden');
                 $saveBtn.addClass('hidden');
@@ -394,18 +368,18 @@ namespace SchedulingTasks.Data
                     var field = $item.data('field');
                     var $valueBox = $item.find('.detail-value-box');
                     var $displayValue = $valueBox.find('.display-value');
-                    var $select = $valueBox.find('.edit-select');
+                    var $selectWrapper = $valueBox.find('.edit-select-wrapper');
 
                     // Restore original selected value
-                    $select.val(originalValues[field]);
+                    $selectWrapper.find('select').val(originalValues[field]);
 
                     // Show display value, hide select
                     $displayValue.removeClass('hidden');
-                    $select.addClass('hidden');
+                    $selectWrapper.addClass('hidden');
                 });
 
                 // Restore LOB selections and disable checkboxes
-                $('.checkbox-input').each(function () {
+                $('.checkbox-item input[type="checkbox"]').each(function () {
                     var id = $(this).attr('id');
                     $(this).prop('checked', originalLobSelections[id]);
                     $(this).prop('disabled', true);
@@ -416,6 +390,7 @@ namespace SchedulingTasks.Data
         });
     </script>
 }
+
 
 
 
