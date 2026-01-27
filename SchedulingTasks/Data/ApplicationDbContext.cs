@@ -42,636 +42,764 @@ namespace SchedulingTasks.Data
     }
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Field Mapping</title>
-    <!-- Add jQuery CDN -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        /* ============================================
-           PAGE SPECIFIC STYLES (Field Mapping)
-           ============================================ */
+@using ROV.Common.DataModel
+@using ROV.ReportHub.ViewModels
+@model ManageReportingOrgViewModel
+@{
+    ViewBag.Title = "Manage ReportingOrg";
+}
 
-        /* Details Grid */
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 20px;
-            padding: 24px 0;
-            border-bottom: 1px solid #eee;
-        }
+<link href="~/css/styles.css" rel="stylesheet" />
 
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+@{
+    AppUser _curUser = PageData["CurrentUser"] as AppUser;
+}
 
-        .detail-label {
-            font-size: 14px;
-            color: #333;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+<div class="container">
+    @using (Html.BeginForm("ManageReportingOrg", "Division", FormMethod.Post, new { id = "frmManageReportingOrg" }))
+    {
+        @Html.AntiForgeryToken()
 
-        .info-icon {
-            color: #0049ac;
-            cursor: help;
-            font-size: 14px;
-            font-weight: normal;
-        }
-
-        .detail-value-box {
-            position: relative;
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 4px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-        }
-
-        .display-value {
-            font-size: 14px;
-            color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding: 0 14px;
-            width: 100%;
-        }
-
-        .display-value.empty {
-            color: #6b7280;
-        }
-
-        /* Edit Select Wrapper */
-        .edit-select-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .edit-select-wrapper select {
-            width: 100%;
-            height: 100%;
-            padding: 0 36px 0 14px;
-            font-size: 14px;
-            border: 1px solid #1e3a5f;
-            border-radius: 4px;
-            background: #fff;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            cursor: pointer;
-            color: #333;
-            outline: none;
-        }
-
-        .edit-select-wrapper select:focus {
-            border-color: #0049ac;
-            box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.15);
-        }
-
-        .edit-select-wrapper::after {
-            content: '';
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 6px solid #1e3a5f;
-            pointer-events: none;
-        }
-
-        /* LOB Details Section */
-        .lob-details-section {
-            margin-top: 24px;
-            padding-top: 0;
-        }
-
-        .lob-details-label {
-            font-size: 14px;
-            color: #333;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .lob-details-container {
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            overflow: hidden;
-            background: #fff;
-        }
-
-        /* UPDATED FILTER INPUT STYLES */
-        .lob-filter-wrapper {
-            padding: 12px 16px;
-            background: #f8f9fa; /* Light grey container */
-            border-bottom: 1px solid #e5e7eb;
-            position: relative;
-        }
-
-        .lob-filter-icon {
-            position: absolute;
-            left: 28px; /* 16px padding + 12px inside input */
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            color: #6b7280;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .lob-filter-input {
-            width: 100%;
-            padding: 10px 12px 10px 40px; /* Space for icon */
-            font-size: 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            background: #fff;
-            color: #333;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-
-        .lob-filter-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .lob-filter-input::placeholder {
-            color: #9ca3af;
-        }
-
-        /* Checkbox Grid */
-        .lob-checkbox-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0;
-            max-height: 350px;
-            overflow-y: auto;
-            padding: 16px;
-        }
-
-        .checkbox-item {
-            padding: 10px 8px;
-            display: flex;
-            align-items: flex-start;
-        }
-
-        .checkbox-item:nth-child(6n+1), .checkbox-item:nth-child(6n+2), .checkbox-item:nth-child(6n+3) { background: #fff; }
-        .checkbox-item:nth-child(6n+4), .checkbox-item:nth-child(6n+5), .checkbox-item:nth-child(6n+6) { background: #f9fafb; }
-
-        .checkbox-label {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            color: #333;
-            line-height: 1.4;
-        }
-
-        .checkbox-label input[type="checkbox"]:disabled + .checkbox-custom { opacity: 0.6; cursor: not-allowed; }
-        .checkbox-label input[type="checkbox"]:disabled ~ .checkbox-text { opacity: 0.7; }
-
-        .lob-details-section.edit-mode .checkbox-label input[type="checkbox"]:disabled + .checkbox-custom,
-        .lob-details-section.edit-mode .checkbox-label input[type="checkbox"]:disabled ~ .checkbox-text { opacity: 1; }
-
-        .checkbox-label input[type="checkbox"] { display: none; }
-
-        .checkbox-custom {
-            width: 18px;
-            height: 18px;
-            min-width: 18px;
-            border: 2px solid #9ca3af;
-            border-radius: 3px;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            margin-top: 1px;
-        }
-
-        .checkbox-label input[type="checkbox"]:checked + .checkbox-custom { background: #0049ac; border-color: #0049ac; }
-        .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
-            content: '';
-            width: 5px;
-            height: 9px;
-            border: solid #fff;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
-            margin-bottom: 2px;
-        }
-
-        .checkbox-text { flex: 1; word-break: break-word; }
-
-        .lob-checkbox-grid::-webkit-scrollbar { width: 8px; }
-        .lob-checkbox-grid::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        .lob-checkbox-grid::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        .lob-checkbox-grid::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
-
-        .hidden { display: none !important; }
-
-        @media (max-width: 1400px) { .details-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 1200px) { .lob-checkbox-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 900px) { .details-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) { 
-            .lob-checkbox-grid { grid-template-columns: 1fr; } 
-            .details-grid { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Field Mapping</h1>
+        <h1>Reporting Organisation</h1>
 
         <!-- Division Selector -->
         <div class="selector-row">
             <label>Division</label>
             <div class="select-wrapper">
-                <select id="divisionDropdown">
-                    <option>DWO (ETS)</option>
-                    <option>Division 2</option>
-                    <option>Division 3</option>
-                </select>
+                @Html.DropDownListFor(m => m.SelectedDivisionID,
+                    new SelectList(Model.Divisions, "ID", "CodeName"),
+                    "(Please Select)")
             </div>
-            <button class="btn btn-secondary">View Fields</button>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <div class="tab active" data-tab="lob-mapping">LOB Mapping</div>
-        </div>
+        @if (Model.SelectedDivisionID > 0)
+        {
+            @Html.HiddenFor(m => m.PageAction)
 
-        <!-- LOB Mapping Tab Content -->
-        <div id="lob-mapping-content" class="tab-content active">
-            <!-- LOB Selector -->
-            <div class="selector-row">
-                <label>LOB</label>
-                <div class="select-wrapper">
-                    <select id="lobDropdown">
-                        <option>All DSRA Access Request</option>
-                        <option>LOB Option 2</option>
-                        <option>LOB Option 3</option>
-                    </select>
+            @if (Model.SelectedReportingOrgID > 0)
+            {
+                var repOrg = Model.TheReportingOrg;
+
+                @Html.HiddenFor(m => m.TheReportingOrg.ID)
+                @Html.HiddenFor(m => m.TheReportingOrg.Code)
+                @Html.HiddenFor(m => m.TheReportingOrg.Description)
+                @Html.HiddenFor(m => m.TheReportingOrg.ActiveFlag)
+                @Html.HiddenFor(m => m.TheReportingOrg.AutoPublishFlag)
+                @Html.HiddenFor(m => m.TheReportingOrg.Division_ID)
+                @Html.HiddenFor(m => m.TheReportingOrg.StoragePath)
+                @Html.HiddenFor(m => m.TheReportingOrg.AutoPublishSource)
+
+                if (Model.TheReportingOrg.Code == "SOAR")
+                {
+                    @Html.HiddenFor(m => m.TheReportingOrg.MSPAdmins)
+                    @Html.HiddenFor(m => m.TheReportingOrg.MSPVisible)
+                    @Html.HiddenFor(m => m.TheReportingOrg.SDPAdmins)
+                    @Html.HiddenFor(m => m.TheReportingOrg.SDPVisible)
+                }
+
+                string acGeneral = Model.PageAction == ManageReportingOrgPageAction.paGeneral ? "active" : "";
+                string acCommunication = Model.PageAction == ManageReportingOrgPageAction.paCommunication ? "active" : "";
+                string acReportCustomFields = Model.PageAction == ManageReportingOrgPageAction.paReportCustomFields ? "active" : "";
+                string acProcessCustomFields = Model.PageAction == ManageReportingOrgPageAction.paProcessCustomFields ? "active" : "";
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <div class="tab @acGeneral" data-tab="general" id="btnSwitchTab_@((int)ManageReportingOrgPageAction.paGeneral)">General</div>
+                    <div class="tab @acCommunication" data-tab="communication" id="btnSwitchTab_@((int)ManageReportingOrgPageAction.paCommunication)">Communication</div>
+                    <div class="tab @acReportCustomFields" data-tab="report-custom" id="btnSwitchTab_@((int)ManageReportingOrgPageAction.paReportCustomFields)">Report Custom Fields</div>
+                    <div class="tab @acProcessCustomFields" data-tab="process-custom" id="btnSwitchTab_@((int)ManageReportingOrgPageAction.paProcessCustomFields)">Process Custom Fields</div>
                 </div>
-            </div>
 
-            <!-- Report Information Section -->
-            <div class="section-header">
-                <span class="section-title">Report Information</span>
-                <div class="header-actions">
-                    <button class="btn btn-outline" id="edit-details-btn">Edit Details</button>
-                    <button class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
-                    <button class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
-                </div>
-            </div>
-
-            <!-- Details Grid -->
-            <div class="details-grid" id="details-grid-container">
-                <div class="detail-item" data-field="lobGroup">
-                    <span class="detail-label">LOB Group</span>
-                    <div class="detail-value-box">
-                        <span class="display-value">WM Operations</span>
+                <!-- General Tab Content -->
+                <div id="general-content" class="tab-content @(Model.PageAction == ManageReportingOrgPageAction.paGeneral ? "active" : "")">
+                    <!-- Reporting Organisation Selector -->
+                    <div class="selector-row">
+                        <label>Reporting Organisation</label>
+                        <div class="select-wrapper">
+                            @Html.DropDownListFor(m => m.SelectedReportingOrgID,
+                                new SelectList(Model.ReportingOrgs, "ID", "CodeName"),
+                                "(Please Select)")
+                        </div>
                     </div>
-                </div>
-                <div class="detail-item" data-field="reportingOrg">
-                    <span class="detail-label">
-                        Reporting Org
-                        <span class="info-icon" title="Information about Reporting Org">ⓘ</span>
-                    </span>
-                    <div class="detail-value-box">
-                        <span class="display-value">ECOE (ECOE Reporting & Analytics)</span>
+
+                    <!-- Organisation Info Card -->
+                    <div class="info-card">
+                        <div class="info-card-left">
+                            <span class="info-card-title" id="org-name-display">@repOrg.NameCode</span>
+                            @if (repOrg.ActiveFlag == true)
+                            {
+                                <span class="status-badge status-active" id="status-badge">Active</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge status-inactive" id="status-badge">Inactive</span>
+                            }
+                        </div>
+                        <div class="header-actions">
+                            <button type="button" class="btn btn-outline" id="edit-details-btn">Edit Details</button>
+                            <button type="button" class="btn btn-save hidden" id="save-details-btn">Save Changes</button>
+                            <button type="button" class="btn btn-cancel hidden" id="cancel-details-btn">Cancel</button>
+                        </div>
                     </div>
-                </div>
-                <div class="detail-item" data-field="reportManager">
-                    <span class="detail-label">Report Manager</span>
-                    <div class="detail-value-box">
-                        <span class="display-value empty">(Please Select)</span>
+
+                    <!-- Details Grid -->
+                    <div class="details-grid" id="details-grid-container">
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.Name)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value" data-field="Name">@repOrg.Name</span>
+                            </div>
+                            @Html.HiddenFor(m => m.TheReportingOrg.Name, new { @class = "edit-field" })
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.StoragePath)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value" data-field="StoragePath">@repOrg.StoragePath</span>
+                            </div>
+                            @if (_curUser.IsTechAdmin)
+                            {
+                                @Html.HiddenFor(m => m.TheReportingOrg.StoragePath, new { @class = "edit-field", @id = "storagePath" })
+                            }
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.AutoPublishSource)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value" data-field="AutoPublishSource">@repOrg.AutoPublishSource</span>
+                            </div>
+                            @if (_curUser.IsTechAdmin)
+                            {
+                                @Html.HiddenFor(m => m.TheReportingOrg.AutoPublishSource, new { @class = "edit-field", @id = "autoPublishSource" })
+                            }
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.AutoPublishFlag)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value" data-field="AutoPublishFlag">@(repOrg.AutoPublishFlag == true ? "Enabled" : "Disabled")</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.ExpirationAlert)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value" data-field="ExpirationAlert">@(repOrg.ExpirationAlert == true ? "Enabled" : "Disabled")</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.AutomaticRetention)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value" data-field="AutomaticRetention">@(repOrg.AutomaticRetention == true ? "Enabled" : "Disabled")</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="detail-item" data-field="reportLead">
-                    <span class="detail-label">Report Lead</span>
-                    <div class="detail-value-box">
-                        <span class="display-value empty">(Please Select)</span>
-                    </div>
-                </div>
-                <div class="detail-item" data-field="iDrive">
-                    <span class="detail-label">iDrive</span>
-                    <div class="detail-value-box">
-                        <span class="display-value empty">(Please Select)</span>
-                    </div>
-                </div>
-                <div class="detail-item" data-field="executive">
-                    <span class="detail-label">Executive</span>
-                    <div class="detail-value-box">
-                        <span class="display-value empty">(Please Select)</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- LOB Details Section -->
-            <div class="lob-details-section">
-                <label class="lob-details-label">LOB Details</label>
-                <div class="lob-details-container">
-                    <!-- Filter Input -->
-                    <div class="lob-filter-wrapper">
-                        <!-- Search Icon -->
-                        <svg class="lob-filter-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input type="text" 
-                               id="lobDetailsFilter" 
-                               class="lob-filter-input" 
-                               placeholder="Filter LOB Details...">
-                    </div>
-                    
-                    <!-- Checkbox Grid -->
-                    <div class="lob-checkbox-grid" id="lobCheckboxGrid">
-                        <!-- Checkboxes will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
-    <script>
-        $(document).ready(function() {
-            // LOB Details Options Data
-            const lobDetailsOptions = [
-                { id: 'wm-operations', label: 'WM Operations', checked: true },
-                { id: 'adv-client', label: 'ADVANCED CLIENT SOLUTIONS BUS CONTROL', checked: false },
-                { id: 'assessments', label: 'ASSESSMENTS DEFECT MGMT COMPLAINTS AMOI...AA(*)', checked: false },
-                { id: 'business-banking', label: 'Business Banking', checked: false },
-                { id: 'business-controls', label: 'BUSINESS CONTROLS', checked: false },
-                { id: 'business-controls-vnbga', label: 'BUSINESS CONTROLS VNBGA...AB(*)', checked: false },
-                { id: 'business-support', label: 'BUSINESS SUPPORT', checked: false },
-                { id: 'card-business', label: 'CARD BUSINESS ENABLEMENT AND CONTROLS', checked: false },
-                { id: 'card-products', label: 'Card Products', checked: false },
-                { id: 'cardholder-benefits', label: 'Cardholder Benefits Vendor(*)', checked: true },
-                { id: 'claims-resolution', label: 'Claims Resolution & Recovery', checked: false },
-                { id: 'client-care', label: 'CLIENT CARE BANKING', checked: false },
-                { id: 'client-exp', label: 'CLIENT EXP SALES CONTROLS ADMIN', checked: false },
-                { id: 'client-srvcs', label: 'CLIENT SRVCS AND CRDT ASSIST BUS CO', checked: false },
-                { id: 'comm-govt', label: 'Comm & Govt Prepaid', checked: false },
-                { id: 'complaint-program', label: 'Complaint Program Governance, Engagement and Reporting', checked: false },
-                { id: 'complaint-review', label: 'Complaint Review Unit', checked: false },
-                { id: 'complaints-control', label: 'Complaints Control & Oversight', checked: false },
-                { id: 'consumer-banking', label: 'Consumer Banking Operations', checked: false },
-                { id: 'corporate-services', label: 'Corporate Services', checked: false },
-                { id: 'credit-risk', label: 'Credit Risk Management', checked: false },
-                { id: 'digital-platforms', label: 'Digital Platforms', checked: false },
-                { id: 'enterprise-data', label: 'Enterprise Data Services', checked: false },
-                { id: 'financial-crimes', label: 'Financial Crimes Prevention', checked: false }
-            ];
-
-            // Configuration for Dropdown Options
-            const dropdownOptions = {
-                "lobGroup": ["WM Operations", "ETS Issues Report", "LOB Group A", "LOB Group B"],
-                "reportingOrg": ["ECOE (ECOE Reporting & Analytics)", "RAM Reporting Org", "Finance Org", "Operations Org"],
-                "reportManager": ["(Please Select)", "Manager A", "Manager B", "Manager C"],
-                "reportLead": ["(Please Select)", "Lead A", "Lead B", "Lead C"],
-                "iDrive": ["(Please Select)", "iDrive A", "iDrive B", "iDrive C"],
-                "executive": ["(Please Select)", "Executive A", "Executive B", "Executive C"]
-            };
-
-            // Store original state
-            let originalValues = {};
-            let originalLobSelections = {};
-            let isEditMode = false;
-
-            // Cache selectors
-            const $editBtn = $('#edit-details-btn');
-            const $saveBtn = $('#save-details-btn');
-            const $cancelBtn = $('#cancel-details-btn');
-            const $gridContainer = $('#details-grid-container');
-            const $lobCheckboxGrid = $('#lobCheckboxGrid');
-            const $lobFilter = $('#lobDetailsFilter');
-            const $lobDetailsSection = $('.lob-details-section');
-
-            // ==========================================
-            // INITIALIZE LOB DETAILS CHECKBOXES
-            // ==========================================
-            function initializeLobCheckboxes() {
-                $lobCheckboxGrid.empty();
-                
-                lobDetailsOptions.forEach(function(option) {
-                    const $checkboxItem = $(`
-                        <div class="checkbox-item" data-label="${option.label.toLowerCase()}">
+                    <!-- Retention Settings Section -->
+                    <div class="details-grid" id="divRetentionParent" style="border-top: none; padding-top: 0;">
+                        <div class="detail-item" style="grid-column: span 3;">
                             <label class="checkbox-label">
-                                <input type="checkbox" 
-                                       id="${option.id}" 
-                                       value="${option.id}"
-                                       ${option.checked ? 'checked' : ''}
-                                       disabled>
+                                @Html.CheckBoxFor(m => m.TheReportingOrg.ExpirationAlert, new { @class = "cgUpdateReportingOrg" })
                                 <span class="checkbox-custom"></span>
-                                <span class="checkbox-text">${option.label}</span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportingOrg.ExpirationAlert) - Select this option if you wish to receive monthly email about expiring reports.</span>
                             </label>
                         </div>
-                    `);
-                    $lobCheckboxGrid.append($checkboxItem);
-                });
-            }
 
-            // Initialize on page load
-            initializeLobCheckboxes();
+                        <div class="detail-item" style="grid-column: span 3;">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportingOrg.AutomaticRetention, new { @class = "cgUpdateReportingOrg csGetConfirmation" })
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportingOrg.AutomaticRetention) - Selecting this option enables automatic retirement for your reports.</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
-            // ==========================================
-            // LOB DETAILS FILTER
-            // ==========================================
-            $lobFilter.on('input', function() {
-                const filterText = $(this).val().toLowerCase();
-                
-                $('.checkbox-item').each(function() {
-                    const labelText = $(this).data('label');
-                    if (labelText.includes(filterText)) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
+                <!-- Communication Tab Content -->
+                <div id="communication-content" class="tab-content @(Model.PageAction == ManageReportingOrgPageAction.paCommunication ? "active" : "")">
+                    <div class="selector-row">
+                        <label>Reporting Organisation</label>
+                        <div class="select-wrapper">
+                            @Html.DropDownListFor(m => m.SelectedReportingOrgID,
+                                new SelectList(Model.ReportingOrgs, "ID", "CodeName"),
+                                "(Please Select)",
+                                new { @id = "commReportingOrgDropdown" })
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-left">
+                            <span class="info-card-title">Communication Settings</span>
+                            <span class="status-badge status-active">Active</span>
+                        </div>
+                        <button type="button" class="btn btn-outline">Edit Details</button>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.SupportEmail)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value">@repOrg.SupportEmail</span>
+                            </div>
+                            @Html.HiddenFor(m => m.TheReportingOrg.SupportEmail)
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.SupportSite)</span>
+                            <div class="detail-value-box">
+                                <span class="display-value">@repOrg.SupportSite</span>
+                            </div>
+                            @Html.HiddenFor(m => m.TheReportingOrg.SupportSite)
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.PACanApproveRequest) <span class="info-icon" title="Select here for if you want the Primary Analyst aligned to the report to be able to approve access">ⓘ</span></span>
+                            <div class="detail-value-box">
+                                <span class="display-value">@(repOrg.PACanApproveRequest == true ? "Enabled" : "Disabled")</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.BACanApproveRequest) <span class="info-icon" title="Select here for if you want the Backup Analyst aligned to the report to be able to approve access">ⓘ</span></span>
+                            <div class="detail-value-box">
+                                <span class="display-value">@(repOrg.BACanApproveRequest == true ? "Enabled" : "Disabled")</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.RTMCanApproveRequest) <span class="info-icon" title="Select here for if you want the Reporting Team Manager aligned to the report to be able to approve access">ⓘ</span></span>
+                            <div class="detail-value-box">
+                                <span class="display-value">@(repOrg.RTMCanApproveRequest == true ? "Enabled" : "Disabled")</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">@Html.DisplayNameFor(m => m.TheReportingOrg.PLCCanApproveRequest) <span class="info-icon" title="Select here for if you want the Primary LOB Contact/Owner aligned to the report to be able to approve access">ⓘ</span></span>
+                            <div class="detail-value-box">
+                                <span class="display-value">@(repOrg.PLCCanApproveRequest == true ? "Enabled" : "Disabled")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Access Approvers Section -->
+                    <div class="info-card" style="margin-top: 24px;">
+                        <div class="info-card-left">
+                            <span class="info-card-title">Report Access Approvers</span>
+                        </div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportingOrg.PACanApproveRequest, new { @class = "cgUpdateReportingOrg" })
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportingOrg.PACanApproveRequest)</span>
+                            </label>
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportingOrg.BACanApproveRequest, new { @class = "cgUpdateReportingOrg" })
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportingOrg.BACanApproveRequest)</span>
+                            </label>
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportingOrg.RTMCanApproveRequest, new { @class = "cgUpdateReportingOrg" })
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportingOrg.RTMCanApproveRequest)</span>
+                            </label>
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportingOrg.PLCCanApproveRequest, new { @class = "cgUpdateReportingOrg" })
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportingOrg.PLCCanApproveRequest)</span>
+                            </label>
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportingOrg.BLCCanApproveRequest, new { @class = "cgUpdateReportingOrg" })
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportingOrg.BLCCanApproveRequest)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Global Approvers Section -->
+                    @Html.HiddenFor(m => m.TheReportingOrg.GlobalApprovers)
+
+                    <div class="info-card" style="margin-top: 24px;">
+                        <div class="info-card-left">
+                            <span class="info-card-title">Global Approvers <span class="info-icon" title="Select here for if you want an associate to be able to approve access requests for any report aligned to this Reporting Org. The user must have Admin or Analyst permission on this Reporting Org.">ⓘ</span></span>
+                        </div>
+                    </div>
+
+                    <div class="selector-row">
+                        <label>Add Global Approver</label>
+                        <div class="select-wrapper">
+                            @Html.TextBoxFor(m => m.TheGlobalApprover.NBK, new { @class = "inline-input", @placeholder = "Enter NBK or Email..." })
+                        </div>
+                        @Html.TextBoxFor(m => m.TheGlobalApprover.Username, new { @class = "inline-input", @disabled = "", @placeholder = "Username" })
+                        @Html.TextBoxFor(m => m.TheGlobalApprover.Email, new { @class = "inline-input", @disabled = "", @placeholder = "Email" })
+                        <button type="button" id="btnAddGlobalApprover" class="btn btn-primary" title="Add as Global Approver">Add</button>
+                    </div>
+
+                    @if (Model.GlobalApprovers.Count > 0)
+                    {
+                        <table class="data-table" id="divGlobalApprover">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>NBK</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.GlobalApprovers)
+                                {
+                                    <tr>
+                                        <td>@user.Username</td>
+                                        <td>@user.NBK</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button type="button" class="action-btn reject cgRemoveGlobalApprover" id="btnRemoveGlobalApprover_@user.NBK" title="Remove from Global Approvers">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                        <path d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     }
-                });
-            });
+                    else
+                    {
+                        <p style="color: #666; padding: 16px 0;">No one has been selected as Global Approver.</p>
+                    }
+                </div>
 
-            // ==========================================
-            // TAB SWITCHING
-            // ==========================================
-            $('.tab').on('click', function() {
+                <!-- Report Custom Fields Tab Content -->
+                <div id="report-custom-content" class="tab-content @(Model.PageAction == ManageReportingOrgPageAction.paReportCustomFields ? "active" : "")">
+                    <div class="selector-row">
+                        <label>Reporting Organisation</label>
+                        <div class="select-wrapper">
+                            @Html.DropDownListFor(m => m.SelectedReportingOrgID,
+                                new SelectList(Model.ReportingOrgs, "ID", "CodeName"),
+                                "(Please Select)",
+                                new { @id = "reportCustomReportingOrgDropdown" })
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-left">
+                            <span class="info-card-title">Report Inventory Custom Fields</span>
+                            <span class="status-badge status-active">Active</span>
+                        </div>
+                    </div>
+
+                    <!-- Add New Report Field -->
+                    <div class="details-grid" id="tblAddNewReportField">
+                        <div class="detail-item" style="grid-column: span 2;">
+                            <span class="detail-label">Display Label</span>
+                            @Html.TextBoxFor(m => m.TheReportFieldDefinition.Label, new { @class = "inline-input", @maxlength = "30", @placeholder = "Display Label" })
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">Data Type</span>
+                            <div class="select-wrapper" style="max-width: 100%;">
+                                @Html.DropDownListFor(m => m.TheReportFieldDefinition.DataType, new SelectList(Model.FieldTypes), "(Select Data Type)")
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">Display Order</span>
+                            @Html.TextBoxFor(m => m.TheReportFieldDefinition.DisplayOrder, new { @class = "inline-input", @maxlength = "3", @placeholder = "Order" })
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportFieldDefinition.Mandatory)
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportFieldDefinition.Mandatory)</span>
+                            </label>
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheReportFieldDefinition.Visible)
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheReportFieldDefinition.Visible)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="selector-row">
+                        <div class="select-wrapper" style="max-width: 100%; flex: 2;">
+                            @Html.TextAreaFor(m => m.TheReportFieldDefinition.Tooltip, new { @class = "inline-input", @placeholder = "Tooltip", @rows = "2" })
+                        </div>
+                        <button type="button" id="btnAddReportCustomField" class="btn btn-primary">Add Field</button>
+                    </div>
+
+                    <div class="selector-row" id="row_ReportLookupValues">
+                        <div class="select-wrapper" style="max-width: 100%;">
+                            @Html.TextBoxFor(m => m.TheReportFieldDefinition.LookupValues, new { @class = "inline-input", @placeholder = "Enter lookup values separated by Semicolon, like (Shared Drive;SDP;Database;)" })
+                        </div>
+                    </div>
+
+                    @if (Model.ReportCustomFields.Count > 0)
+                    {
+                        <table class="data-table" id="tblReportCustomFields">
+                            <thead>
+                                <tr>
+                                    <th>Label</th>
+                                    <th>Data Type</th>
+                                    <th>Mandatory</th>
+                                    <th>Visible</th>
+                                    <th>Display Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.ReportCustomFields.Count; i++)
+                                {
+                                    CustomField field = Model.ReportCustomFields[i];
+                                    <tr>
+                                        <td>
+                                            @Html.HiddenFor(m => field.Name, new { @Name = "ReportCustomFields[" + i + "].Name" })
+                                            @Html.TextBoxFor(m => field.Label, new { @class = "inline-input", @Name = "ReportCustomFields[" + i + "].Label", @maxlength = "30" })
+                                        </td>
+                                        <td>
+                                            @field.DataType
+                                            @Html.HiddenFor(m => field.DataType, new { @Name = "ReportCustomFields[" + i + "].DataType" })
+                                        </td>
+                                        <td>
+                                            <label class="checkbox-label">
+                                                @Html.CheckBoxFor(m => field.Mandatory, new { @Name = "ReportCustomFields[" + i + "].Mandatory" })
+                                                <span class="checkbox-custom"></span>
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <label class="checkbox-label">
+                                                @Html.CheckBoxFor(m => field.Visible, new { @Name = "ReportCustomFields[" + i + "].Visible" })
+                                                <span class="checkbox-custom"></span>
+                                            </label>
+                                        </td>
+                                        <td>
+                                            @Html.TextBoxFor(m => field.DisplayOrder, new { @class = "inline-input", @Name = "ReportCustomFields[" + i + "].DisplayOrder", @maxlength = "3", @style = "width: 60px;" })
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button type="button" class="action-btn approve cgUpdateReportCustomField" id="btnUpdateReportCustomField_@field.Name" title="Update">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                        <path d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
+                                                <button type="button" class="action-btn reject cgRemoveReportCustomField" id="btnRemoveReportCustomField_@field.Name" title="Remove">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                        <path d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="6">
+                                            @Html.TextAreaFor(m => field.Tooltip, new { @class = "inline-input", @Name = "ReportCustomFields[" + i + "].Tooltip", @placeholder = "Tooltip", @rows = "1" })
+                                        </td>
+                                    </tr>
+                                    if (field.DataType == "Lookup")
+                                    {
+                                        <tr>
+                                            <td colspan="6">
+                                                @Html.TextBoxFor(m => field.LookupValues, new { @class = "inline-input", @Name = "ReportCustomFields[" + i + "].LookupValues", @placeholder = "LookupValues" })
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p style="color: #666; padding: 16px 0;">No custom field is defined.</p>
+                    }
+                </div>
+
+                <!-- Process Custom Fields Tab Content -->
+                <div id="process-custom-content" class="tab-content @(Model.PageAction == ManageReportingOrgPageAction.paProcessCustomFields ? "active" : "")">
+                    <div class="selector-row">
+                        <label>Reporting Organisation</label>
+                        <div class="select-wrapper">
+                            @Html.DropDownListFor(m => m.SelectedReportingOrgID,
+                                new SelectList(Model.ReportingOrgs, "ID", "CodeName"),
+                                "(Please Select)",
+                                new { @id = "processCustomReportingOrgDropdown" })
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-left">
+                            <span class="info-card-title">Process Inventory Custom Fields</span>
+                            <span class="status-badge status-active">Active</span>
+                        </div>
+                    </div>
+
+                    <!-- Add New Process Field -->
+                    <div class="details-grid">
+                        <div class="detail-item" style="grid-column: span 2;">
+                            <span class="detail-label">Display Label</span>
+                            @Html.TextBoxFor(m => m.TheProcessFieldDefinition.Label, new { @class = "inline-input", @maxlength = "30", @placeholder = "Display Label" })
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">Data Type</span>
+                            <div class="select-wrapper" style="max-width: 100%;">
+                                @Html.DropDownListFor(m => m.TheProcessFieldDefinition.DataType, new SelectList(Model.FieldTypes), "(Select Data Type)")
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">Display Order</span>
+                            @Html.TextBoxFor(m => m.TheProcessFieldDefinition.DisplayOrder, new { @class = "inline-input", @maxlength = "3", @placeholder = "Order" })
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheProcessFieldDefinition.Mandatory)
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheProcessFieldDefinition.Mandatory)</span>
+                            </label>
+                        </div>
+
+                        <div class="detail-item">
+                            <label class="checkbox-label">
+                                @Html.CheckBoxFor(m => m.TheProcessFieldDefinition.Visible)
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">@Html.DisplayNameFor(m => m.TheProcessFieldDefinition.Visible)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="selector-row">
+                        <div class="select-wrapper" style="max-width: 100%; flex: 2;">
+                            @Html.TextAreaFor(m => m.TheProcessFieldDefinition.Tooltip, new { @class = "inline-input", @placeholder = "Tooltip", @rows = "2" })
+                        </div>
+                        <button type="button" id="btnAddProcessCustomField" class="btn btn-primary">Add Field</button>
+                    </div>
+
+                    <div class="selector-row" id="row_ProcessLookupValues">
+                        <div class="select-wrapper" style="max-width: 100%;">
+                            @Html.TextBoxFor(m => m.TheProcessFieldDefinition.LookupValues, new { @class = "inline-input", @placeholder = "Enter lookup values separated by Semicolon, like (Shared Drive;SDP;Database;)" })
+                        </div>
+                    </div>
+
+                    @if (Model.ProcessCustomFields.Count > 0)
+                    {
+                        <table class="data-table" id="tblProcessCustomFields">
+                            <thead>
+                                <tr>
+                                    <th>Label</th>
+                                    <th>Data Type</th>
+                                    <th>Mandatory</th>
+                                    <th>Visible</th>
+                                    <th>Display Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.ProcessCustomFields.Count; i++)
+                                {
+                                    CustomField field = Model.ProcessCustomFields[i];
+                                    <tr>
+                                        <td>
+                                            @Html.HiddenFor(m => field.Name, new { @Name = "ProcessCustomFields[" + i + "].Name" })
+                                            @Html.TextBoxFor(m => field.Label, new { @class = "inline-input", @Name = "ProcessCustomFields[" + i + "].Label", @maxlength = "30" })
+                                        </td>
+                                        <td>
+                                            @field.DataType
+                                            @Html.HiddenFor(m => field.DataType, new { @Name = "ProcessCustomFields[" + i + "].DataType" })
+                                        </td>
+                                        <td>
+                                            <label class="checkbox-label">
+                                                @Html.CheckBoxFor(m => field.Mandatory, new { @Name = "ProcessCustomFields[" + i + "].Mandatory" })
+                                                <span class="checkbox-custom"></span>
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <label class="checkbox-label">
+                                                @Html.CheckBoxFor(m => field.Visible, new { @Name = "ProcessCustomFields[" + i + "].Visible" })
+                                                <span class="checkbox-custom"></span>
+                                            </label>
+                                        </td>
+                                        <td>
+                                            @Html.TextBoxFor(m => field.DisplayOrder, new { @class = "inline-input", @Name = "ProcessCustomFields[" + i + "].DisplayOrder", @maxlength = "3", @style = "width: 60px;" })
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button type="button" class="action-btn approve cgUpdateProcessCustomField" id="btnUpdateProcessCustomField_@field.Name" title="Update">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                        <path d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
+                                                <button type="button" class="action-btn reject cgRemoveProcessCustomField" id="btnRemoveProcessCustomField_@field.Name" title="Remove">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                        <path d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="6">
+                                            @Html.TextAreaFor(m => field.Tooltip, new { @class = "inline-input", @Name = "ProcessCustomFields[" + i + "].Tooltip", @placeholder = "Tooltip", @rows = "1" })
+                                        </td>
+                                    </tr>
+                                    if (field.DataType == "Lookup")
+                                    {
+                                        <tr>
+                                            <td colspan="6">
+                                                @Html.TextBoxFor(m => field.LookupValues, new { @class = "inline-input", @Name = "ProcessCustomFields[" + i + "].LookupValues", @placeholder = "LookupValues" })
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p style="color: #666; padding: 16px 0;">No custom field is defined.</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Show only Reporting Org dropdown when division is selected but org is not -->
+                <div class="selector-row">
+                    <label>Reporting Organisation</label>
+                    <div class="select-wrapper">
+                        @Html.DropDownListFor(m => m.SelectedReportingOrgID,
+                            new SelectList(Model.ReportingOrgs, "ID", "CodeName"),
+                            "(Please Select)")
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+@section Scripts
+{
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Tab switching
+            $('.tab').on('click', function () {
+                var tabId = $(this).attr('id');
+                if (tabId && tabId.indexOf('btnSwitchTab_') === 0) {
+                    var pageAction = tabId.replace('btnSwitchTab_', '');
+                    $('#PageAction').val(pageAction);
+                    $('#frmManageReportingOrg').submit();
+                }
+
+                // Visual tab switching for immediate feedback
                 $('.tab').removeClass('active');
                 $(this).addClass('active');
-                
                 $('.tab-content').removeClass('active');
                 var tabName = $(this).data('tab');
                 $('#' + tabName + '-content').addClass('active');
             });
 
-            // ==========================================
-            // EDIT MODE
-            // ==========================================
-            $editBtn.on('click', function() {
-                isEditMode = true;
-                
-                // Toggle Buttons
+            // Division dropdown change
+            $('#SelectedDivisionID').on('change', function () {
+                $('#frmManageReportingOrg').submit();
+            });
+
+            // Reporting Org dropdown change
+            $('[id^="SelectedReportingOrgID"], #commReportingOrgDropdown, #reportCustomReportingOrgDropdown, #processCustomReportingOrgDropdown').on('change', function () {
+                $('#frmManageReportingOrg').submit();
+            });
+
+            // Edit Details functionality
+            const $editBtn = $('#edit-details-btn');
+            const $saveBtn = $('#save-details-btn');
+            const $cancelBtn = $('#cancel-details-btn');
+            const $gridContainer = $('#details-grid-container');
+
+            let originalValues = {};
+
+            $editBtn.on('click', function () {
                 $editBtn.addClass('hidden');
                 $saveBtn.removeClass('hidden');
                 $cancelBtn.removeClass('hidden');
 
-                // Save original values
-                originalValues = {};
-                $gridContainer.find('.detail-item').each(function() {
-                    const field = $(this).data('field');
-                    const value = $(this).find('.display-value').text().trim();
+                // Store original values and convert to inputs
+                $gridContainer.find('.display-value').each(function () {
+                    var $el = $(this);
+                    var field = $el.data('field');
+                    var value = $el.text().trim();
                     originalValues[field] = value;
-                });
 
-                // Save original LOB selections
-                originalLobSelections = {};
-                $lobCheckboxGrid.find('input[type="checkbox"]').each(function() {
-                    originalLobSelections[$(this).attr('id')] = $(this).is(':checked');
-                });
+                    // Create edit dropdown/input based on field type
+                    var $wrapper = $('<div class="edit-select-wrapper"></div>');
+                    var $select;
 
-                // Add dropdown overlays to each field
-                $gridContainer.find('.detail-item').each(function() {
-                    const $item = $(this);
-                    const field = $item.data('field');
-                    const $valueBox = $item.find('.detail-value-box');
-                    const currentText = $valueBox.find('.display-value').text().trim();
-                    
-                    // Hide display value
-                    $valueBox.find('.display-value').hide();
-                    
-                    // Create select wrapper
-                    const $wrapper = $('<div class="edit-select-wrapper"></div>');
-                    const $select = $('<select></select>');
-                    
-                    const options = dropdownOptions[field] || [currentText];
-                    
-                    $.each(options, function(i, opt) {
-                        const $option = $('<option></option>').val(opt).text(opt);
-                        if(opt === currentText) $option.prop('selected', true);
-                        $select.append($option);
-                    });
-                    
-                    // Ensure current value is in list
-                    if ($.inArray(currentText, options) === -1 && currentText !== "") {
-                        const $option = $('<option></option>').val(currentText).text(currentText).prop('selected', true);
-                        $select.prepend($option);
+                    if (field === 'AutoPublishFlag' || field === 'ExpirationAlert' || field === 'AutomaticRetention') {
+                        $select = $('<select><option value="Enabled">Enabled</option><option value="Disabled">Disabled</option></select>');
+                        $select.val(value);
+                    } else {
+                        $select = $('<input type="text" value="' + value + '" />');
                     }
 
                     $wrapper.append($select);
-                    $valueBox.append($wrapper);
+                    $el.parent().find('.edit-select-wrapper').remove();
+                    $el.parent().append($wrapper);
+                    $el.hide();
                 });
-
-                // Enable LOB Details checkboxes
-                $lobCheckboxGrid.find('input[type="checkbox"]').prop('disabled', false);
-                $lobDetailsSection.addClass('edit-mode');
             });
 
-            // ==========================================
-            // SAVE CHANGES
-            // ==========================================
-            $saveBtn.on('click', function() {
-                isEditMode = false;
-                
-                // Toggle Buttons
+            $saveBtn.on('click', function () {
                 $editBtn.removeClass('hidden');
                 $saveBtn.addClass('hidden');
                 $cancelBtn.addClass('hidden');
 
-                // Save values and remove dropdowns
-                $gridContainer.find('.detail-item').each(function() {
-                    const $item = $(this);
-                    const $valueBox = $item.find('.detail-value-box');
-                    const $select = $valueBox.find('select');
-                    const $displayValue = $valueBox.find('.display-value');
-                    
-                    if ($select.length) {
-                        const newValue = $select.val();
-                        const isEmpty = newValue === '(Please Select)' || newValue === '';
-                        
-                        // Update display value
-                        $displayValue.text(newValue);
-                        $displayValue.toggleClass('empty', isEmpty);
-                        
-                        // Remove select wrapper
-                        $valueBox.find('.edit-select-wrapper').remove();
-                        
-                        // Show display value
-                        $displayValue.show();
+                $gridContainer.find('.display-value').each(function () {
+                    var $el = $(this);
+                    var $wrapper = $el.parent().find('.edit-select-wrapper');
+                    if ($wrapper.length) {
+                        var newValue = $wrapper.find('select, input').val();
+                        $el.text(newValue);
+                        $wrapper.remove();
                     }
+                    $el.show();
                 });
 
-                // Disable LOB Details checkboxes
-                $lobCheckboxGrid.find('input[type="checkbox"]').prop('disabled', true);
-                $lobDetailsSection.removeClass('edit-mode');
-
-                // Log saved data
-                const selectedLobs = [];
-                $lobCheckboxGrid.find('input[type="checkbox"]:checked').each(function() {
-                    selectedLobs.push($(this).closest('.checkbox-item').find('.checkbox-text').text());
-                });
-                console.log('Saved LOB Details:', selectedLobs);
+                // Trigger update via AJAX or form submit
+                $('.cgUpdateReportingOrg').first().trigger('click');
             });
 
-            // ==========================================
-            // CANCEL CHANGES
-            // ==========================================
-            $cancelBtn.on('click', function() {
-                isEditMode = false;
-                
-                // Toggle Buttons
+            $cancelBtn.on('click', function () {
                 $editBtn.removeClass('hidden');
                 $saveBtn.addClass('hidden');
                 $cancelBtn.addClass('hidden');
 
-                // Restore original values and remove dropdowns
-                $gridContainer.find('.detail-item').each(function() {
-                    const $item = $(this);
-                    const field = $item.data('field');
-                    const $valueBox = $item.find('.detail-value-box');
-                    const $displayValue = $valueBox.find('.display-value');
-                    const originalValue = originalValues[field];
-                    const isEmpty = originalValue === '(Please Select)' || originalValue === '';
-                    
-                    // Restore display value
-                    $displayValue.text(originalValue);
-                    $displayValue.toggleClass('empty', isEmpty);
-                    
-                    // Remove select wrapper
-                    $valueBox.find('.edit-select-wrapper').remove();
-                    
-                    // Show display value
-                    $displayValue.show();
+                $gridContainer.find('.display-value').each(function () {
+                    var $el = $(this);
+                    var field = $el.data('field');
+                    $el.text(originalValues[field] || $el.text());
+                    $el.parent().find('.edit-select-wrapper').remove();
+                    $el.show();
                 });
-
-                // Restore LOB selections and disable checkboxes
-                $lobCheckboxGrid.find('input[type="checkbox"]').each(function() {
-                    const id = $(this).attr('id');
-                    $(this).prop('checked', originalLobSelections[id]);
-                    $(this).prop('disabled', true);
-                });
-                $lobDetailsSection.removeClass('edit-mode');
             });
         });
     </script>
-</body>
-</html>
+    <script src="~/js2/manageReportingOrgs.js"></script>
+}
