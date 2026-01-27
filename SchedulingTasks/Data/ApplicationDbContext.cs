@@ -69,12 +69,10 @@ namespace SchedulingTasks.Data
         flex-direction: column;
         gap: 16px;
         margin-bottom: 24px;
-        max-width: 600px;
     }
 
     .top-selectors .selector-row {
-        display: grid;
-        grid-template-columns: 180px 1fr auto;
+        display: flex;
         align-items: center;
         gap: 16px;
         margin-bottom: 0;
@@ -84,11 +82,15 @@ namespace SchedulingTasks.Data
         font-size: 14px;
         color: #666;
         font-weight: 500;
+        min-width: 160px;
+        /* Fixed width for alignment */
+        flex-shrink: 0;
     }
 
     .top-selectors .select-wrapper {
         position: relative;
         width: 100%;
+        max-width: 500px;
     }
 
     /* 3 Column Layout */
@@ -167,7 +169,7 @@ namespace SchedulingTasks.Data
         height: 16px;
     }
 
-    /* Edit Mode Container - Overlays the display box */
+    /* Edit Mode Container - FIXED: Same width as display box */
     .edit-mode-container {
         display: none;
         flex-direction: row;
@@ -181,18 +183,24 @@ namespace SchedulingTasks.Data
         display: flex;
     }
 
-    /* Inputs in Edit Mode */
-    .field-input {
+    /* FIXED: Input wrapper to maintain width */
+    .edit-input-wrapper {
         flex: 1;
+        min-width: 0;
+        /* Allows flex item to shrink below content size */
+    }
+
+    /* Inputs in Edit Mode - FIXED: Full width */
+    .field-input {
+        width: 100%;
         height: 42px;
         padding: 8px 12px;
         font-size: 14px;
         border: 1px solid #0049ac;
         border-radius: 4px;
         outline: none;
-        width: 100%;
-        min-width: 0;
         background: #fff;
+        box-sizing: border-box;
     }
 
     /* Checkbox Styling - Standard Look */
@@ -258,10 +266,12 @@ namespace SchedulingTasks.Data
         line-height: 1.4;
     }
 
-    /* Action Buttons (Save/Cancel) next to input */
+    /* Action Buttons (Save/Cancel) next to input - FIXED: Don't shrink */
     .mini-btn {
         width: 36px;
         height: 36px;
+        min-width: 36px;
+        /* Prevent shrinking */
         border-radius: 4px;
         border: 1px solid transparent;
         display: flex;
@@ -270,6 +280,8 @@ namespace SchedulingTasks.Data
         cursor: pointer;
         transition: all 0.2s;
         background: #fff;
+        flex-shrink: 0;
+        /* Prevent shrinking */
     }
 
     .mini-btn-save {
@@ -315,11 +327,16 @@ namespace SchedulingTasks.Data
         }
 
         .top-selectors .selector-row {
-            grid-template-columns: 1fr;
+            flex-direction: column;
+            align-items: flex-start;
             gap: 8px;
         }
 
-        .top-selectors {
+        .top-selectors .selector-row label {
+            min-width: auto;
+        }
+
+        .top-selectors .select-wrapper {
             max-width: 100%;
         }
     }
@@ -345,7 +362,6 @@ namespace SchedulingTasks.Data
                         new SelectList(Model.Divisions, "ID", "CodeName"),
                         "(Please Select)")
                 </div>
-                <div></div>
             </div>
 
             <!-- Reporting Organisation Selector -->
@@ -358,7 +374,6 @@ namespace SchedulingTasks.Data
                             new SelectList(Model.ReportingOrgs, "ID", "CodeName"),
                             "(Please Select)")
                     </div>
-                    <div></div>
                 </div>
             }
         </div>
@@ -433,7 +448,9 @@ namespace SchedulingTasks.Data
                         </div>
                         <!-- Edit View -->
                         <div class="edit-mode-container">
-                            @Html.TextBoxFor(m => m.TheReportingOrg.Name, new { @class = "field-input" })
+                            <div class="edit-input-wrapper">
+                                @Html.TextBoxFor(m => m.TheReportingOrg.Name, new { @class = "field-input" })
+                            </div>
                             <button type="button" class="mini-btn mini-btn-save cgUpdateReportingOrg" title="Save">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" /></svg>
                             </button>
@@ -460,7 +477,9 @@ namespace SchedulingTasks.Data
                         @if (_curUser.IsTechAdmin)
                         {
                             <div class="edit-mode-container">
-                                @Html.TextBoxFor(m => m.TheReportingOrg.StoragePath, new { @class = "field-input", @id = "storagePath" })
+                                <div class="edit-input-wrapper">
+                                    @Html.TextBoxFor(m => m.TheReportingOrg.StoragePath, new { @class = "field-input", @id = "storagePath" })
+                                </div>
                                 <button type="button" class="mini-btn mini-btn-save cgUpdateReportingOrgStoragePath" title="Save">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" /></svg>
                                 </button>
@@ -488,7 +507,9 @@ namespace SchedulingTasks.Data
                         @if (_curUser.IsTechAdmin)
                         {
                             <div class="edit-mode-container">
-                                @Html.TextBoxFor(m => m.TheReportingOrg.AutoPublishSource, new { @class = "field-input", @id = "autoPublishSource" })
+                                <div class="edit-input-wrapper">
+                                    @Html.TextBoxFor(m => m.TheReportingOrg.AutoPublishSource, new { @class = "field-input", @id = "autoPublishSource" })
+                                </div>
                                 <button type="button" class="mini-btn mini-btn-save cgUpdateReportingOrgAutoPublishSource" title="Save">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" /></svg>
                                 </button>
@@ -506,7 +527,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.AutoPublishFlag, new { @class = "standard-checkbox cgUpdateReportingOrgAutoPublishFlag", @id = "TheReportingOrg_AutoPublishFlag" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrgAutoPublishFlag" id="TheReportingOrg_AutoPublishFlag" name="TheReportingOrg.AutoPublishFlag" value="true" @(repOrg.AutoPublishFlag == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.AutoPublishFlag)</span>
                             </div>
                             <div class="checkbox-helper-text">Check to activate this publisher, uncheck to inactivate</div>
@@ -518,7 +539,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.ExpirationAlert, new { @class = "standard-checkbox cgUpdateReportingOrg" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrg" id="TheReportingOrg_ExpirationAlert" name="TheReportingOrg.ExpirationAlert" value="true" @(repOrg.ExpirationAlert == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.ExpirationAlert)</span>
                             </div>
                             <div class="checkbox-helper-text">Select this option if you wish to receive monthly email about expiring reports</div>
@@ -530,7 +551,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.AutomaticRetention, new { @class = "standard-checkbox cgUpdateReportingOrg csGetConfirmation" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrg csGetConfirmation" id="TheReportingOrg_AutomaticRetention" name="TheReportingOrg.AutomaticRetention" value="true" @(repOrg.AutomaticRetention == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.AutomaticRetention)</span>
                             </div>
                             <div class="checkbox-helper-text">⚠️ Selecting this option enables automatic retirement for your reports</div>
@@ -561,7 +582,9 @@ namespace SchedulingTasks.Data
                             </button>
                         </div>
                         <div class="edit-mode-container">
-                            @Html.TextBoxFor(m => m.TheReportingOrg.SupportEmail, new { @class = "field-input" })
+                            <div class="edit-input-wrapper">
+                                @Html.TextBoxFor(m => m.TheReportingOrg.SupportEmail, new { @class = "field-input" })
+                            </div>
                             <button type="button" class="mini-btn mini-btn-save cgUpdateReportingOrg" title="Save">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" /></svg>
                             </button>
@@ -581,7 +604,9 @@ namespace SchedulingTasks.Data
                             </button>
                         </div>
                         <div class="edit-mode-container">
-                            @Html.TextBoxFor(m => m.TheReportingOrg.SupportSite, new { @class = "field-input" })
+                            <div class="edit-input-wrapper">
+                                @Html.TextBoxFor(m => m.TheReportingOrg.SupportSite, new { @class = "field-input" })
+                            </div>
                             <button type="button" class="mini-btn mini-btn-save cgUpdateReportingOrg" title="Save">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" /></svg>
                             </button>
@@ -604,7 +629,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.PACanApproveRequest, new { @class = "standard-checkbox cgUpdateReportingOrg" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrg" id="TheReportingOrg_PACanApproveRequest" name="TheReportingOrg.PACanApproveRequest" value="true" @(repOrg.PACanApproveRequest == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.PACanApproveRequest)</span>
                             </div>
                             <div class="checkbox-helper-text">Primary Analyst can approve access requests</div>
@@ -615,7 +640,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.BACanApproveRequest, new { @class = "standard-checkbox cgUpdateReportingOrg" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrg" id="TheReportingOrg_BACanApproveRequest" name="TheReportingOrg.BACanApproveRequest" value="true" @(repOrg.BACanApproveRequest == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.BACanApproveRequest)</span>
                             </div>
                             <div class="checkbox-helper-text">Backup Analyst can approve access requests</div>
@@ -626,7 +651,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.RTMCanApproveRequest, new { @class = "standard-checkbox cgUpdateReportingOrg" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrg" id="TheReportingOrg_RTMCanApproveRequest" name="TheReportingOrg.RTMCanApproveRequest" value="true" @(repOrg.RTMCanApproveRequest == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.RTMCanApproveRequest)</span>
                             </div>
                             <div class="checkbox-helper-text">Reporting Team Manager can approve access requests</div>
@@ -637,7 +662,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.PLCCanApproveRequest, new { @class = "standard-checkbox cgUpdateReportingOrg" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrg" id="TheReportingOrg_PLCCanApproveRequest" name="TheReportingOrg.PLCCanApproveRequest" value="true" @(repOrg.PLCCanApproveRequest == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.PLCCanApproveRequest)</span>
                             </div>
                             <div class="checkbox-helper-text">Primary LOB Contact/Owner can approve access requests</div>
@@ -648,7 +673,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportingOrg.BLCCanApproveRequest, new { @class = "standard-checkbox cgUpdateReportingOrg" })
+                                <input type="checkbox" class="standard-checkbox cgUpdateReportingOrg" id="TheReportingOrg_BLCCanApproveRequest" name="TheReportingOrg.BLCCanApproveRequest" value="true" @(repOrg.BLCCanApproveRequest == true ? "checked" : "") />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportingOrg.BLCCanApproveRequest)</span>
                             </div>
                             <div class="checkbox-helper-text">Backup LOB Contact/Owner can approve access requests</div>
@@ -746,7 +771,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportFieldDefinition.Mandatory, new { @class = "standard-checkbox" })
+                                <input type="checkbox" class="standard-checkbox" id="TheReportFieldDefinition_Mandatory" name="TheReportFieldDefinition.Mandatory" value="true" />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportFieldDefinition.Mandatory)</span>
                             </div>
                         </div>
@@ -756,7 +781,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheReportFieldDefinition.Visible, new { @class = "standard-checkbox" })
+                                <input type="checkbox" class="standard-checkbox" id="TheReportFieldDefinition_Visible" name="TheReportFieldDefinition.Visible" value="true" />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheReportFieldDefinition.Visible)</span>
                             </div>
                         </div>
@@ -804,10 +829,10 @@ namespace SchedulingTasks.Data
                                         @Html.HiddenFor(m => field.DataType, new { @Name = "ReportCustomFields[" + i + "].DataType" })
                                     </td>
                                     <td>
-                                        @Html.CheckBoxFor(m => field.Mandatory, new { @class = "standard-checkbox", @Name = "ReportCustomFields[" + i + "].Mandatory" })
+                                        <input type="checkbox" class="standard-checkbox" name="ReportCustomFields[@i].Mandatory" value="true" @(field.Mandatory ? "checked" : "") />
                                     </td>
                                     <td>
-                                        @Html.CheckBoxFor(m => field.Visible, new { @class = "standard-checkbox", @Name = "ReportCustomFields[" + i + "].Visible" })
+                                        <input type="checkbox" class="standard-checkbox" name="ReportCustomFields[@i].Visible" value="true" @(field.Visible ? "checked" : "") />
                                     </td>
                                     <td>
                                         @Html.TextBoxFor(m => field.DisplayOrder, new { @class = "inline-input", @Name = "ReportCustomFields[" + i + "].DisplayOrder", @maxlength = "3", @style = "width: 60px;" })
@@ -879,7 +904,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheProcessFieldDefinition.Mandatory, new { @class = "standard-checkbox" })
+                                <input type="checkbox" class="standard-checkbox" id="TheProcessFieldDefinition_Mandatory" name="TheProcessFieldDefinition.Mandatory" value="true" />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheProcessFieldDefinition.Mandatory)</span>
                             </div>
                         </div>
@@ -889,7 +914,7 @@ namespace SchedulingTasks.Data
                         <span class="detail-label"></span>
                         <div class="checkbox-display-container">
                             <div class="checkbox-row">
-                                @Html.CheckBoxFor(m => m.TheProcessFieldDefinition.Visible, new { @class = "standard-checkbox" })
+                                <input type="checkbox" class="standard-checkbox" id="TheProcessFieldDefinition_Visible" name="TheProcessFieldDefinition.Visible" value="true" />
                                 <span class="checkbox-status-label">@Html.DisplayNameFor(m => m.TheProcessFieldDefinition.Visible)</span>
                             </div>
                         </div>
@@ -937,10 +962,10 @@ namespace SchedulingTasks.Data
                                         @Html.HiddenFor(m => field.DataType, new { @Name = "ProcessCustomFields[" + i + "].DataType" })
                                     </td>
                                     <td>
-                                        @Html.CheckBoxFor(m => field.Mandatory, new { @class = "standard-checkbox", @Name = "ProcessCustomFields[" + i + "].Mandatory" })
+                                        <input type="checkbox" class="standard-checkbox" name="ProcessCustomFields[@i].Mandatory" value="true" @(field.Mandatory ? "checked" : "") />
                                     </td>
                                     <td>
-                                        @Html.CheckBoxFor(m => field.Visible, new { @class = "standard-checkbox", @Name = "ProcessCustomFields[" + i + "].Visible" })
+                                        <input type="checkbox" class="standard-checkbox" name="ProcessCustomFields[@i].Visible" value="true" @(field.Visible ? "checked" : "") />
                                     </td>
                                     <td>
                                         @Html.TextBoxFor(m => field.DisplayOrder, new { @class = "inline-input", @Name = "ProcessCustomFields[" + i + "].DisplayOrder", @maxlength = "3", @style = "width: 60px;" })
