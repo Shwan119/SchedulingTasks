@@ -41,7 +41,6 @@ namespace SchedulingTasks.Data
         }
     }
 }
-
 @using ROV.ReportHub.ViewModels
 @model ManageResourcesViewModel
 @{
@@ -58,255 +57,249 @@ namespace SchedulingTasks.Data
        PAGE SPECIFIC STYLES (Manage Resources)
        ============================================ */
 
-    /* Top Selector Alignment */
-    .top-selectors {
+    /* Top Selector Row */
+    .top-selector-row {
         display: flex;
-        flex-direction: column;
+        align-items: center;
         gap: 16px;
         margin-bottom: 24px;
     }
 
-    .top-selectors .selector-row {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 0;
-    }
-
-    .top-selectors .selector-row label {
+    .top-selector-row label {
         font-size: 14px;
         color: #666;
         font-weight: 500;
-        min-width: 160px;
-        flex-shrink: 0;
+        min-width: 60px;
     }
 
-    .top-selectors .select-wrapper {
-        position: relative;
-        width: 100%;
+    .top-selector-row .select-wrapper {
+        flex: 1;
         max-width: 500px;
     }
 
-    /* Add New Row Styling */
-    .add-new-row {
-        background: #fffbeb !important;
-        border-left: 3px solid #f59e0b;
+    /* Tabs with Count */
+    .tabs-with-count .tab {
+        padding: 14px 30px;
     }
 
-    .add-new-row td {
-        padding: 12px 16px;
-        vertical-align: middle;
-    }
-
-    /* User Input Group */
-    .user-input-group {
+    /* Table Controls Row */
+    .table-controls {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
+        margin-bottom: 16px;
     }
 
-    .user-input-group .nbk-input {
-        width: 140px;
-        padding: 8px 12px;
-        font-size: 14px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px 0 0 4px;
-        outline: none;
-    }
-
-    .user-input-group .nbk-input:focus {
-        border-color: #0049ac;
-        box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.15);
-    }
-
-    .user-input-group .username-display {
-        width: 160px;
-        padding: 8px 12px;
-        font-size: 14px;
-        border: 1px solid #d1d5db;
-        border-left: none;
-        border-radius: 0 4px 4px 0;
-        background: #f9fafb;
-        color: #666;
-    }
-
-    .or-separator {
-        font-size: 12px;
-        color: #9ca3af;
-        font-weight: 500;
-        padding: 0 8px;
-    }
-
-    .user-input-group .assignee-input {
-        flex: 1;
-        min-width: 180px;
-        padding: 8px 12px;
-        font-size: 14px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        outline: none;
-    }
-
-    .user-input-group .assignee-input:focus {
-        border-color: #0049ac;
-        box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.15);
-    }
-
-    /* Standard Checkbox in Table */
-    .table-checkbox {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        border: 2px solid #6b7280;
-        border-radius: 4px;
-        background-color: #fff;
-        cursor: pointer;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-
-    .table-checkbox:checked {
-        background-color: #0049ac;
-        border-color: #0049ac;
-    }
-
-    .table-checkbox:checked::after {
-        content: '';
-        width: 5px;
-        height: 10px;
-        border: solid white;
-        border-width: 0 2px 2px 0;
-        transform: rotate(45deg);
-        margin-bottom: 2px;
-    }
-
-    /* Status Text in Table */
-    .status-text-active {
-        color: #4a7c59;
-        font-weight: 500;
-    }
-
-    .status-text-inactive {
-        color: #c53030;
-        font-weight: 500;
-    }
-
-    /* Add Button */
-    .btn-add {
-        background: #4a7c59;
+    .btn-new {
+        background: #1e3a5f;
         color: #fff;
         border: none;
-        padding: 8px 16px;
+        padding: 10px 20px;
         border-radius: 4px;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         font-size: 14px;
         font-weight: 500;
         transition: all 0.2s;
     }
 
-    .btn-add:hover {
-        background: #3d6a4a;
+    .btn-new:hover {
+        background: #162d4a;
     }
 
-    .btn-add svg {
+    .btn-new svg {
         width: 16px;
         height: 16px;
     }
 
-    /* Action buttons for table rows */
+    /* Inline Edit Row (Yellow) */
+    .inline-edit-row {
+        background: #fffbeb !important;
+    }
+
+    .inline-edit-row:hover {
+        background: #fffbeb !important;
+    }
+
+    .inline-edit-row td {
+        padding: 12px 16px;
+        vertical-align: middle;
+    }
+
+    .inline-edit-row .inline-input {
+        border: 1px solid #d1d5db;
+        background: #fff;
+    }
+
+    /* Inline Input for Table */
+    .inline-input {
+        padding: 8px 12px;
+        font-size: 14px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        width: 100%;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .inline-input:focus {
+        border-color: #0049ac;
+        background: #fff;
+        box-shadow: 0 0 0 2px rgba(0, 73, 172, 0.15);
+    }
+
+    /* Status Dropdown */
+    .status-select {
+        padding: 8px 32px 8px 12px;
+        font-size: 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        background: #fff;
+        appearance: none;
+        cursor: pointer;
+        min-width: 120px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 16px;
+    }
+
+    /* Status Text */
+    .status-text {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .status-text.active {
+        color: #4a7c59;
+    }
+
+    .status-text.inactive {
+        color: #c53030;
+    }
+
+    /* Row Action Buttons */
     .row-actions {
         display: flex;
+        align-items: center;
         gap: 12px;
         justify-content: flex-end;
     }
 
-    .row-action-btn {
+    /* Save/Cancel buttons for inline edit */
+    .btn-row-save {
         width: 32px;
         height: 32px;
-        border-radius: 4px;
-        border: 1px solid;
+        border-radius: 50%;
+        border: 2px solid #1e3a5f;
+        background: transparent;
+        color: #1e3a5f;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
         transition: all 0.2s;
-        background: #fff;
     }
 
-    .row-action-btn.save {
-        border-color: #4a7c59;
-        color: #4a7c59;
-    }
-
-    .row-action-btn.save:hover {
-        background: #4a7c59;
+    .btn-row-save:hover {
+        background: #1e3a5f;
         color: #fff;
     }
 
-    .row-action-btn.reset {
-        border-color: #d97706;
-        color: #d97706;
+    .btn-row-cancel {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #9b2c2c;
+        background: transparent;
+        color: #9b2c2c;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
     }
 
-    .row-action-btn.reset:hover {
-        background: #d97706;
+    .btn-row-cancel:hover {
+        background: #9b2c2c;
         color: #fff;
     }
 
-    .row-action-btn svg {
-        width: 16px;
-        height: 16px;
+    .btn-row-save svg,
+    .btn-row-cancel svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Edit Pencil Button */
+    .btn-edit {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #6b7280;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s;
+    }
+
+    .btn-edit:hover {
+        color: #1e3a5f;
+    }
+
+    .btn-edit svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* 3-dot Menu Button */
+    .btn-menu {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #6b7280;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s;
+    }
+
+    .btn-menu:hover {
+        color: #1e3a5f;
+    }
+
+    .btn-menu svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Hidden class */
+    .hidden {
+        display: none !important;
     }
 
     /* Responsive */
-    @media (max-width: 1024px) {
-        .user-input-group {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .user-input-group .nbk-input {
-            width: 100%;
-            border-radius: 4px;
-        }
-
-        .user-input-group .username-display {
-            width: 100%;
-            border-left: 1px solid #d1d5db;
-            border-radius: 4px;
-        }
-
-        .or-separator {
-            text-align: center;
-            padding: 4px 0;
-        }
-
-        .user-input-group .assignee-input {
-            width: 100%;
-        }
-    }
-
     @media (max-width: 768px) {
-        .top-selectors .selector-row {
+        .top-selector-row {
             flex-direction: column;
             align-items: flex-start;
             gap: 8px;
         }
 
-        .top-selectors .selector-row label {
-            min-width: auto;
+        .top-selector-row .select-wrapper {
+            max-width: 100%;
+            width: 100%;
         }
 
-        .top-selectors .select-wrapper {
-            max-width: 100%;
+        .table-controls {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
         }
     }
 </style>
@@ -317,18 +310,17 @@ namespace SchedulingTasks.Data
         @Html.AntiForgeryToken()
         @Html.HiddenFor(m => m.PageAction)
 
-        <h1>Manage Resources</h1>
+        <h1>Resources</h1>
 
-        <div class="top-selectors">
-            <!-- Division Selector -->
-            <div class="selector-row">
-                <label>Division</label>
-                <div class="select-wrapper">
-                    @Html.DropDownListFor(m => m.SelectedDivisionID,
-                        new SelectList(Model.Divisions, "ID", "CodeName"),
-                        "(Please Select)")
-                </div>
+        <!-- Division Selector -->
+        <div class="top-selector-row">
+            <label>Division</label>
+            <div class="select-wrapper">
+                @Html.DropDownListFor(m => m.SelectedDivisionID,
+                    new SelectList(Model.Divisions, "ID", "CodeName"),
+                    "(Please Select)")
             </div>
+            <button type="button" class="btn btn-secondary">View Fields</button>
         </div>
 
         @if (Model.SelectedDivisionID > 0)
@@ -338,476 +330,622 @@ namespace SchedulingTasks.Data
             string acReportManager = Model.PageAction == ResourceManagementPageAction.paReportManager ? "active" : "";
             string aciDrive = Model.PageAction == ResourceManagementPageAction.paIDrive ? "active" : "";
 
-            <!-- Tabs -->
-            <div class="tabs">
-                <div class="tab @acExecutive" data-tab="executive" id="btnSwitchTab_@((int)ResourceManagementPageAction.paExecutive)">Executives</div>
-                <div class="tab @acReportLead" data-tab="reportlead" id="btnSwitchTab_@((int)ResourceManagementPageAction.paReportLead)">Report Leads</div>
-                <div class="tab @acReportManager" data-tab="reportmanager" id="btnSwitchTab_@((int)ResourceManagementPageAction.paReportManager)">Report Managers</div>
-                <div class="tab @aciDrive" data-tab="idrive" id="btnSwitchTab_@((int)ResourceManagementPageAction.paIDrive)">iDrives</div>
+            <!-- Tabs with Counts -->
+            <div class="tabs tabs-with-count">
+                <div class="tab @acExecutive" data-tab="executive" id="btnSwitchTab_@((int)ResourceManagementPageAction.paExecutive)">Executives (@Model.Executives.Count)</div>
+                <div class="tab @acReportLead" data-tab="reportlead" id="btnSwitchTab_@((int)ResourceManagementPageAction.paReportLead)">Report Leads (@Model.ReportLeads.Count)</div>
+                <div class="tab @acReportManager" data-tab="reportmanager" id="btnSwitchTab_@((int)ResourceManagementPageAction.paReportManager)">Report Manager (@Model.ReportManagers.Count)</div>
+                <div class="tab @aciDrive" data-tab="idrive" id="btnSwitchTab_@((int)ResourceManagementPageAction.paIDrive)">iDrives (@Model.iDrives.Count)</div>
             </div>
 
             <!-- ==================== EXECUTIVES TAB ==================== -->
-            <div id="executive-content" class="tab-content @(Model.PageAction == ResourceManagementPageAction.paExecutive ? "active" : "")">
-                <!-- Table Header -->
-                <div class="table-header">
-                    <span class="total-count">Total (@Model.Executives.Count)</span>
-                    <div class="search-box">
-                        <input type="text" class="table-search" placeholder="Search by ID or Name">
+            @if (Model.PageAction == ResourceManagementPageAction.paExecutive)
+            {
+                <div id="executive-content" class="tab-content active">
+                    <!-- Table Controls -->
+                    <div class="table-controls">
+                        <button type="button" id="btnShowAddExecutive" class="btn-new">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
+                            New
+                        </button>
+                        <div class="search-box">
+                            <input type="text" class="table-search" placeholder="Search by Report ID or Name">
+                        </div>
                     </div>
-                </div>
 
-                <!-- Data Table -->
-                <table class="data-table" id="tblExecutive">
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">ID</th>
-                            <th>User / Assignee</th>
-                            <th style="width: 100px;">Active</th>
-                            <th style="width: 120px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Add New Row -->
-                        <tr class="add-new-row">
-                            <td></td>
-                            <td>
-                                <div class="user-input-group">
-                                    @Html.HiddenFor(m => m.TheExecutive.User_ID, new { @id = "Executive_User_ID_0" })
-                                    <input type="text" class="nbk-input" id="Executive_NBK_0" name="Executive_NBK" placeholder="Enter NBK or Email..." />
-                                    <input type="text" class="username-display" id="Executive_Username_0" disabled placeholder="Username" />
-                                    <span class="or-separator">OR</span>
-                                    @Html.TextBoxFor(m => m.TheExecutive.AssigneeName, new { @class = "assignee-input", @placeholder = "DG Group / Virtual Resource" })
-                                </div>
-                            </td>
-                            <td>
-                                @{ Model.TheExecutive.ActiveFlag = true; }
-                                <input type="checkbox" class="table-checkbox" id="TheExecutive_ActiveFlag" name="TheExecutive.ActiveFlag" value="true" checked />
-                            </td>
-                            <td>
-                                <button type="button" id="btnAddExecutive" class="btn-add" title="Add">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
-                                    Add
-                                </button>
-                            </td>
-                        </tr>
-
-                        <!-- Existing Rows -->
-                        @for (int i = 0; i < Model.Executives.Count; i++)
-                        {
-                            var resource = Model.Executives.ToArray()[i];
+                    <!-- Data Table -->
+                    <table class="data-table" id="tblExecutive">
+                        <thead>
                             <tr>
+                                <th style="width: 100px;">ID</th>
+                                <th style="width: 180px;">NBK ID</th>
+                                <th>Full Name</th>
+                                <th style="width: 150px;">Status</th>
+                                <th style="width: 100px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Add New Row (Hidden by default) -->
+                            <tr class="inline-edit-row hidden" id="addExecutiveRow">
                                 <td>
-                                    @Html.HiddenFor(m => resource.ID, new { @Id = "Executive_ID_" + resource.ID })
-                                    @resource.ID
+                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
                                 </td>
                                 <td>
-                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "Executive_User_ID_" + resource.ID })
-                                    @if (resource.User_ID > 0)
-                                    {
-                                        <div class="user-input-group">
-                                            <input type="text" class="nbk-input cgFilter" id="Executive_NBK_@resource.ID" name="Executive_NBK" value="@resource.User.NBK" placeholder="Enter NBK or Email..." />
-                                            <input type="text" class="username-display cgFilter" id="Executive_Username_@resource.ID" disabled value="@resource.User.Username" />
-                                        </div>
-                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "Executive_AssigneeName_" + resource.ID })
-                                    }
-                                    else
-                                    {
-                                        <input type="text" class="assignee-input cgFilter" id="Executive_AssigneeName_@resource.ID" name="Executive_AssigneeName" value="@resource.AssigneeName" />
-                                    }
+                                    @Html.HiddenFor(m => m.TheExecutive.User_ID, new { @id = "Executive_User_ID_0" })
+                                    <input type="text" class="inline-input" id="Executive_NBK_0" name="Executive_NBK" placeholder="Enter NBK or Email..." />
                                 </td>
                                 <td>
-                                    <input type="checkbox" class="table-checkbox" id="Executive_ActiveFlag_@resource.ID" name="Executive_ActiveFlag_@resource.ID" value="true" @(resource.ActiveFlag ? "checked" : "") />
+                                    <input type="text" class="inline-input" id="Executive_Username_0" disabled placeholder="Full Name" />
+                                    @Html.HiddenFor(m => m.TheExecutive.AssigneeName)
+                                </td>
+                                <td>
+                                    <select class="status-select" id="TheExecutive_ActiveFlag" name="TheExecutive.ActiveFlag">
+                                        <option value="true" selected>Active</option>
+                                        <option value="false">Inactive</option>
+                                    </select>
                                 </td>
                                 <td>
                                     <div class="row-actions">
-                                        <button type="button" class="row-action-btn save cgUpdateExecutive" id="btnUpdateExecutive_@resource.ID" title="Save">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7" /></svg>
+                                        <button type="button" class="btn-row-save" id="btnAddExecutive" title="Save">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
                                         </button>
-                                        <button type="button" class="row-action-btn reset cgResetExecutive" id="btnResetExecutive_@resource.ID" title="Reset">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        <button type="button" class="btn-row-cancel" id="btnCancelAddExecutive" title="Cancel">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                        }
 
-                        @if (Model.Executives.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 32px; color: #666;">
-                                    No executives found.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                            <!-- Existing Rows -->
+                            @for (int i = 0; i < Model.Executives.Count; i++)
+                            {
+                                var resource = Model.Executives.ToArray()[i];
+                                <tr id="Executive_Row_@resource.ID">
+                                    @Html.HiddenFor(m => resource.ID, new { @Id = "Executive_ID_" + resource.ID })
+                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "Executive_User_ID_" + resource.ID })
 
-                <!-- Pagination -->
-                <div class="pagination-wrapper">
-                    <span class="showing-text">Showing 1-@Model.Executives.Count of @Model.Executives.Count</span>
-                    <div class="pagination">
-                        <button disabled>«</button>
-                        <button disabled>‹</button>
-                        <button class="active">1</button>
-                        <button>›</button>
-                        <button>»</button>
-                    </div>
-                    <div class="per-page">
-                        <span>Show per page:</span>
-                        <select>
-                            <option>10</option>
-                            <option>25</option>
-                            <option>50</option>
-                            <option>100</option>
-                        </select>
+                                    <!-- Display Mode -->
+                                    <td class="display-cell">@resource.ID</td>
+                                    <td class="display-cell">
+                                        @if (resource.User_ID > 0)
+                                        {
+                                            @resource.User.NBK
+                                        }
+                                        else
+                                        {
+                                            @resource.AssigneeName
+                                        }
+                                    </td>
+                                    <td class="display-cell">
+                                        @if (resource.User_ID > 0)
+                                        {
+                                            @resource.User.Username
+                                        }
+                                        else
+                                        {
+                                            <span class="email-text">@resource.AssigneeName</span>
+                                        }
+                                    </td>
+                                    <td class="display-cell">
+                                        @if (resource.ActiveFlag)
+                                        {
+                                            <span class="status-text active">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-text inactive">Inactive</span>
+                                        }
+                                    </td>
+                                    <td class="display-cell">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-edit cgEditExecutive" data-id="@resource.ID" title="Edit">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-menu" title="More options">
+                                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                    <!-- Edit Mode (Hidden) -->
+                                    <td class="edit-cell hidden">@resource.ID</td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="Executive_NBK_@resource.ID" name="Executive_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" placeholder="Enter NBK or Email..." />
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="Executive_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" placeholder="Full Name" />
+                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "Executive_AssigneeName_" + resource.ID })
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <select class="status-select" id="Executive_ActiveFlag_@resource.ID" name="Executive_ActiveFlag_@resource.ID">
+                                            <option value="true" @(resource.ActiveFlag ? "selected" : "")>Active</option>
+                                            <option value="false" @(!resource.ActiveFlag ? "selected" : "")>Inactive</option>
+                                        </select>
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-row-save cgUpdateExecutive" id="btnUpdateExecutive_@resource.ID" title="Save">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-row-cancel cgCancelEditExecutive" data-id="@resource.ID" title="Cancel">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+
+                            @if (Model.Executives.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 32px; color: #666;">
+                                        No executives found.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    <div class="pagination-wrapper">
+                        <span class="showing-text">Showing 1-@Model.Executives.Count of @Model.Executives.Count</span>
+                        <div class="pagination">
+                            <button disabled>«</button>
+                            <button disabled>‹</button>
+                            <button class="active">1</button>
+                            <button>2</button>
+                            <button>3</button>
+                            <span class="dots">...</span>
+                            <button>›</button>
+                            <button>»</button>
+                        </div>
+                        <div class="per-page">
+                            <span>Show per page:</span>
+                            <select>
+                                <option>10</option>
+                                <option>25</option>
+                                <option>50</option>
+                                <option>100</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             <!-- ==================== REPORT LEADS TAB ==================== -->
-            <div id="reportlead-content" class="tab-content @(Model.PageAction == ResourceManagementPageAction.paReportLead ? "active" : "")">
-                <div class="table-header">
-                    <span class="total-count">Total (@Model.ReportLeads.Count)</span>
-                    <div class="search-box">
-                        <input type="text" class="table-search" placeholder="Search by ID or Name">
+            @if (Model.PageAction == ResourceManagementPageAction.paReportLead)
+            {
+                <div id="reportlead-content" class="tab-content active">
+                    <div class="table-controls">
+                        <button type="button" id="btnShowAddReportLead" class="btn-new">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
+                            New
+                        </button>
+                        <div class="search-box">
+                            <input type="text" class="table-search" placeholder="Search by Report ID or Name">
+                        </div>
                     </div>
-                </div>
 
-                <table class="data-table" id="tblReportLead">
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">ID</th>
-                            <th>User / Assignee</th>
-                            <th style="width: 100px;">Active</th>
-                            <th style="width: 120px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Add New Row -->
-                        <tr class="add-new-row">
-                            <td></td>
-                            <td>
-                                <div class="user-input-group">
-                                    @Html.HiddenFor(m => m.TheReportLead.User_ID, new { @id = "ReportLead_User_ID_0" })
-                                    <input type="text" class="nbk-input" id="ReportLead_NBK_0" name="ReportLead_NBK" placeholder="Enter NBK or Email..." />
-                                    <input type="text" class="username-display" id="ReportLead_Username_0" disabled placeholder="Username" />
-                                    <span class="or-separator">OR</span>
-                                    @Html.TextBoxFor(m => m.TheReportLead.AssigneeName, new { @class = "assignee-input", @placeholder = "DG Group / Virtual Resource" })
-                                </div>
-                            </td>
-                            <td>
-                                @{ Model.TheReportLead.ActiveFlag = true; }
-                                <input type="checkbox" class="table-checkbox" id="TheReportLead_ActiveFlag" name="TheReportLead.ActiveFlag" value="true" checked />
-                            </td>
-                            <td>
-                                <button type="button" id="btnAddReportLead" class="btn-add" title="Add">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
-                                    Add
-                                </button>
-                            </td>
-                        </tr>
-
-                        <!-- Existing Rows -->
-                        @for (int i = 0; i < Model.ReportLeads.Count; i++)
-                        {
-                            var resource = Model.ReportLeads.ToArray()[i];
+                    <table class="data-table" id="tblReportLead">
+                        <thead>
                             <tr>
+                                <th style="width: 100px;">ID</th>
+                                <th style="width: 180px;">NBK ID</th>
+                                <th>Full Name</th>
+                                <th style="width: 150px;">Status</th>
+                                <th style="width: 100px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Add New Row (Hidden by default) -->
+                            <tr class="inline-edit-row hidden" id="addReportLeadRow">
                                 <td>
-                                    @Html.HiddenFor(m => resource.ID, new { @Id = "ReportLead_ID_" + resource.ID })
-                                    @resource.ID
+                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
                                 </td>
                                 <td>
-                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "ReportLead_User_ID_" + resource.ID })
-                                    @if (resource.User_ID > 0)
-                                    {
-                                        <div class="user-input-group">
-                                            <input type="text" class="nbk-input cgFilter" id="ReportLead_NBK_@resource.ID" name="ReportLead_NBK" value="@resource.User.NBK" placeholder="Enter NBK or Email..." />
-                                            <input type="text" class="username-display cgFilter" id="ReportLead_Username_@resource.ID" disabled value="@resource.User.Username" />
-                                        </div>
-                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "ReportLead_AssigneeName_" + resource.ID })
-                                    }
-                                    else
-                                    {
-                                        <input type="text" class="assignee-input cgFilter" id="ReportLead_AssigneeName_@resource.ID" name="ReportLead_AssigneeName" value="@resource.AssigneeName" />
-                                    }
+                                    @Html.HiddenFor(m => m.TheReportLead.User_ID, new { @id = "ReportLead_User_ID_0" })
+                                    <input type="text" class="inline-input" id="ReportLead_NBK_0" name="ReportLead_NBK" placeholder="Enter NBK or Email..." />
                                 </td>
                                 <td>
-                                    <input type="checkbox" class="table-checkbox" id="ReportLead_ActiveFlag_@resource.ID" name="ReportLead_ActiveFlag_@resource.ID" value="true" @(resource.ActiveFlag ? "checked" : "") />
+                                    <input type="text" class="inline-input" id="ReportLead_Username_0" disabled placeholder="Full Name" />
+                                    @Html.HiddenFor(m => m.TheReportLead.AssigneeName)
+                                </td>
+                                <td>
+                                    <select class="status-select" id="TheReportLead_ActiveFlag" name="TheReportLead.ActiveFlag">
+                                        <option value="true" selected>Active</option>
+                                        <option value="false">Inactive</option>
+                                    </select>
                                 </td>
                                 <td>
                                     <div class="row-actions">
-                                        <button type="button" class="row-action-btn save cgUpdateReportLead" id="btnUpdateReportLead_@resource.ID" title="Save">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7" /></svg>
+                                        <button type="button" class="btn-row-save" id="btnAddReportLead" title="Save">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
                                         </button>
-                                        <button type="button" class="row-action-btn reset cgResetReportLead" id="btnResetReportLead_@resource.ID" title="Reset">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        <button type="button" class="btn-row-cancel" id="btnCancelAddReportLead" title="Cancel">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                        }
 
-                        @if (Model.ReportLeads.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 32px; color: #666;">
-                                    No report leads found.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                            @for (int i = 0; i < Model.ReportLeads.Count; i++)
+                            {
+                                var resource = Model.ReportLeads.ToArray()[i];
+                                <tr id="ReportLead_Row_@resource.ID">
+                                    @Html.HiddenFor(m => resource.ID, new { @Id = "ReportLead_ID_" + resource.ID })
+                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "ReportLead_User_ID_" + resource.ID })
 
-                <div class="pagination-wrapper">
-                    <span class="showing-text">Showing 1-@Model.ReportLeads.Count of @Model.ReportLeads.Count</span>
-                    <div class="pagination">
-                        <button disabled>«</button>
-                        <button disabled>‹</button>
-                        <button class="active">1</button>
-                        <button>›</button>
-                        <button>»</button>
-                    </div>
-                    <div class="per-page">
-                        <span>Show per page:</span>
-                        <select>
-                            <option>10</option>
-                            <option>25</option>
-                            <option>50</option>
-                            <option>100</option>
-                        </select>
+                                    <!-- Display Mode -->
+                                    <td class="display-cell">@resource.ID</td>
+                                    <td class="display-cell">@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)</td>
+                                    <td class="display-cell">@(resource.User_ID > 0 ? resource.User.Username : resource.AssigneeName)</td>
+                                    <td class="display-cell">
+                                        <span class="status-text @(resource.ActiveFlag ? "active" : "inactive")">@(resource.ActiveFlag ? "Active" : "Inactive")</span>
+                                    </td>
+                                    <td class="display-cell">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-edit cgEditReportLead" data-id="@resource.ID" title="Edit">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-menu" title="More options">
+                                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                    <!-- Edit Mode (Hidden) -->
+                                    <td class="edit-cell hidden">@resource.ID</td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="ReportLead_NBK_@resource.ID" name="ReportLead_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" />
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="ReportLead_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" />
+                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "ReportLead_AssigneeName_" + resource.ID })
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <select class="status-select" id="ReportLead_ActiveFlag_@resource.ID">
+                                            <option value="true" @(resource.ActiveFlag ? "selected" : "")>Active</option>
+                                            <option value="false" @(!resource.ActiveFlag ? "selected" : "")>Inactive</option>
+                                        </select>
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-row-save cgUpdateReportLead" id="btnUpdateReportLead_@resource.ID" title="Save">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-row-cancel cgCancelEditReportLead" data-id="@resource.ID" title="Cancel">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+
+                            @if (Model.ReportLeads.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 32px; color: #666;">
+                                        No report leads found.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="pagination-wrapper">
+                        <span class="showing-text">Showing 1-@Model.ReportLeads.Count of @Model.ReportLeads.Count</span>
+                        <div class="pagination">
+                            <button disabled>«</button>
+                            <button disabled>‹</button>
+                            <button class="active">1</button>
+                            <button>2</button>
+                            <button>3</button>
+                            <span class="dots">...</span>
+                            <button>›</button>
+                            <button>»</button>
+                        </div>
+                        <div class="per-page">
+                            <span>Show per page:</span>
+                            <select>
+                                <option>10</option>
+                                <option>25</option>
+                                <option>50</option>
+                                <option>100</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             <!-- ==================== REPORT MANAGERS TAB ==================== -->
-            <div id="reportmanager-content" class="tab-content @(Model.PageAction == ResourceManagementPageAction.paReportManager ? "active" : "")">
-                <div class="table-header">
-                    <span class="total-count">Total (@Model.ReportManagers.Count)</span>
-                    <div class="search-box">
-                        <input type="text" class="table-search" placeholder="Search by ID or Name">
+            @if (Model.PageAction == ResourceManagementPageAction.paReportManager)
+            {
+                <div id="reportmanager-content" class="tab-content active">
+                    <div class="table-controls">
+                        <button type="button" id="btnShowAddReportManager" class="btn-new">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
+                            New
+                        </button>
+                        <div class="search-box">
+                            <input type="text" class="table-search" placeholder="Search by Report ID or Name">
+                        </div>
                     </div>
-                </div>
 
-                <table class="data-table" id="tblReportManager">
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">ID</th>
-                            <th>User / Assignee</th>
-                            <th style="width: 100px;">Active</th>
-                            <th style="width: 120px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Add New Row -->
-                        <tr class="add-new-row">
-                            <td></td>
-                            <td>
-                                <div class="user-input-group">
-                                    @Html.HiddenFor(m => m.TheReportManager.User_ID, new { @id = "ReportManager_User_ID_0" })
-                                    <input type="text" class="nbk-input" id="ReportManager_NBK_0" name="ReportManager_NBK" placeholder="Enter NBK or Email..." />
-                                    <input type="text" class="username-display" id="ReportManager_Username_0" disabled placeholder="Username" />
-                                    <span class="or-separator">OR</span>
-                                    @Html.TextBoxFor(m => m.TheReportManager.AssigneeName, new { @class = "assignee-input", @placeholder = "DG Group / Virtual Resource" })
-                                </div>
-                            </td>
-                            <td>
-                                @{ Model.TheReportManager.ActiveFlag = true; }
-                                <input type="checkbox" class="table-checkbox" id="TheReportManager_ActiveFlag" name="TheReportManager.ActiveFlag" value="true" checked />
-                            </td>
-                            <td>
-                                <button type="button" id="btnAddReportManager" class="btn-add" title="Add">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
-                                    Add
-                                </button>
-                            </td>
-                        </tr>
-
-                        <!-- Existing Rows -->
-                        @for (int i = 0; i < Model.ReportManagers.Count; i++)
-                        {
-                            var resource = Model.ReportManagers.ToArray()[i];
+                    <table class="data-table" id="tblReportManager">
+                        <thead>
                             <tr>
+                                <th style="width: 100px;">ID</th>
+                                <th style="width: 180px;">NBK ID</th>
+                                <th>Full Name</th>
+                                <th style="width: 150px;">Status</th>
+                                <th style="width: 100px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Add New Row (Hidden by default) -->
+                            <tr class="inline-edit-row hidden" id="addReportManagerRow">
                                 <td>
-                                    @Html.HiddenFor(m => resource.ID, new { @Id = "ReportManager_ID_" + resource.ID })
-                                    @resource.ID
+                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
                                 </td>
                                 <td>
-                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "ReportManager_User_ID_" + resource.ID })
-                                    @if (resource.User_ID > 0)
-                                    {
-                                        <div class="user-input-group">
-                                            <input type="text" class="nbk-input cgFilter" id="ReportManager_NBK_@resource.ID" name="ReportManager_NBK" value="@resource.User.NBK" placeholder="Enter NBK or Email..." />
-                                            <input type="text" class="username-display cgFilter" id="ReportManager_Username_@resource.ID" disabled value="@resource.User.Username" />
-                                        </div>
-                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "ReportManager_AssigneeName_" + resource.ID })
-                                    }
-                                    else
-                                    {
-                                        <input type="text" class="assignee-input cgFilter" id="ReportManager_AssigneeName_@resource.ID" name="ReportManager_AssigneeName" value="@resource.AssigneeName" />
-                                    }
+                                    @Html.HiddenFor(m => m.TheReportManager.User_ID, new { @id = "ReportManager_User_ID_0" })
+                                    <input type="text" class="inline-input" id="ReportManager_NBK_0" name="ReportManager_NBK" placeholder="Enter NBK or Email..." />
                                 </td>
                                 <td>
-                                    <input type="checkbox" class="table-checkbox" id="ReportManager_ActiveFlag_@resource.ID" name="ReportManager_ActiveFlag_@resource.ID" value="true" @(resource.ActiveFlag ? "checked" : "") />
+                                    <input type="text" class="inline-input" id="ReportManager_Username_0" disabled placeholder="Full Name" />
+                                    @Html.HiddenFor(m => m.TheReportManager.AssigneeName)
+                                </td>
+                                <td>
+                                    <select class="status-select" id="TheReportManager_ActiveFlag" name="TheReportManager.ActiveFlag">
+                                        <option value="true" selected>Active</option>
+                                        <option value="false">Inactive</option>
+                                    </select>
                                 </td>
                                 <td>
                                     <div class="row-actions">
-                                        <button type="button" class="row-action-btn save cgUpdateReportManager" id="btnUpdateReportManager_@resource.ID" title="Save">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7" /></svg>
+                                        <button type="button" class="btn-row-save" id="btnAddReportManager" title="Save">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
                                         </button>
-                                        <button type="button" class="row-action-btn reset cgResetReportManager" id="btnResetReportManager_@resource.ID" title="Reset">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        <button type="button" class="btn-row-cancel" id="btnCancelAddReportManager" title="Cancel">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                        }
 
-                        @if (Model.ReportManagers.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 32px; color: #666;">
-                                    No report managers found.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                            @for (int i = 0; i < Model.ReportManagers.Count; i++)
+                            {
+                                var resource = Model.ReportManagers.ToArray()[i];
+                                <tr id="ReportManager_Row_@resource.ID">
+                                    @Html.HiddenFor(m => resource.ID, new { @Id = "ReportManager_ID_" + resource.ID })
+                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "ReportManager_User_ID_" + resource.ID })
 
-                <div class="pagination-wrapper">
-                    <span class="showing-text">Showing 1-@Model.ReportManagers.Count of @Model.ReportManagers.Count</span>
-                    <div class="pagination">
-                        <button disabled>«</button>
-                        <button disabled>‹</button>
-                        <button class="active">1</button>
-                        <button>›</button>
-                        <button>»</button>
-                    </div>
-                    <div class="per-page">
-                        <span>Show per page:</span>
-                        <select>
-                            <option>10</option>
-                            <option>25</option>
-                            <option>50</option>
-                            <option>100</option>
-                        </select>
+                                    <!-- Display Mode -->
+                                    <td class="display-cell">@resource.ID</td>
+                                    <td class="display-cell">@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)</td>
+                                    <td class="display-cell">@(resource.User_ID > 0 ? resource.User.Username : resource.AssigneeName)</td>
+                                    <td class="display-cell">
+                                        <span class="status-text @(resource.ActiveFlag ? "active" : "inactive")">@(resource.ActiveFlag ? "Active" : "Inactive")</span>
+                                    </td>
+                                    <td class="display-cell">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-edit cgEditReportManager" data-id="@resource.ID" title="Edit">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-menu" title="More options">
+                                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                    <!-- Edit Mode (Hidden) -->
+                                    <td class="edit-cell hidden">@resource.ID</td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="ReportManager_NBK_@resource.ID" name="ReportManager_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" />
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="ReportManager_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" />
+                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "ReportManager_AssigneeName_" + resource.ID })
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <select class="status-select" id="ReportManager_ActiveFlag_@resource.ID">
+                                            <option value="true" @(resource.ActiveFlag ? "selected" : "")>Active</option>
+                                            <option value="false" @(!resource.ActiveFlag ? "selected" : "")>Inactive</option>
+                                        </select>
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-row-save cgUpdateReportManager" id="btnUpdateReportManager_@resource.ID" title="Save">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-row-cancel cgCancelEditReportManager" data-id="@resource.ID" title="Cancel">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+
+                            @if (Model.ReportManagers.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 32px; color: #666;">
+                                        No report managers found.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="pagination-wrapper">
+                        <span class="showing-text">Showing 1-@Model.ReportManagers.Count of @Model.ReportManagers.Count</span>
+                        <div class="pagination">
+                            <button disabled>«</button>
+                            <button disabled>‹</button>
+                            <button class="active">1</button>
+                            <button>2</button>
+                            <button>3</button>
+                            <span class="dots">...</span>
+                            <button>›</button>
+                            <button>»</button>
+                        </div>
+                        <div class="per-page">
+                            <span>Show per page:</span>
+                            <select>
+                                <option>10</option>
+                                <option>25</option>
+                                <option>50</option>
+                                <option>100</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             <!-- ==================== iDRIVES TAB ==================== -->
-            <div id="idrive-content" class="tab-content @(Model.PageAction == ResourceManagementPageAction.paIDrive ? "active" : "")">
-                <div class="table-header">
-                    <span class="total-count">Total (@Model.iDrives.Count)</span>
-                    <div class="search-box">
-                        <input type="text" class="table-search" placeholder="Search by ID or Name">
+            @if (Model.PageAction == ResourceManagementPageAction.paIDrive)
+            {
+                <div id="idrive-content" class="tab-content active">
+                    <div class="table-controls">
+                        <button type="button" id="btnShowAddiDrive" class="btn-new">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
+                            New
+                        </button>
+                        <div class="search-box">
+                            <input type="text" class="table-search" placeholder="Search by Report ID or Name">
+                        </div>
                     </div>
-                </div>
 
-                <table class="data-table" id="tbliDrive">
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">ID</th>
-                            <th>User / Assignee</th>
-                            <th style="width: 100px;">Active</th>
-                            <th style="width: 120px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Add New Row -->
-                        <tr class="add-new-row">
-                            <td></td>
-                            <td>
-                                <div class="user-input-group">
-                                    @Html.HiddenFor(m => m.TheiDrive.User_ID, new { @id = "iDrive_User_ID_0" })
-                                    <input type="text" class="nbk-input" id="iDrive_NBK_0" name="iDrive_NBK" placeholder="Enter NBK or Email..." />
-                                    <input type="text" class="username-display" id="iDrive_Username_0" disabled placeholder="Username" />
-                                    <span class="or-separator">OR</span>
-                                    @Html.TextBoxFor(m => m.TheiDrive.AssigneeName, new { @class = "assignee-input", @placeholder = "DG Group / Virtual Resource" })
-                                </div>
-                            </td>
-                            <td>
-                                @{ Model.TheiDrive.ActiveFlag = true; }
-                                <input type="checkbox" class="table-checkbox" id="TheiDrive_ActiveFlag" name="TheiDrive.ActiveFlag" value="true" checked />
-                            </td>
-                            <td>
-                                <button type="button" id="btnAddiDrive" class="btn-add" title="Add">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14" /></svg>
-                                    Add
-                                </button>
-                            </td>
-                        </tr>
-
-                        <!-- Existing Rows -->
-                        @for (int i = 0; i < Model.iDrives.Count; i++)
-                        {
-                            var resource = Model.iDrives.ToArray()[i];
+                    <table class="data-table" id="tbliDrive">
+                        <thead>
                             <tr>
+                                <th style="width: 100px;">ID</th>
+                                <th style="width: 180px;">NBK ID</th>
+                                <th>Full Name</th>
+                                <th style="width: 150px;">Status</th>
+                                <th style="width: 100px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Add New Row (Hidden by default) -->
+                            <tr class="inline-edit-row hidden" id="addiDriveRow">
                                 <td>
-                                    @Html.HiddenFor(m => resource.ID, new { @Id = "iDrive_ID_" + resource.ID })
-                                    @resource.ID
+                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
                                 </td>
                                 <td>
-                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "iDrive_User_ID_" + resource.ID })
-                                    @if (resource.User_ID > 0)
-                                    {
-                                        <div class="user-input-group">
-                                            <input type="text" class="nbk-input cgFilter" id="iDrive_NBK_@resource.ID" name="iDrive_NBK" value="@resource.User.NBK" placeholder="Enter NBK or Email..." />
-                                            <input type="text" class="username-display cgFilter" id="iDrive_Username_@resource.ID" disabled value="@resource.User.Username" />
-                                        </div>
-                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "iDrive_AssigneeName_" + resource.ID })
-                                    }
-                                    else
-                                    {
-                                        <input type="text" class="assignee-input cgFilter" id="iDrive_AssigneeName_@resource.ID" name="iDrive_AssigneeName" value="@resource.AssigneeName" />
-                                    }
+                                    @Html.HiddenFor(m => m.TheiDrive.User_ID, new { @id = "iDrive_User_ID_0" })
+                                    <input type="text" class="inline-input" id="iDrive_NBK_0" name="iDrive_NBK" placeholder="Enter NBK or Email..." />
                                 </td>
                                 <td>
-                                    <input type="checkbox" class="table-checkbox" id="iDrive_ActiveFlag_@resource.ID" name="iDrive_ActiveFlag_@resource.ID" value="true" @(resource.ActiveFlag ? "checked" : "") />
+                                    <input type="text" class="inline-input" id="iDrive_Username_0" disabled placeholder="Full Name" />
+                                    @Html.HiddenFor(m => m.TheiDrive.AssigneeName)
+                                </td>
+                                <td>
+                                    <select class="status-select" id="TheiDrive_ActiveFlag" name="TheiDrive.ActiveFlag">
+                                        <option value="true" selected>Active</option>
+                                        <option value="false">Inactive</option>
+                                    </select>
                                 </td>
                                 <td>
                                     <div class="row-actions">
-                                        <button type="button" class="row-action-btn save cgUpdateiDrive" id="btnUpdateiDrive_@resource.ID" title="Save">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7" /></svg>
+                                        <button type="button" class="btn-row-save" id="btnAddiDrive" title="Save">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
                                         </button>
-                                        <button type="button" class="row-action-btn reset cgResetiDrive" id="btnResetiDrive_@resource.ID" title="Reset">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        <button type="button" class="btn-row-cancel" id="btnCancelAddiDrive" title="Cancel">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                        }
 
-                        @if (Model.iDrives.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 32px; color: #666;">
-                                    No iDrives found.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                            @for (int i = 0; i < Model.iDrives.Count; i++)
+                            {
+                                var resource = Model.iDrives.ToArray()[i];
+                                <tr id="iDrive_Row_@resource.ID">
+                                    @Html.HiddenFor(m => resource.ID, new { @Id = "iDrive_ID_" + resource.ID })
+                                    @Html.HiddenFor(m => resource.User_ID, new { @Id = "iDrive_User_ID_" + resource.ID })
 
-                <div class="pagination-wrapper">
-                    <span class="showing-text">Showing 1-@Model.iDrives.Count of @Model.iDrives.Count</span>
-                    <div class="pagination">
-                        <button disabled>«</button>
-                        <button disabled>‹</button>
-                        <button class="active">1</button>
-                        <button>›</button>
-                        <button>»</button>
-                    </div>
-                    <div class="per-page">
-                        <span>Show per page:</span>
-                        <select>
-                            <option>10</option>
-                            <option>25</option>
-                            <option>50</option>
-                            <option>100</option>
-                        </select>
+                                    <!-- Display Mode -->
+                                    <td class="display-cell">@resource.ID</td>
+                                    <td class="display-cell">@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)</td>
+                                    <td class="display-cell">@(resource.User_ID > 0 ? resource.User.Username : resource.AssigneeName)</td>
+                                    <td class="display-cell">
+                                        <span class="status-text @(resource.ActiveFlag ? "active" : "inactive")">@(resource.ActiveFlag ? "Active" : "Inactive")</span>
+                                    </td>
+                                    <td class="display-cell">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-edit cgEditiDrive" data-id="@resource.ID" title="Edit">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-menu" title="More options">
+                                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                    <!-- Edit Mode (Hidden) -->
+                                    <td class="edit-cell hidden">@resource.ID</td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="iDrive_NBK_@resource.ID" name="iDrive_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" />
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <input type="text" class="inline-input" id="iDrive_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" />
+                                        @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "iDrive_AssigneeName_" + resource.ID })
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <select class="status-select" id="iDrive_ActiveFlag_@resource.ID">
+                                            <option value="true" @(resource.ActiveFlag ? "selected" : "")>Active</option>
+                                            <option value="false" @(!resource.ActiveFlag ? "selected" : "")>Inactive</option>
+                                        </select>
+                                    </td>
+                                    <td class="edit-cell hidden">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn-row-save cgUpdateiDrive" id="btnUpdateiDrive_@resource.ID" title="Save">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
+                                            </button>
+                                            <button type="button" class="btn-row-cancel cgCancelEditiDrive" data-id="@resource.ID" title="Cancel">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+
+                            @if (Model.iDrives.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 32px; color: #666;">
+                                        No iDrives found.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="pagination-wrapper">
+                        <span class="showing-text">Showing 1-@Model.iDrives.Count of @Model.iDrives.Count</span>
+                        <div class="pagination">
+                            <button disabled>«</button>
+                            <button disabled>‹</button>
+                            <button class="active">1</button>
+                            <button>2</button>
+                            <button>3</button>
+                            <span class="dots">...</span>
+                            <button>›</button>
+                            <button>»</button>
+                        </div>
+                        <div class="per-page">
+                            <span>Show per page:</span>
+                            <select>
+                                <option>10</option>
+                                <option>25</option>
+                                <option>50</option>
+                                <option>100</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
         }
     }
 </div>
@@ -834,13 +972,108 @@ namespace SchedulingTasks.Data
                     $('#PageAction').val(pageAction);
                     $('#frmManageResources').submit();
                 }
+            });
 
-                // Visual tab switching for immediate feedback
-                $('.tab').removeClass('active');
-                $(this).addClass('active');
-                var tabName = $(this).data('tab');
-                $('.tab-content').removeClass('active');
-                $('#' + tabName + '-content').addClass('active');
+            // ==========================================
+            // SHOW/HIDE ADD ROW
+            // ==========================================
+            // Executives
+            $('#btnShowAddExecutive').on('click', function () {
+                $('#addExecutiveRow').removeClass('hidden');
+                $(this).addClass('hidden');
+            });
+            $('#btnCancelAddExecutive').on('click', function () {
+                $('#addExecutiveRow').addClass('hidden');
+                $('#btnShowAddExecutive').removeClass('hidden');
+                // Clear inputs
+                $('#Executive_NBK_0').val('');
+                $('#Executive_Username_0').val('');
+                $('#Executive_User_ID_0').val('');
+            });
+
+            // Report Leads
+            $('#btnShowAddReportLead').on('click', function () {
+                $('#addReportLeadRow').removeClass('hidden');
+                $(this).addClass('hidden');
+            });
+            $('#btnCancelAddReportLead').on('click', function () {
+                $('#addReportLeadRow').addClass('hidden');
+                $('#btnShowAddReportLead').removeClass('hidden');
+                $('#ReportLead_NBK_0').val('');
+                $('#ReportLead_Username_0').val('');
+                $('#ReportLead_User_ID_0').val('');
+            });
+
+            // Report Managers
+            $('#btnShowAddReportManager').on('click', function () {
+                $('#addReportManagerRow').removeClass('hidden');
+                $(this).addClass('hidden');
+            });
+            $('#btnCancelAddReportManager').on('click', function () {
+                $('#addReportManagerRow').addClass('hidden');
+                $('#btnShowAddReportManager').removeClass('hidden');
+                $('#ReportManager_NBK_0').val('');
+                $('#ReportManager_Username_0').val('');
+                $('#ReportManager_User_ID_0').val('');
+            });
+
+            // iDrives
+            $('#btnShowAddiDrive').on('click', function () {
+                $('#addiDriveRow').removeClass('hidden');
+                $(this).addClass('hidden');
+            });
+            $('#btnCancelAddiDrive').on('click', function () {
+                $('#addiDriveRow').addClass('hidden');
+                $('#btnShowAddiDrive').removeClass('hidden');
+                $('#iDrive_NBK_0').val('');
+                $('#iDrive_Username_0').val('');
+                $('#iDrive_User_ID_0').val('');
+            });
+
+            // ==========================================
+            // INLINE EDIT MODE TOGGLE
+            // ==========================================
+            function enterEditMode(resourceType, id) {
+                var $row = $('#' + resourceType + '_Row_' + id);
+                $row.find('.display-cell').addClass('hidden');
+                $row.find('.edit-cell').removeClass('hidden');
+                $row.addClass('inline-edit-row');
+            }
+
+            function exitEditMode(resourceType, id) {
+                var $row = $('#' + resourceType + '_Row_' + id);
+                $row.find('.edit-cell').addClass('hidden');
+                $row.find('.display-cell').removeClass('hidden');
+                $row.removeClass('inline-edit-row');
+            }
+
+            // Edit button handlers
+            $(document).on('click', '.cgEditExecutive', function () {
+                enterEditMode('Executive', $(this).data('id'));
+            });
+            $(document).on('click', '.cgCancelEditExecutive', function () {
+                exitEditMode('Executive', $(this).data('id'));
+            });
+
+            $(document).on('click', '.cgEditReportLead', function () {
+                enterEditMode('ReportLead', $(this).data('id'));
+            });
+            $(document).on('click', '.cgCancelEditReportLead', function () {
+                exitEditMode('ReportLead', $(this).data('id'));
+            });
+
+            $(document).on('click', '.cgEditReportManager', function () {
+                enterEditMode('ReportManager', $(this).data('id'));
+            });
+            $(document).on('click', '.cgCancelEditReportManager', function () {
+                exitEditMode('ReportManager', $(this).data('id'));
+            });
+
+            $(document).on('click', '.cgEditiDrive', function () {
+                enterEditMode('iDrive', $(this).data('id'));
+            });
+            $(document).on('click', '.cgCancelEditiDrive', function () {
+                exitEditMode('iDrive', $(this).data('id'));
             });
 
             // ==========================================
@@ -849,32 +1082,18 @@ namespace SchedulingTasks.Data
             $('.table-search').on('keyup', function () {
                 var searchTerm = $(this).val().toLowerCase();
                 var $tabContent = $(this).closest('.tab-content');
-                var $rows = $tabContent.find('.data-table tbody tr:not(.add-new-row)');
+                var $rows = $tabContent.find('.data-table tbody tr:not(.inline-edit-row)');
                 var visibleCount = 0;
 
                 $rows.each(function () {
-                    var $row = $(this);
-                    var id = $row.find('td:first').text().toLowerCase();
-                    var nbk = $row.find('.nbk-input').val() ? $row.find('.nbk-input').val().toLowerCase() : '';
-                    var username = $row.find('.username-display').val() ? $row.find('.username-display').val().toLowerCase() : '';
-                    var assignee = $row.find('.assignee-input').val() ? $row.find('.assignee-input').val().toLowerCase() : '';
-
-                    if (id.includes(searchTerm) || nbk.includes(searchTerm) || username.includes(searchTerm) || assignee.includes(searchTerm)) {
-                        $row.show();
+                    var rowText = $(this).text().toLowerCase();
+                    if (rowText.includes(searchTerm)) {
+                        $(this).show();
                         visibleCount++;
                     } else {
-                        $row.hide();
+                        $(this).hide();
                     }
                 });
-
-                // Update Count Text
-                var $totalCount = $tabContent.find('.total-count');
-                var totalRows = $rows.length;
-                if (searchTerm === '') {
-                    $totalCount.text('Total (' + totalRows + ')');
-                } else {
-                    $totalCount.text('Showing ' + visibleCount + ' of ' + totalRows);
-                }
             });
 
             // ==========================================
