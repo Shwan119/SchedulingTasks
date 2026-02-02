@@ -41,6 +41,9 @@ namespace SchedulingTasks.Data
         }
     }
 }
+
+
+
 @using ROV.ReportHub.ViewModels
 @model ManageResourcesViewModel
 @{
@@ -107,6 +110,15 @@ namespace SchedulingTasks.Data
 
     .btn-new:hover {
         background: #162d4a;
+    }
+
+    .btn-new:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .btn-new:disabled:hover {
+        background: #1e3a5f;
     }
 
     .btn-new svg {
@@ -359,7 +371,7 @@ namespace SchedulingTasks.Data
                             <tr>
                                 <th style="width: 100px;">ID</th>
                                 <th style="width: 180px;">NBK ID</th>
-                                <th>Full Name</th>
+                                <th>User / Assignee</th>
                                 <th style="width: 150px;">Status</th>
                                 <th style="width: 100px;"></th>
                             </tr>
@@ -368,15 +380,18 @@ namespace SchedulingTasks.Data
                             <!-- Add New Row (Hidden by default) -->
                             <tr class="inline-edit-row hidden" id="addExecutiveRow">
                                 <td>
-                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
+                                    @Html.TextBox("Executive_ID_0", "", new { @class = "inline-input", @disabled = "disabled", @placeholder = "Auto", @style = "width: 80px;" })
                                 </td>
                                 <td>
                                     @Html.HiddenFor(m => m.TheExecutive.User_ID, new { @id = "Executive_User_ID_0" })
-                                    <input type="text" class="inline-input" id="Executive_NBK_0" name="Executive_NBK" placeholder="Enter NBK or Email..." />
+                                    @Html.TextBoxFor(m => m.TheExecutive.User.NBK, new { @class = "inline-input", @id = "Executive_NBK_0", @Name = "Executive_NBK", @placeholder = "Enter NBK or Email..." })
                                 </td>
                                 <td>
-                                    <input type="text" class="inline-input" id="Executive_Username_0" disabled placeholder="Full Name" />
-                                    @Html.HiddenFor(m => m.TheExecutive.AssigneeName)
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        @Html.TextBoxFor(m => m.TheExecutive.User.Username, new { @class = "inline-input", @id = "Executive_Username_0", @disabled = "disabled", @placeholder = "Username", @style = "flex: 1;" })
+                                        <span style="color: #6b7280; font-size: 12px; font-weight: 500;">OR</span>
+                                        @Html.TextBoxFor(m => m.TheExecutive.AssigneeName, new { @class = "inline-input", @placeholder = "DG Group / Virtual Resource", @style = "flex: 1;" })
+                                    </div>
                                 </td>
                                 <td>
                                     <select class="status-select" id="TheExecutive_ActiveFlag" name="TheExecutive.ActiveFlag">
@@ -450,10 +465,10 @@ namespace SchedulingTasks.Data
                                     <!-- Edit Mode (Hidden) -->
                                     <td class="edit-cell hidden">@resource.ID</td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="Executive_NBK_@resource.ID" name="Executive_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" placeholder="Enter NBK or Email..." />
+                                        @Html.TextBox("Executive_NBK_" + resource.ID, (resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName), new { @class = "inline-input", @placeholder = "Enter NBK or Email..." })
                                     </td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="Executive_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" placeholder="Full Name" />
+                                        @Html.TextBox("Executive_Username_" + resource.ID, (resource.User_ID > 0 ? resource.User.Username : ""), new { @class = "inline-input", @disabled = "disabled", @placeholder = "Username" })
                                         @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "Executive_AssigneeName_" + resource.ID })
                                     </td>
                                     <td class="edit-cell hidden">
@@ -531,7 +546,7 @@ namespace SchedulingTasks.Data
                             <tr>
                                 <th style="width: 100px;">ID</th>
                                 <th style="width: 180px;">NBK ID</th>
-                                <th>Full Name</th>
+                                <th>User / Assignee</th>
                                 <th style="width: 150px;">Status</th>
                                 <th style="width: 100px;"></th>
                             </tr>
@@ -540,15 +555,18 @@ namespace SchedulingTasks.Data
                             <!-- Add New Row (Hidden by default) -->
                             <tr class="inline-edit-row hidden" id="addReportLeadRow">
                                 <td>
-                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
+                                    @Html.TextBox("ReportLead_ID_0", "", new { @class = "inline-input", @disabled = "disabled", @placeholder = "Auto", @style = "width: 80px;" })
                                 </td>
                                 <td>
                                     @Html.HiddenFor(m => m.TheReportLead.User_ID, new { @id = "ReportLead_User_ID_0" })
-                                    <input type="text" class="inline-input" id="ReportLead_NBK_0" name="ReportLead_NBK" placeholder="Enter NBK or Email..." />
+                                    @Html.TextBoxFor(m => m.TheReportLead.User.NBK, new { @class = "inline-input", @id = "ReportLead_NBK_0", @Name = "ReportLead_NBK", @placeholder = "Enter NBK or Email..." })
                                 </td>
                                 <td>
-                                    <input type="text" class="inline-input" id="ReportLead_Username_0" disabled placeholder="Full Name" />
-                                    @Html.HiddenFor(m => m.TheReportLead.AssigneeName)
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        @Html.TextBoxFor(m => m.TheReportLead.User.Username, new { @class = "inline-input", @id = "ReportLead_Username_0", @disabled = "disabled", @placeholder = "Username", @style = "flex: 1;" })
+                                        <span style="color: #6b7280; font-size: 12px; font-weight: 500;">OR</span>
+                                        @Html.TextBoxFor(m => m.TheReportLead.AssigneeName, new { @class = "inline-input", @placeholder = "DG Group / Virtual Resource", @style = "flex: 1;" })
+                                    </div>
                                 </td>
                                 <td>
                                     <select class="status-select" id="TheReportLead_ActiveFlag" name="TheReportLead.ActiveFlag">
@@ -596,10 +614,10 @@ namespace SchedulingTasks.Data
                                     <!-- Edit Mode (Hidden) -->
                                     <td class="edit-cell hidden">@resource.ID</td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="ReportLead_NBK_@resource.ID" name="ReportLead_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" />
+                                        @Html.TextBox("ReportLead_NBK_" + resource.ID, (resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName), new { @class = "inline-input", @placeholder = "Enter NBK or Email..." })
                                     </td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="ReportLead_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" />
+                                        @Html.TextBox("ReportLead_Username_" + resource.ID, (resource.User_ID > 0 ? resource.User.Username : ""), new { @class = "inline-input", @disabled = "disabled", @placeholder = "Username" })
                                         @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "ReportLead_AssigneeName_" + resource.ID })
                                     </td>
                                     <td class="edit-cell hidden">
@@ -676,7 +694,7 @@ namespace SchedulingTasks.Data
                             <tr>
                                 <th style="width: 100px;">ID</th>
                                 <th style="width: 180px;">NBK ID</th>
-                                <th>Full Name</th>
+                                <th>User / Assignee</th>
                                 <th style="width: 150px;">Status</th>
                                 <th style="width: 100px;"></th>
                             </tr>
@@ -685,15 +703,18 @@ namespace SchedulingTasks.Data
                             <!-- Add New Row (Hidden by default) -->
                             <tr class="inline-edit-row hidden" id="addReportManagerRow">
                                 <td>
-                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
+                                    @Html.TextBox("ReportManager_ID_0", "", new { @class = "inline-input", @disabled = "disabled", @placeholder = "Auto", @style = "width: 80px;" })
                                 </td>
                                 <td>
                                     @Html.HiddenFor(m => m.TheReportManager.User_ID, new { @id = "ReportManager_User_ID_0" })
-                                    <input type="text" class="inline-input" id="ReportManager_NBK_0" name="ReportManager_NBK" placeholder="Enter NBK or Email..." />
+                                    @Html.TextBoxFor(m => m.TheReportManager.User.NBK, new { @class = "inline-input", @id = "ReportManager_NBK_0", @Name = "ReportManager_NBK", @placeholder = "Enter NBK or Email..." })
                                 </td>
                                 <td>
-                                    <input type="text" class="inline-input" id="ReportManager_Username_0" disabled placeholder="Full Name" />
-                                    @Html.HiddenFor(m => m.TheReportManager.AssigneeName)
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        @Html.TextBoxFor(m => m.TheReportManager.User.Username, new { @class = "inline-input", @id = "ReportManager_Username_0", @disabled = "disabled", @placeholder = "Username", @style = "flex: 1;" })
+                                        <span style="color: #6b7280; font-size: 12px; font-weight: 500;">OR</span>
+                                        @Html.TextBoxFor(m => m.TheReportManager.AssigneeName, new { @class = "inline-input", @placeholder = "DG Group / Virtual Resource", @style = "flex: 1;" })
+                                    </div>
                                 </td>
                                 <td>
                                     <select class="status-select" id="TheReportManager_ActiveFlag" name="TheReportManager.ActiveFlag">
@@ -741,10 +762,10 @@ namespace SchedulingTasks.Data
                                     <!-- Edit Mode (Hidden) -->
                                     <td class="edit-cell hidden">@resource.ID</td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="ReportManager_NBK_@resource.ID" name="ReportManager_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" />
+                                        @Html.TextBox("ReportManager_NBK_" + resource.ID, (resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName), new { @class = "inline-input", @placeholder = "Enter NBK or Email..." })
                                     </td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="ReportManager_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" />
+                                        @Html.TextBox("ReportManager_Username_" + resource.ID, (resource.User_ID > 0 ? resource.User.Username : ""), new { @class = "inline-input", @disabled = "disabled", @placeholder = "Username" })
                                         @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "ReportManager_AssigneeName_" + resource.ID })
                                     </td>
                                     <td class="edit-cell hidden">
@@ -821,7 +842,7 @@ namespace SchedulingTasks.Data
                             <tr>
                                 <th style="width: 100px;">ID</th>
                                 <th style="width: 180px;">NBK ID</th>
-                                <th>Full Name</th>
+                                <th>User / Assignee</th>
                                 <th style="width: 150px;">Status</th>
                                 <th style="width: 100px;"></th>
                             </tr>
@@ -830,15 +851,18 @@ namespace SchedulingTasks.Data
                             <!-- Add New Row (Hidden by default) -->
                             <tr class="inline-edit-row hidden" id="addiDriveRow">
                                 <td>
-                                    <input type="text" class="inline-input" disabled placeholder="Auto" style="width: 80px;" />
+                                    @Html.TextBox("iDrive_ID_0", "", new { @class = "inline-input", @disabled = "disabled", @placeholder = "Auto", @style = "width: 80px;" })
                                 </td>
                                 <td>
                                     @Html.HiddenFor(m => m.TheiDrive.User_ID, new { @id = "iDrive_User_ID_0" })
-                                    <input type="text" class="inline-input" id="iDrive_NBK_0" name="iDrive_NBK" placeholder="Enter NBK or Email..." />
+                                    @Html.TextBoxFor(m => m.TheiDrive.User.NBK, new { @class = "inline-input", @id = "iDrive_NBK_0", @Name = "iDrive_NBK", @placeholder = "Enter NBK or Email..." })
                                 </td>
                                 <td>
-                                    <input type="text" class="inline-input" id="iDrive_Username_0" disabled placeholder="Full Name" />
-                                    @Html.HiddenFor(m => m.TheiDrive.AssigneeName)
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        @Html.TextBoxFor(m => m.TheiDrive.User.Username, new { @class = "inline-input", @id = "iDrive_Username_0", @disabled = "disabled", @placeholder = "Username", @style = "flex: 1;" })
+                                        <span style="color: #6b7280; font-size: 12px; font-weight: 500;">OR</span>
+                                        @Html.TextBoxFor(m => m.TheiDrive.AssigneeName, new { @class = "inline-input", @placeholder = "DG Group / Virtual Resource", @style = "flex: 1;" })
+                                    </div>
                                 </td>
                                 <td>
                                     <select class="status-select" id="TheiDrive_ActiveFlag" name="TheiDrive.ActiveFlag">
@@ -886,10 +910,10 @@ namespace SchedulingTasks.Data
                                     <!-- Edit Mode (Hidden) -->
                                     <td class="edit-cell hidden">@resource.ID</td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="iDrive_NBK_@resource.ID" name="iDrive_NBK" value="@(resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName)" />
+                                        @Html.TextBox("iDrive_NBK_" + resource.ID, (resource.User_ID > 0 ? resource.User.NBK : resource.AssigneeName), new { @class = "inline-input", @placeholder = "Enter NBK or Email..." })
                                     </td>
                                     <td class="edit-cell hidden">
-                                        <input type="text" class="inline-input" id="iDrive_Username_@resource.ID" disabled value="@(resource.User_ID > 0 ? resource.User.Username : "")" />
+                                        @Html.TextBox("iDrive_Username_" + resource.ID, (resource.User_ID > 0 ? resource.User.Username : ""), new { @class = "inline-input", @disabled = "disabled", @placeholder = "Username" })
                                         @Html.HiddenFor(m => resource.AssigneeName, new { @Id = "iDrive_AssigneeName_" + resource.ID })
                                     </td>
                                     <td class="edit-cell hidden">
@@ -980,54 +1004,58 @@ namespace SchedulingTasks.Data
             // Executives
             $('#btnShowAddExecutive').on('click', function () {
                 $('#addExecutiveRow').removeClass('hidden');
-                $(this).addClass('hidden');
+                $(this).prop('disabled', true).css('opacity', '0.5');
             });
             $('#btnCancelAddExecutive').on('click', function () {
                 $('#addExecutiveRow').addClass('hidden');
-                $('#btnShowAddExecutive').removeClass('hidden');
+                $('#btnShowAddExecutive').prop('disabled', false).css('opacity', '1');
                 // Clear inputs
                 $('#Executive_NBK_0').val('');
                 $('#Executive_Username_0').val('');
                 $('#Executive_User_ID_0').val('');
+                $('#TheExecutive_AssigneeName').val('');
             });
 
             // Report Leads
             $('#btnShowAddReportLead').on('click', function () {
                 $('#addReportLeadRow').removeClass('hidden');
-                $(this).addClass('hidden');
+                $(this).prop('disabled', true).css('opacity', '0.5');
             });
             $('#btnCancelAddReportLead').on('click', function () {
                 $('#addReportLeadRow').addClass('hidden');
-                $('#btnShowAddReportLead').removeClass('hidden');
+                $('#btnShowAddReportLead').prop('disabled', false).css('opacity', '1');
                 $('#ReportLead_NBK_0').val('');
                 $('#ReportLead_Username_0').val('');
                 $('#ReportLead_User_ID_0').val('');
+                $('#TheReportLead_AssigneeName').val('');
             });
 
             // Report Managers
             $('#btnShowAddReportManager').on('click', function () {
                 $('#addReportManagerRow').removeClass('hidden');
-                $(this).addClass('hidden');
+                $(this).prop('disabled', true).css('opacity', '0.5');
             });
             $('#btnCancelAddReportManager').on('click', function () {
                 $('#addReportManagerRow').addClass('hidden');
-                $('#btnShowAddReportManager').removeClass('hidden');
+                $('#btnShowAddReportManager').prop('disabled', false).css('opacity', '1');
                 $('#ReportManager_NBK_0').val('');
                 $('#ReportManager_Username_0').val('');
                 $('#ReportManager_User_ID_0').val('');
+                $('#TheReportManager_AssigneeName').val('');
             });
 
             // iDrives
             $('#btnShowAddiDrive').on('click', function () {
                 $('#addiDriveRow').removeClass('hidden');
-                $(this).addClass('hidden');
+                $(this).prop('disabled', true).css('opacity', '0.5');
             });
             $('#btnCancelAddiDrive').on('click', function () {
                 $('#addiDriveRow').addClass('hidden');
-                $('#btnShowAddiDrive').removeClass('hidden');
+                $('#btnShowAddiDrive').prop('disabled', false).css('opacity', '1');
                 $('#iDrive_NBK_0').val('');
                 $('#iDrive_Username_0').val('');
                 $('#iDrive_User_ID_0').val('');
+                $('#TheiDrive_AssigneeName').val('');
             });
 
             // ==========================================
